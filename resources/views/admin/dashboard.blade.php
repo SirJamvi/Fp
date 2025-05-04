@@ -3,3 +3,4 @@
   <h3 class="text-xl">Ini adalah halaman home page</h3>
   <p>silahkan ubah ubah</p>
 </x-layout>
+

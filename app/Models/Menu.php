@@ -9,27 +9,45 @@ class Menu extends Model
 {
     use HasFactory;
 
-    // Tambahkan ini untuk menentukan nama tabel yang benar
-    protected $table = 'menu';
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'nama',
-        'deskripsi',
-        'harga',
-        'kategori',
-        'tersedia',
-        'gambar'
+        'name',
+        'description',
+        'price',
+        'image',
+        'category',
+        'is_available',
+        'preparation_time',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'tersedia' => 'boolean',
-        'harga' => 'decimal:2'
+        'price' => 'decimal:2',
+        'is_available' => 'boolean',
+        'preparation_time' => 'integer',
     ];
 
-    // Jika Anda ingin menambahkan relasi atau method lain
-    // Contoh relasi jika menu memiliki kategori terpisah:
-    // public function kategori()
-    // {
-    //     return $this->belongsTo(Kategori::class);
-    // }
+    /**
+     * Get the category options.
+     *
+     * @return array
+     */
+    public static function getCategoryOptions(): array
+    {
+        return [
+            'food' => 'Food',
+            'beverage' => 'Beverage',
+            'dessert' => 'Dessert',
+            'appetizer' => 'Appetizer',
+            'other' => 'Other',
+        ];
+    }
 }
