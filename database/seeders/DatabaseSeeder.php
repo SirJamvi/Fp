@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
         // Seed admin user
         DB::table('pengguna')->insert([
             'nama' => 'Admin Restoran',
-            'email' => 'admin@restoran.com',
+            'email' => '    ',
             'nomor_hp' => '081234567890',
             'password' => Hash::make('password123'),
             'peran' => 'admin',

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 
 // Public Routes
@@ -24,6 +25,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Menu Management (Resource Controller)
     Route::resource('menu', MenuController::class);
 
+    // User Management (Resource Controller)
+    Route::resource('kelola-akun', PenggunaController::class);
+
     // Additional Admin Pages
     Route::get('/manajemen-meja', function () {
         return view('admin.manajemen-meja', ['title' => 'Manajemen Meja']);
@@ -40,8 +44,4 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/info-cust', function () {
         return view('admin.info-cust', ['title' => 'Info Pelanggan']);
     })->name('info-cust');
-
-    Route::get('/kelola-akun', function () {
-        return view('admin.kelola-akun', ['title' => 'Kelola Akun']);
-    })->name('kelola-akun');
 });
