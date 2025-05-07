@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Pelayan\PelayanController;
+use App\Http\Controllers\Koki\KokiController;
 
 // Public Routes
 Route::get('/', function () {
@@ -44,4 +46,30 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/info-cust', function () {
         return view('admin.info-cust', ['title' => 'Info Pelanggan']);
     })->name('info-cust');
+});
+
+// Pelayan Routes Group
+Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
+    // Dashboard
+    Route::get('/', [PelayanController::class, 'dashboard']);
+    Route::get('/dashboard', [PelayanController::class, 'dashboard'])->name('dashboard');
+    
+    // Pesanan
+    Route::get('/pesanan', [PelayanController::class, 'pesanan'])->name('pesanan');
+    
+    // Status Meja
+    Route::get('/meja', [PelayanController::class, 'meja'])->name('meja');
+});
+
+// Koki Routes Group
+Route::prefix('koki')->name('koki.')->middleware(['auth', 'koki'])->group(function () {
+    // Dashboard
+    Route::get('/', [KokiController::class, 'dashboard']);
+    Route::get('/dashboard', [KokiController::class, 'dashboard'])->name('dashboard');
+    
+    // Daftar Pesanan
+    Route::get('/daftar-pesanan', [KokiController::class, 'daftarPesanan'])->name('daftar-pesanan');
+    
+    // Stok Bahan
+    Route::get('/stok-bahan', [KokiController::class, 'stokBahan'])->name('stok-bahan');
 });
