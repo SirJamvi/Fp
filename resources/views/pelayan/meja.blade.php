@@ -26,7 +26,7 @@
                                     </div>
                                     <div class="card-footer d-flex align-items-center justify-content-center">
                                         <button class="btn btn-sm {{ in_array($i, [1, 3, 5, 7, 9]) ? 'btn-light' : 'btn-dark' }}">
-                                            {{ in_array($i, [1, 3, 5, 7, 9]) ? 'Lihat Pesanan' : 'Tambah Pesanan' }}
+                                            {{ in_array($i, [1, 3, 5, 7, 9]) ? 'Lihat Pesanan' : 'Tambah Pesanan!' }}
                                         </button>
                                     </div>
                                 </div>
