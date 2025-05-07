@@ -9,19 +9,19 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="bg-white shadow rounded-lg p-4">
         <div class="text-sm text-gray-500">Total Reservation</div>
-        <div class="text-2xl font-semibold text-blue-600">100</div>
+        <div class="text-2xl font-semibold text-blue-600">{{ $totalReservations }}</div>
       </div>
       <div class="bg-white shadow rounded-lg p-4">
         <div class="text-sm text-gray-500">Best Selling Item</div>
-        <div class="text-2xl font-semibold text-purple-600">Paha Atas</div>
+        <div class="text-2xl font-semibold text-purple-600">{{ $bestSellingItem ?? 'No Data' }}</div>
       </div>
       <div class="bg-white shadow rounded-lg p-4">
         <div class="text-sm text-gray-500">Present</div>
-        <div class="text-2xl font-semibold text-green-600">80</div>
+        <div class="text-2xl font-semibold text-green-600">{{ $presentReservations }}</div>
       </div>
       <div class="bg-white shadow rounded-lg p-4">
         <div class="text-sm text-gray-500">Total Orders</div>
-        <div class="text-2xl font-semibold text-indigo-600">90</div>
+        <div class="text-2xl font-semibold text-indigo-600">{{ $totalOrders }}</div>
       </div>
     </div>
 
@@ -60,36 +60,32 @@
           <button class="bg-blue-600 text-white rounded px-2 py-1 text-sm">Export</button>
         </div>
       </div>
-      <table class="w-full text-sm text-left text-gray-700">
-        <thead class="text-xs uppercase bg-gray-100">
-          <tr>
-            <th scope="col" class="px-4 py-2">Name</th>
-            <th scope="col" class="px-4 py-2">Role</th>
-            <th scope="col" class="px-4 py-2">Reservation Served</th>
-            <th scope="col" class="px-4 py-2">Ratings</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b">
-            <td class="px-4 py-2">Adi Rizki</td>
-            <td class="px-4 py-2">Waiter</td>
-            <td class="px-4 py-2">60 Orang</td>
-            <td class="px-4 py-2">⭐ 4.8</td>
-          </tr>
-          <tr class="border-b">
-            <td class="px-4 py-2">Rahmat</td>
-            <td class="px-4 py-2">Chef</td>
-            <td class="px-4 py-2">90 Orang</td>
-            <td class="px-4 py-2">⭐ 5.0</td>
-          </tr>
-          <tr class="border-b">
-            <td class="px-4 py-2">Cici</td>
-            <td class="px-4 py-2">Waiter</td>
-            <td class="px-4 py-2">30 Orang</td>
-            <td class="px-4 py-2">⭐ 4.5</td>
-          </tr>
-        </tbody>
-      </table>
+      <table>
+    <thead>
+        <tr>
+            <th>Nama</th>
+            <th>Peran</th>
+            <th>Jumlah Reservasi</th>
+            <th>Rata-rata Rating</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse ($staffPerformance as $staff)
+            <tr>
+                <td>{{ $staff->nama }}</td>
+                <td>{{ $staff->peran }}</td>
+                <td>{{ $staff->jumlah_reservasi }}</td>
+                <td>{{ $staff->rata_rata_rating ?? 'Belum ada rating' }}</td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="4">Tidak ada data staf.</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+
+
     </div>
   </div>
 
@@ -102,7 +98,7 @@
       data: {
         labels: ['Total Reservation', 'Present', 'Total Order'],
         datasets: [{
-          data: [100, 80, 90],
+          data: [{{ $totalReservations }}, {{ $presentReservations }}, {{ $totalOrders }}],
           backgroundColor: ['#f97316', '#10b981', '#8b5cf6'],
         }]
       },

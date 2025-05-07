@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\ReservasiController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\MejaController;
 
 // Public Routes
 Route::get('/', function () {
@@ -21,27 +23,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/', [AdminController::class, 'dashboard']);
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-    // Menu Management (Resource Controller)
-    Route::resource('menu', MenuController::class);
+    // Menu
+    Route::resource('menu', MenuController::class); // -> admin.menu.index, etc.
 
-    // Additional Admin Pages
-    Route::get('/manajemen-meja', function () {
-        return view('admin.manajemen-meja', ['title' => 'Manajemen Meja']);
-    })->name('manajemen-meja');
+    // Meja
+    Route::resource('meja', MejaController::class); // -> admin.meja.index, etc.
 
-    Route::get('/reservasi', function () {
-        return view('admin.reservasi', ['title' => 'Reservasi']);
-    })->name('reservasi');
+    // Reservasi
+    Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi');
 
-    Route::get('/laporan', function () {
-        return view('admin.laporan', ['title' => 'Laporan']);
-    })->name('laporan');
-
-    Route::get('/info-cust', function () {
-        return view('admin.info-cust', ['title' => 'Info Pelanggan']);
-    })->name('info-cust');
-
-    Route::get('/kelola-akun', function () {
-        return view('admin.kelola-akun', ['title' => 'Kelola Akun']);
-    })->name('kelola-akun');
+    // View statis
+    Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])->name('laporan');
+    Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])->name('info-cust');
+    Route::view('/kelola-akun', 'admin.kelola-akun', ['title' => 'Kelola Akun'])->name('kelola-akun');
 });
