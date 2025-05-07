@@ -37,7 +37,7 @@ class PenggunaFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'peran' => 'kasir',
+                'peran' => 'pelayan',
             ];
         });
     }
