@@ -1,33 +1,67 @@
 <?php
 
-// app/Http/Controllers/Admin/AdminController.php
-// app/Http/Controllers/Admin/AdminController.php
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Menu;
-use App\Models\Meja;
-use App\Models\Pengguna;
 use App\Models\Reservasi;
-use Illuminate\Http\Request;
+use App\Models\Order;
+use Carbon\Carbon;
+use App\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     public function dashboard()
 {
-    $title = 'Dashboard Admin'; // <-- TAMBAHKAN INI
-    
-    $totalPelanggan = Pengguna::where('peran', 'pelanggan')->count();
-    $totalMenu = Menu::count();
-    $totalMeja = Meja::count();
-    $reservasiHariIni = Reservasi::whereDate('waktu_kedatangan', today())->count();
+    $title = 'Dashboard Admin';
+
+    $totalReservations = Reservasi::count();
+    $totalOrders = Order::count();
+    $presentReservations = Reservasi::where('status', 'selesai')->count();
+
+    $bestSellingItem = DB::table('orders')
+        ->join('menus', 'orders.menu_id', '=', 'menus.id')
+        ->select('menus.name', DB::raw('SUM(orders.quantity) as total'))
+        ->groupBy('menus.id', 'menus.name')
+        ->orderByDesc('total')
+        ->value('menus.name');
+
+    $staffPerformance = DB::table('pengguna')
+        ->leftJoin('reservasi', 'pengguna.id', '=', 'reservasi.staff_id')
+        ->leftJoin('ratings', 'pengguna.id', '=', 'ratings.staff_id')
+        ->select(
+            'pengguna.id',
+            'pengguna.nama',
+            'pengguna.peran',
+            DB::raw('COUNT(DISTINCT reservasi.id) as jumlah_reservasi'),
+            DB::raw('ROUND(AVG(ratings.rating), 2) as rata_rata_rating')
+        )
+        ->whereIn('pengguna.peran', ['pelayan', 'koki'])
+        ->groupBy('pengguna.id', 'pengguna.nama', 'pengguna.peran')
+        ->get();
+
+    // Data transaksi 30 hari terakhir
+    $transactionStats = DB::table('transactions')
+        ->join('menus', 'transactions.menu_id', '=', 'menus.id')
+        ->where('transactions.created_at', '>=', Carbon::now()->subDays(30))
+        ->select('menus.name as menu_name', DB::raw('SUM(transactions.total_price) as total'))
+        ->groupBy('menus.name')
+        ->orderByDesc('total')
+        ->limit(6)
+        ->get();
+
+    $transactionLabels = $transactionStats->pluck('menu_name');
+    $transactionData = $transactionStats->pluck('total');
 
     return view('admin.dashboard', compact(
-        'title', // <-- MASUKKAN KE DALAM COMPACT()
-        'totalPelanggan',
-        'totalMenu',
-        'totalMeja',
-        'reservasiHariIni'
+        'title',
+        'totalReservations',
+        'bestSellingItem',
+        'presentReservations',
+        'totalOrders',
+        'staffPerformance',
+        'transactionLabels',
+        'transactionData'
     ));
 }
 }

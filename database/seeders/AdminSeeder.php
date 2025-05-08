@@ -15,8 +15,11 @@ class AdminSeeder extends Seeder
             'nama' => 'Admin Restoran',
             'email' => 'admin@restoran.com',
             'nomor_hp' => '081234567890',
-            'password' => Hash::make('password123'),
-            'peran' => 'admin'
+            'password' => Hash::make('password123'), // pastikan password di-hash
+            'peran' => 'admin', // pastikan peran admin
+            'email_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }

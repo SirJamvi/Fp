@@ -5,63 +5,97 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        // Seed admin user
+        // Buat Admin
         DB::table('pengguna')->insert([
-            'nama' => 'Admin Restoran',
-            'email' => 'admin@restoran.com',
-            'nomor_hp' => '081234567890',
-            'password' => Hash::make('password123'),
-            'peran' => 'admin',
-            'email_verified_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        // Seed sample menu items
-        DB::table('menu')->insert([
             [
-                'nama' => 'Nasi Goreng Spesial',
-                'deskripsi' => 'Nasi goreng dengan telur, ayam, dan sayuran',
-                'harga' => 35000,
-                'kategori' => 'Makanan',
-                'tersedia' => true,
+                'nama' => 'Admin Restoran',
+                'email' => 'admin@restoran.com',
+                'nomor_hp' => '081234567899',
+                'password' => Hash::make('password123'),
+                'peran' => 'admin',
+                'email_verified_at' => now(),
                 'created_at' => now(),
-                'updated_at' => now()
-            ],
-            [
-                'nama' => 'Es Teh Manis',
-                'deskripsi' => 'Es teh dengan gula',
-                'harga' => 10000,
-                'kategori' => 'Minuman',
-                'tersedia' => true,
-                'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]
         ]);
 
-        // Seed sample tables
+        // Buat Pelanggan
+        DB::table('pengguna')->insert([
+            [
+                'nama' => 'Pelanggan 1',
+                'email' => 'pelanggan1@example.com',
+                'nomor_hp' => '081234567800',
+                'password' => Hash::make('password'),
+                'peran' => 'pelanggan',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ]);
+
+        // Buat Staff: Pelayan & Koki
+        DB::table('pengguna')->insert([
+            [
+                'nama' => 'Pelayan 1',
+                'email' => 'pelayan1@example.com',
+                'nomor_hp' => '081234567801',
+                'password' => Hash::make('password'),
+                'peran' => 'pelayan',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nama' => 'Koki 1',
+                'email' => 'koki1@example.com',
+                'nomor_hp' => '081234567802',
+                'password' => Hash::make('password'),
+                'peran' => 'koki',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ]);
+
+        // Buat Meja
         DB::table('meja')->insert([
-            [
-                'nomor_meja' => 'A1',
-                'area' => 'Indoor',
-                'kapasitas' => 4,
-                'status' => 'tersedia',
-                'created_at' => now(),
-                'updated_at' => now()
-            ],
-            [
-                'nomor_meja' => 'B2',
-                'area' => 'Outdoor',
-                'kapasitas' => 6,
-                'status' => 'tersedia',
-                'created_at' => now(),
-                'updated_at' => now()
-            ]
+            'nomor_meja' => 'A1',
+            'kapasitas' => 4,
+            'status' => 'tersedia',
+            'area' => 'indor', // area harus sesuai kolom di database
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Ambil data untuk relasi
+        $user = DB::table('pengguna')->where('peran', 'pelanggan')->first();
+        $userId = $user ? $user->id : 1;
+        
+        $meja = DB::table('meja')->first();
+        $mejaId = $meja ? $meja->id : 1;
+        
+        $staff = DB::table('pengguna')->whereIn('peran', ['pelayan', 'koki'])->inRandomOrder()->first();
+        $staffId = $staff ? $staff->id : null;
+        
+
+        // Buat Reservasi
+        DB::table('reservasi')->insert([
+            'user_id' => $userId,
+            'meja_id' => $mejaId,
+            'staff_id' => $staffId, // boleh null
+            'waktu_kedatangan' => now()->addDays(2),
+            'jumlah_tamu' => 4,
+            'status' => 'dipesan',
+            'kode_reservasi' => strtoupper(Str::random(6)),
+            'catatan' => 'Minta dekat jendela',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }

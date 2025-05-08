@@ -18,7 +18,7 @@ class Pengguna extends Authenticatable
         'email',
         'nomor_hp',
         'password',
-        'peran'
+        'peran',
     ];
 
     protected $hidden = [
@@ -30,8 +30,34 @@ class Pengguna extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * Cek apakah pengguna adalah admin.
+     *
+     * @return bool
+     */
     public function isAdmin()
     {
         return $this->peran === 'admin';
     }
+
+    /**
+     * Relasi ke tabel reservasi.
+     * Seorang pengguna bisa memiliki banyak reservasi.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function reservations()
+    {
+        return $this->hasMany(Reservasi::class, 'staff_id', 'id');
+    }
+    
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'user_id', 'id');
+    }        
+    public function reservasiDilayani()
+    {
+        return $this->hasMany(Reservasi::class, 'staff_id', 'id');
+    }
+
 }

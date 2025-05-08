@@ -3,9 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\ReservasiController;
+use App\Http\Controllers\Admin\MejaController;
+use App\Http\Controllers\Admin\KelolaAkunController;
 use App\Http\Controllers\Auth\LoginController;
 
-// Public Routes
+// Public Route
 Route::get('/', function () {
     return view('welcome');
 });
@@ -15,33 +18,17 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Admin Routes Group
+// Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // Dashboard
-    Route::get('/', [AdminController::class, 'dashboard']);
+    Route::get('/', [AdminController::class, 'dashboard'])->name('home');
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-    // Menu Management (Resource Controller)
     Route::resource('menu', MenuController::class);
+    Route::resource('meja', MejaController::class);
+    Route::resource('kelola-akun', KelolaAkunController::class); // disesuaikan di sini
 
-    // Additional Admin Pages
-    Route::get('/manajemen-meja', function () {
-        return view('admin.manajemen-meja', ['title' => 'Manajemen Meja']);
-    })->name('manajemen-meja');
+    Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi');
 
-    Route::get('/reservasi', function () {
-        return view('admin.reservasi', ['title' => 'Reservasi']);
-    })->name('reservasi');
-
-    Route::get('/laporan', function () {
-        return view('admin.laporan', ['title' => 'Laporan']);
-    })->name('laporan');
-
-    Route::get('/info-cust', function () {
-        return view('admin.info-cust', ['title' => 'Info Pelanggan']);
-    })->name('info-cust');
-
-    Route::get('/kelola-akun', function () {
-        return view('admin.kelola-akun', ['title' => 'Kelola Akun']);
-    })->name('kelola-akun');
+    Route::view('/laporan', 'admin.laporan')->name('laporan');
+    Route::view('/info-cust', 'admin.info-cust')->name('info-cust');
 });
