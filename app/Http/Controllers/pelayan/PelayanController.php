@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Pelayan/PelayanController.php
 
 namespace App\Http\Controllers\Pelayan;
 
@@ -10,22 +9,16 @@ class PelayanController extends Controller
 {
     public function dashboard()
     {
-        return view('pelayan.dashboard', [
-            'title' => 'Dashboard Pelayan'
-        ]);
+        return view('pelayan.dashboard', ['title' => 'Dashboard Pelayan']);
     }
-    
+
     public function pesanan()
     {
-        return view('pelayan.pesanan', [
-            'title' => 'Kelola Pesanan'
-        ]);
+        return view('pelayan.pesanan', ['title' => 'Kelola Pesanan']);
     }
-    
+
     public function meja()
     {
-        return view('pelayan.meja', [
-            'title' => 'Status Meja'
-        ]);
+        return view('pelayan.meja', ['title' => 'Status Meja']);
     }
 }
