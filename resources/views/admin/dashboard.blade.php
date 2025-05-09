@@ -84,6 +84,31 @@
           @endforelse
         </tbody>
       </table>
+      <table>
+    <thead>
+        <tr>
+            <th>Nama</th>
+            <th>Peran</th>
+            <th>Jumlah Reservasi</th>
+            <th>Rata-rata Rating</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse ($staffPerformance as $staff)
+            <tr>
+                <td>{{ $staff->nama }}</td>
+                <td>{{ $staff->peran }}</td>
+                <td>{{ $staff->jumlah_reservasi }}</td>
+                <td>{{ $staff->rata_rata_rating ?? 'Belum ada rating' }}</td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="4">Tidak ada data staf.</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+
     </div>
   </div>
 

@@ -31,4 +31,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::view('/laporan', 'admin.laporan')->name('laporan');
     Route::view('/info-cust', 'admin.info-cust')->name('info-cust');
+    // Menu
+    Route::resource('menu', MenuController::class); // -> admin.menu.index, etc.
+
+    // Meja
+    Route::resource('meja', MejaController::class); // -> admin.meja.index, etc.
+
+    // Reservasi
+    Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi');
+
+    // View statis
+    Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])->name('laporan');
+    Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])->name('info-cust');
+    Route::view('/kelola-akun', 'admin.kelola-akun', ['title' => 'Kelola Akun'])->name('kelola-akun');
 });
