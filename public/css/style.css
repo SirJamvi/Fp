@@ -1,620 +1,71 @@
+/* Reset & Global */
 body, html {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
 }
 
+/* HERO SECTION */
 .hero {
   width: 100%;
-  background: url('your-hero-image.jpg') center center / cover no-repeat;
-  position: relative;
-}
-
-.overlay-dark {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-  
-.feature-icon {
-    font-size: 3rem; /* 48px */
-    color: #f4623a;
-    margin-bottom: 15px;
-    transition: color 0.3s ease;
-  }
-  
-  .footer {
-    background-color: #f4623a;
-    color: white;
-    padding: 20px 0;
-  }
-  
-  .footer a {
-    color: #ddd;
-    text-decoration: none;
-  }
-  
-  .footer a:hover {
-    color: #fff;
-  }
-  
-  .map-container {
-    box-shadow: 0 4px 8px hsla(0, 95.90%, 47.80%, 0.64);
-    overflow: hidden;
-  }
-  
-  .custom-icon {
-    background-color: #fff;
-    border-radius: 50%;
-    padding: 5px;
-    box-shadow: 0 2px 5px #61dff5;
-  }
-  
-  .menu-main {
-    background-color: #fff;
-  }
-  
-  .tab-menu {
-    margin-top: 30px;
-  }
-  
-  .slider-nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin: 20px 0;
-  }
-  
-  .tab-title-menu {
-    flex: 1 1 40%;
-    max-width: 45%;
-    background-color: #fff;
-    text-align: center;
-    padding: 15px 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s;
-  }
-  
-  .tab-title-menu i {
-    font-size: 24px;
-    margin-top: 5px;
-    color: #d35400;
-  }
-  
-  .tab-title-menu:hover {
-    transform: scale(1.05);
-  }
-  
-  /* Media query untuk handphone kecil */
-  @media (max-width: 480px) {
-    .tab-title-menu {
-      flex: 1 1 100%;
-      max-width: 100%;
-    }
-  }  
-  
-  .tab-title-menu:hover h2,
-  .tab-title-menu:hover p,
-  .tab-title-menu:hover i {
-    color: #e74c3c;
-  }
-  
-  .tab-title-menu h2 {
-    font-size: 16px;
-    font-weight: bold;
-  }
-  
-  .menu-item-box {
-    margin-bottom: 20px;
-  }
-  
-  .menu-item {
-    display: flex;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    border-radius: 10px;
-    padding: 15px;
-    background-color: #fff;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .menu-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  }
-  
-  .menu-item img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-right: 15px;
-  }
-  
-  .menu-details h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: bold;
-  }
-  
-  .menu-details .price {
-    float: right;
-    color: #ff5722;
-  }
-  
-  .menu-box-shadow {
-    background-color: #f4623a;
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .menu-box-shadow .block-title,
-  .menu-box-shadow .title-caption {
-    color: #fff;
-  }
-  
-  #our_team {
-    position: relative;
-    background: url('https://png.pngtree.com/background/20210709/original/pngtree-food-western-food-steak-tomato-picture-image_941801.jpg') center center / cover no-repeat;
-    color: #fff;
-    padding: 100px 0;
-    z-index: 1;
-  }
-  
-  #our_team::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 0;
-  }
-  
-  #our_team .container {
-    position: relative;
-    z-index: 2;
-  }
-  
-  .sf-team {
-    background-color: rgba(255, 255, 255, 0.92);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-    padding: 20px;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-  
-  .sf-team:hover {
-    background-color: #f4623a; /* Ubah warna latar jika diinginkan */
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-/* Ubah warna teks saat hover */
-.sf-team:hover .text-col h3 {
-    color: #ffffff; /* Warna teks judul saat hover */
-}
-
-.sf-team:hover .text-col p {
-    color: hsl(0, 0%, 100%); /* Warna paragraf saat hover */
-}
-  
-.sf-team .thumb h4 {
-  transition: color 0.3s ease;
-  color: #333;
-}
-
-.sf-team:hover .thumb h4 {
-  color: hsl(0, 0%, 100%); /* Atau warna yang sesuai brand kamu */
-}
-
-  .sf-team .thumb img {
-    width: 100%;
-    border-radius: 10px;
-    transition: transform 0.3s ease;
-  }
-  
-  .sf-team:hover .thumb img {
-    transform: scale(1.05);
-  }
-  
-  .sf-team .text-col h3 {
-    font-size: 20px;
-    font-weight: bold;
-    color: #222;
-    margin-top: 15px;
-  }
-  
-  .sf-team .text-col p {
-    font-size: 14px;
-    color: #444;
-    margin-top: 10px;
-  }
-  
-  .team-social {
-    list-style: none;
-    padding: 0;
-    margin-top: 15px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  .team-social li a {
-    color: #333;
-    background-color: #fff;
-    padding: 8px 10px;
-    border-radius: 50%;
-    display: inline-block;
-    transition: background-color 0.3s, color 0.3s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  
-  .team-social li a:hover {
-    background-color: #f0c040;
-    color: #000;
-  }
-  
-  .fitur-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.85);
-    z-index: 1;
-  }
-  
-  .fitur-section .container {
-    position: relative;
-    z-index: 2;
-  }
-  
-  .fitur-text {
-    color: hsl(0, 0%, 100%);
-  }
-  
-  .feature-card {
-    background-color: #f4623a;
-    border-radius: 12px;
-    padding: 30px 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    height: 100%;
-    color: rgb(40, 41, 33);
-    cursor: pointer;
-  }
-  
-  .feature-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    background-color: white;
-    color: rgb(40, 41, 33);
-  }
-  
-  .feature-card h5,
-  .feature-card p {
-    transition: color 0.3s ease;
-    color: inherit;
-  }
-  
-  .feature-card:hover .feature-icon {
-    color: #0d6efd;
-  }
-  
-  /* Navbar */
-  .navbar-nav .nav-link {
-    color: #fff;
-    padding: 10px 15px;
-    transition: all 0.3s ease;
-  }
-  
-  .navbar-nav .nav-link:hover,
-  .navbar-nav .nav-link.active {
-    color: #f0c040;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-  }
-  
-  @media (max-width: 767px) {
-    .navbar-nav {
-      background-color: #222;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    .navbar-nav .nav-item {
-      margin-bottom: 10px;
-    }
-  }
-  
-  /* Footer Responsive */
-  .footer-box {
-    background-color: #222;
-    color: #fff;
-    padding-top: 70px;
-    padding-bottom: 40px;
-  }
-  
-  .footer-box a {
-    color: #fff;
-    text-decoration: none;
-  }
-  
-  .footer-box a:hover {
-    color: #f8a600;
-  }
-  
-  .footer-box h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }
-  
-  .footer-box p {
-    font-size: 14px;
-    margin-bottom: 10px;
-    line-height: 1.6;
-  }
-  
-  .footer-logo img {
-    width: 150px;
-    margin-bottom: 20px;
-  }
-  
-  .footer-socials {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-  }
-  
-  .footer-socials li {
-    margin-right: 15px;
-  }
-  
-  .social-circle-border {
-    border: 2px solid #f8a600;
-    border-radius: 50%;
-    padding: 8px;
-    display: inline-block;
-  }
-  
-  .social-circle-border i {
-    color: #f8a600;
-    font-size: 16px;
-  }
-  
-  .footer-box-a, .footer-box-b, .footer-box-c, .footer-box-d {
-    margin-bottom: 30px;
-  }
-  
-  .footer-box-b ul,
-  .footer-box-d ul {
-    padding-left: 20px;
-  }
-  
-  .footer-box-b ul li,
-  .footer-box-d ul li {
-    font-size: 14px;
-    line-height: 1.8;
-  }
-  
-  .footer-box-b ul li a,
-  .footer-box-d ul li span {
-    color: #fff;
-  }
-  
-  .footer-box-b ul li a:hover,
-  .footer-box-d ul li span:hover {
-    color: #f8a600;
-  }
-  
-  .footer-in-main {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 30px;
-  }
-  
-  .footer-in-main > div {
-    flex: 1;
-    min-width: 200px;
-  }
-  
-  @media (max-width: 768px) {
-    .footer-in-main {
-      flex-direction: column;
-      align-items: center;
-    }
-    .footer-in-main > div {
-      text-align: center;
-    }
-    .footer-in-main .footer-box-a, 
-    .footer-in-main .footer-box-b, 
-    .footer-in-main .footer-box-c, 
-    .footer-in-main .footer-box-d {
-      margin-bottom: 20px;
-    }
-    .footer-socials {
-      justify-content: center;
-    }
-    .footer-logo img {
-      width: 120px;
-    }
-  }
-  
-  @media (max-width: 576px) {
-    .footer-logo img {
-      width: 100px;
-    }
-  }
-
-/* Fitur Section */
-.fitur-section {
-    position: relative;
-    background-image: url('images/bg-fitur.jpg');
-    background-size: cover;
-    background-position: center;
-    padding: 80px 0;
-    --fitur-text-color: hsl(0, 0%, 100%); /* default: putih */
-  }
-  
-  .fitur-section.dark-mode {
-    --fitur-text-color: #000000; /* contoh untuk dark-mode terbalik */
-  }
-  
-  .fitur-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: rgba(255, 255, 255, 0.85);
-    z-index: 1;
-  }
-  
-  .fitur-section .container {
-    position: relative;
-    z-index: 2;
-  }
-
-  .fitur-heading {
-    color: #333; /* warna tetap */
-  }
-  
-  
-  /* Terapkan warna dari variabel */
-  .fitur-text {
-    color: var(--fitur-text-color) !important;
-    transition: color 0.3s ease;
-  }
-  
-  /* Kartu fitur mengikuti variabel warna */
-  .feature-card {
-    background-color: #f4623a;
-    border-radius: 12px;
-    padding: 30px 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    height: 100%;
-    color: var(--fitur-text-color);
-    cursor: pointer;
-  }
-  
-  .feature-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    background-color: white;
-    color: #282921; /* fallback saat hover */
-  }
-
-  .feature-card:hover .fitur-text {
-    color: #222 !important;
-  }
-  
-  
-  .feature-card h5,
-  .feature-card p {
-    color: inherit;
-    transition: color 0.3s ease;
-  }
-  
-  .feature-card:hover .feature-icon {
-    color: #0d6efd;
-  }
-  
-  .feature-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
-    transition: color 0.3s ease;
-    color: var(--fitur-text-color);
-  }
-  
-  .navbar-brand img {
-    width: 50px;
-    height: 50px;
-  }
-
-  .hero {
-    background-image: url('https://png.pngtree.com/background/20230604/original/pngtree-restaurant-bar-counter-background-image-picture-image_2873153.jpg');
-    background-size: cover;
-    background-position: center;
-    height: 100vh;
-  }
-
-  .overlay-dark {
-    background-color: rgba(0, 0, 0, 0.6);
-    z-index: 1;
-  }
-
-  .hero-section {
-    background-image: url('../images/Gabung Sekarang.jpg');
-    background-size: cover;
-    background-position: center;
-    height: 100vh;
-  }
-
-  .about-inset-img {
-  bottom: -20px;
-  right: -20px;
-  width: 40%;
-  border: 4px solid white;
-}
-
-.overlay-dark-60 {
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 1;
-}
-
-/* Optional: Smooth scroll animation */
-[data-aos] {
-  transition: all 0.6s ease-in-out !important;
-}
-
-/* Section Background */
-.download-app-section {
-  background-image: url('/images/Fitur.jpg');
-  background-size: cover;
-  background-position: center;
+  background: url('https://png.pngtree.com/background/20230604/original/pngtree-restaurant-bar-counter-background-image-picture-image_2873153.jpg') center center / cover no-repeat;
   height: 100vh;
   position: relative;
 }
 
-/* Overlay Gelap */
-.download-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 1;
+.hero-section {
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('../images/Fitur.jpg') center center / cover no-repeat;
+  padding: 60px 0;
+  position: relative;
+  color: white;
+  text-align: center;
+  height: 100vh;
 }
 
-/* Pastikan z-2 tetap muncul di atas overlay */
+.hero-section .container,
+.hero-overlay,
 .z-2 {
   position: relative;
   z-index: 2;
 }
 
-/* Tombol Dasar */
+.hero-overlay,
+.overlay-dark,
+.overlay-dark-60,
+.download-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hero-image {
+  max-width: 150px;
+  height: auto;
+  max-height: 400px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease;
+}
+
+.hero-image:hover {
+  transform: scale(1.05);
+}
+
+/* BUTTONS */
 .btn-download {
   border-radius: 30px;
-  min-width: 150px;
-  padding: 0.75rem 1.5rem;
+  padding: 10px 20px;
   font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
-  transition: all 0.3s ease-in-out;
   display: inline-block;
+  transition: all 0.3s ease;
 }
 
-/* Tombol Playstore */
 .btn-orange {
   background-color: #FA4A0C;
   color: #fff;
@@ -627,7 +78,6 @@ body, html {
   box-shadow: 0 0 15px rgba(250, 74, 12, 0.5);
 }
 
-/* Tombol App Store */
 .btn-outline-white {
   background-color: transparent;
   color: #fff;
@@ -636,138 +86,353 @@ body, html {
 
 .btn-outline-white:hover {
   background-color: #fff;
-  color: #e74c3c;
+  color: #333;
   transform: scale(1.05);
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
-/* Responsif */
-@media (max-width: 576px) {
-  .btn-download {
-    width: 100%;
-    min-width: unset;
-    font-size: 1rem;
-  }
-}
-
-/* Gaya dasar hero */
-.hero-section {
-  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('../images/Fitur.jpg') no-repeat center center;
-  background-size: cover;
-  padding: 60px 0;
+/* FEATURES */
+.fitur-section {
   position: relative;
-  color: white;
-  text-align: center;
+  padding: 80px 0;
+  --fitur-text-color: #fff;
 }
 
-.hero-overlay {
+
+.fitur-heading {
+  color: #333;
+}
+
+.feature-card {
+  background-color: #f4623a;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.feature-card:hover {
+  background-color: #fff;
+  color: #fff;
+}
+
+.feature-card:hover .fitur-text {
+  color: #222;
+}
+
+
+.feature-card h5,
+.feature-card p,
+.feature-icon {
+  transition: color 0.3s ease;
+  color: inherit;
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.feature-card:hover .feature-icon {
+  color: #0d6efd;
+}
+
+/* MENU SECTION */
+.menu-main {
+  background-color: #fff;
+}
+
+.menu-box-shadow {
+  background-color: #f4623a;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #222;
+}
+
+.tab-menu {
+  margin-top: 30px;
+}
+
+.text-change.active {
+  color: #ffffff;
+}
+
+.slider-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.tab-title-menu {
+  flex: 1 1 40%;
+  max-width: 45%;
+  background: #fff;
+  text-align: center;
+  padding: 15px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.tab-title-menu:hover {
+  transform: scale(1.05);
+}
+
+.tab-title-menu:hover h2,
+.tab-title-menu:hover p,
+.tab-title-menu:hover i {
+  color: #e74c3c;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.menu-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.menu-item img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 15px;
+}
+
+.menu-details h4,
+.menu-details .price {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.menu-details .price {
+  float: right;
+  color: #ff5722;
+}
+
+/* TEAM SECTION */
+#our_team {
+  position: relative;
+  background: url('https://png.pngtree.com/background/20210709/original/pngtree-food-western-food-steak-tomato-picture-image_941801.jpg') center center / cover no-repeat;
+  color: #fff;
+  padding: 100px 0;
+  z-index: 1;
+}
+
+#our_team::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 0;
 }
 
-.hero-section .container {
-  position: relative;
-  z-index: 2;
-}
-
-.hero-image {
-  max-width: 150px;
-  height: auto;
+.sf-team {
+  background-color: rgba(255, 255, 255, 0.92);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  transition: transform 0.3s ease;
-}
-
-.hero-image:hover {
-  transform: scale(1.05);
-}
-
-.btn-download {
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-weight: 600;
-  text-decoration: none;
+  padding: 20px;
+  text-align: center;
   transition: all 0.3s ease;
 }
 
-.btn-orange {
-  background-color: #ff6600;
-  color: white;
-  border: none;
+.sf-team:hover {
+  background-color: #f4623a;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
-.btn-orange:hover {
-  background-color: #e65c00;
+.sf-team:hover .text-col h3,
+.sf-team:hover .text-col p,
+.sf-team:hover .thumb h4 {
+  color: #fff;
 }
 
-.btn-outline-white {
-  border: 2px solid white;
-  color: white;
-  background: transparent;
+.sf-team .thumb img {
+  width: 100%;
+  border-radius: 10px;
+  transition: transform 0.3s;
 }
 
-.btn-outline-white:hover {
-  background-color: white;
+.sf-team:hover .thumb img {
+  transform: scale(1.05);
+}
+
+.text-col h3,
+.thumb h4 {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 15px;
+  color: #222;
+}
+
+.text-col p {
+  font-size: 14px;
+  color: #444;
+  margin-top: 10px;
+}
+
+.team-social {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+}
+
+.team-social li a {
+  background: #fff;
   color: #333;
+  padding: 8px 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.3s, color 0.3s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Responsif untuk handphone */
-@media (max-width: 768px) {
-  .hero-section h1 {
-    font-size: 1.8rem;
-  }
-
-  .hero-section .lead {
-    font-size: 1rem;
-  }
-
-  .hero-image {
-    max-width: 120px;
-    margin-bottom: 10px;
-  }
-
-  .d-flex.flex-wrap {
-    justify-content: center !important;
-  }
-
-  .btn-download {
-    width: 100%;
-    text-align: center;
-    margin-bottom: 10px;
-  }
+.team-social li a:hover {
+  background-color: #f0c040;
+  color: #000;
 }
 
+/* FOOTER */
+.footer {
+  background-color: #f4623a;
+  color: white;
+  padding: 20px 0;
+}
 
-/* Gambar Mockup */
-.hero-image {
-  max-height: 400px;
+.footer a {
+  color: #ddd;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: #fff;
+}
+
+.footer-box {
+  background-color: #222;
+  color: #fff;
+  padding: 70px 0 40px;
+}
+
+.footer-box h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.footer-box p,
+.footer-box-b ul li,
+.footer-box-d ul li {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.footer-box a:hover {
+  color: #f8a600;
+}
+
+.footer-in-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.footer-in-main > div {
+  flex: 1;
+  min-width: 200px;
+}
+
+.socials-box {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.social-circle-border {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #ccc; /* border default */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: hsl(0, 0%, 100%); /* warna ikon */
+  background-color: transparent;
+}
+
+.social-circle-border:hover {
+  background-color: #222; /* latar saat hover */
+  color: #f8a600;               /* warna ikon saat hover */
+  border-color: #f8a600;
+}
+
+ul li a {
+  color: hsl(0, 0%, 100%); /* warna teks link default */
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+ul li a:hover {
+  color: #f8a600; /* warna saat hover */
+}
+
+/* NAVBAR */
+.navbar-nav .nav-link {
+  color: #fff;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+  color: #f0c040;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: 5px;
+}
+
+/* Auto-hide navbar */
+.navbar-hidden {
+  transform: translateY(-100%);
   transition: transform 0.3s ease;
 }
 
-.hero-image:hover {
-  transform: scale(1.03);
+
+/* Misc */
+.about-inset-img {
+  bottom: -20px;
+  right: -20px;
+  width: 40%;
+  border: 4px solid white;
 }
 
-/* Responsif */
-@media (max-width: 576px) {
-  .btn-download {
-    width: 100%;
-    min-width: unset;
-    font-size: 1rem;
-  }
-
-  .hero-image {
-    max-height: 300px;
-    width: 100%;
-  }
+[data-aos] {
+  transition: all 0.6s ease-in-out !important;
 }
 
 .step-title.step {
-  color: #f0c040; /* kuning */
+  color: #f0c040;
 }
 
