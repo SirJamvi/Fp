@@ -1,6 +1,15 @@
-@extends('components.layout')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Koki</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
 
-@section('content')
 <div class="container-fluid py-4">
     <div class="row">
         <div class="col-12">
@@ -27,6 +36,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-xl-4 col-md-6 mb-4">
                             <div class="card bg-warning text-white h-100">
                                 <div class="card-body">
@@ -44,6 +54,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-xl-4 col-md-6 mb-4">
                             <div class="card bg-info text-white h-100">
                                 <div class="card-body">
@@ -100,7 +111,7 @@
                                                     <span class="text-xs font-weight-bold">10:15</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-gradient-danger">Baru</span>
+                                                    <span class="badge bg-danger">Baru</span>
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-primary">Proses</button>
@@ -124,7 +135,7 @@
                                                     <span class="text-xs font-weight-bold">10:08</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-gradient-warning">Diproses</span>
+                                                    <span class="badge bg-warning">Diproses</span>
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-success">Selesai</button>
@@ -136,9 +147,14 @@
                             </div>
                         </div>
                     </div>
+                    
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

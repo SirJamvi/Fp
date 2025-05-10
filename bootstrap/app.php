@@ -15,11 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
+            'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
             'admin' => AdminMiddleware::class,
             'pelayan' => PelayanMiddleware::class,
             'koki' => KokiMiddleware::class,
-            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
-            'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

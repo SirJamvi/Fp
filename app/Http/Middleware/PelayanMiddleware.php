@@ -1,5 +1,4 @@
 <?php
-// app/Http/Middleware/PelayanMiddleware.php
 
 namespace App\Http\Middleware;
 

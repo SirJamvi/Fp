@@ -12,14 +12,14 @@ class Pengguna extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * The table associated with the model.
+     * Nama tabel yang terkait dengan model
      *
      * @var string
      */
     protected $table = 'pengguna';
 
     /**
-     * The attributes that are mass assignable.
+     * Atribut yang dapat diisi secara massal
      *
      * @var array<int, string>
      */
@@ -32,7 +32,7 @@ class Pengguna extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atribut yang harus disembunyikan untuk serialisasi
      *
      * @var array<int, string>
      */
@@ -42,7 +42,7 @@ class Pengguna extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Atribut yang harus dicast
      *
      * @var array<string, string>
      */
@@ -50,4 +50,28 @@ class Pengguna extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Cek apakah pengguna adalah admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->peran === 'admin';
+    }
+
+    /**
+     * Cek apakah pengguna adalah pelayan
+     */
+    public function isPelayan(): bool
+    {
+        return $this->peran === 'pelayan';
+    }
+    
+    /**
+     * Cek apakah pengguna adalah koki
+     */
+    public function isKoki(): bool
+    {
+        return $this->peran === 'koki';
+    }
 }
