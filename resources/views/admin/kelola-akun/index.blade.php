@@ -1,60 +1,62 @@
 <x-layout>
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-700">Kelola Akun</h2>
-            <a href="{{ route('admin.kelola-akun.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Tambah Akun</a>
-        </div>
-
-        @if(session('success'))
-            <div class="mb-4 text-green-600">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peran</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach ($users as $user)
-                        <tr>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $user->nama }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $user->email }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                @switch($user->peran)
-                                    @case('admin')
-                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Admin</span>
-                                        @break
-                                    @case('pelayan')
-                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Pelayan/Kasir</span>
-                                        @break
-                                    @case('koki')
-                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">Koki</span>
-                                        @break
-                                    @default
-                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full bg-red-100 text-red-800">Unknown</span>
-                                @endswitch
-                            </td>
-                            <td class="px-6 py-4 text-sm font-medium">
-                                <a href="{{ route('admin.kelola-akun.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>
-                                @if ($user->peran !== 'admin')
-                                    <form action="{{ route('admin.kelola-akun.destroy', $user->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" onclick="return confirm('Yakin ingin menghapus akun ini?')" class="text-red-600 hover:text-red-900">Hapus</button>
-                                    </form>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+  <x-slot:title>{{ $title }}</x-slot:title>
+  
+  <div class="container mx-auto p-4">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Users</h1>
+      <a href="{{ route('admin.kelola-akun.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        + Add New
+      </a>
     </div>
+
+    @if(session('success'))
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ session('success') }}
+      </div>
+    @endif
+
+    <div class="bg-white shadow-md rounded overflow-hidden">
+      <table class="min-w-full">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">NAME</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">ROLE</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">CREATE DATE</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">ACTION</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          @foreach($users as $user)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->nama }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                @if($user->peran === 'admin')
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
+                @elseif($user->peran === 'pelayan')
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Pelayan/Kasir</span>
+                @elseif($user->peran === 'koki')
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Koki</span>
+                @else
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pelanggan</span>
+                @endif
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ $user->created_at->format('d/m/Y') }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <a href="{{ route('admin.kelola-akun.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                @if($user->peran !== 'admin')
+                  <form action="{{ route('admin.kelola-akun.destroy', $user->id) }}" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus akun ini?')">Delete</button>
+                  </form>
+                @endif
+              </td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+  </div>
 </x-layout>
