@@ -1,0 +1,151 @@
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Bagian Kiri - Tetap seperti semula */
+        .login-hero {
+            flex: 1;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                            url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%253D%253D&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .hero-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 3rem;
+            border-radius: 8px;
+            max-width: 600px;
+            color: white;
+        }
+        
+        /* Bagian Kanan - Form Login dengan Tema Orange */
+        .login-form-container {
+            width: 100%;
+            max-width: 28rem;
+            background-color: #fff5e6; /* Orange sangat light */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2rem;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Warna Orange yang Harmonis */
+        .btn-orange {
+            background-color: #e67e22; /* Warna orange */
+            color: white;
+        }
+        
+        .btn-orange:hover {
+            background-color: #d35400; /* Orange lebih gelap */
+        }
+        
+        .text-orange {
+            color: #e67e22;
+        }
+        
+        .focus-orange:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.2);
+        }
+        
+        .checkbox-orange:checked {
+            background-color: #e67e22;
+            border-color: #e67e22;
+        }
+        
+        .link-orange {
+            color: #e67e22;
+        }
+        
+        .link-orange:hover {
+            color: #d35400;
+        }
+        
+        .password-toggle:hover {
+            color: #e67e22;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+            }
+            
+            .login-hero {
+                padding: 4rem 2rem;
+                min-height: 50vh;
+            }
+            
+            .login-form-container {
+                max-width: 100%;
+                box-shadow: none;
+            }
+        }
+        
+        /* Style untuk password toggle */
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280;
+        }
+        
+        .password-input-container {
+            position: relative;
+        }
+
+        .form-icons-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.form-icons-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.form-icons-bg .icon {
+    position: absolute;
+    color: rgba(230, 126, 34, 0.1);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    animation: float 15s infinite ease-in-out;
+    opacity: 0.9;
+}
+
+/* Variasi posisi, ukuran, dan rotasi */
+.icon-1 { top: 5%; left: 10%; font-size: 4.5rem; transform: rotate(-15deg); }
+.icon-2 { top: 5%; right: 10%; font-size: 5.5rem; transform: rotate(10deg); }
+.icon-3 { bottom: 5%; left: 10%; font-size: 5rem; transform: rotate(5deg); }
+.icon-4 { top: 64%; left: 60%; font-size: 4rem; transform: rotate(-8deg); }
+.icon-5 { bottom: 5%; right: 10%; font-size: 5rem; transform: rotate(20deg); }
+.icon-6 { top: 63%; left: 25%; font-size: 4rem; transform: rotate(-12deg); }
+.icon-7 { bottom: 60%; left: 60%; font-size: 4rem; transform: rotate(7deg); }
+.icon-8 { top: 30%; right: 60%; font-size: 4rem; transform: rotate(-18deg); }
+
+.icon-blur {
+    filter: blur(1px);
+}
+
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-6px) rotate(1deg); }
+}
