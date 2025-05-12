@@ -13,12 +13,6 @@
         Reservasi Manager
     </a>
     
-    <a href="{{ route('pelayan.meja') }}" 
-        class="flex items-center p-3 rounded-lg 
-        {{ request()->routeIs('pelayan.meja') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
-        <i class="fas fa-chair mr-3"></i>
-        Restaurant Progress
-    </a>
 
 <a href="{{ route('pelayan.meja') }}" 
         class="flex items-center p-3 rounded-lg 
