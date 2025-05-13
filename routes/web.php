@@ -5,8 +5,10 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MejaController;
 use App\Http\Controllers\Admin\PenggunaController;
+use App\Http\Controllers\Admin\ReservasiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Pelayan\PelayanController;
+use App\Http\Controllers\Pelayan\PelayanMejaController;
 use App\Http\Controllers\Koki\KokiController;
 
 Route::get('/', function () {
@@ -25,7 +27,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('meja', MejaController::class);
     Route::resource('kelola-akun', PenggunaController::class);
 
-    Route::get('/reservasi', fn () => view('admin.reservasi', ['title' => 'Reservasi']))->name('reservasi');
+    Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi');
     Route::get('/laporan', fn () => view('admin.laporan', ['title' => 'Laporan']))->name('laporan');
     Route::get('/info-cust', fn () => view('admin.info-cust', ['title' => 'Info Pelanggan']))->name('info-cust');
 });
@@ -33,8 +35,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 // Pelayan Routes
 Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
     Route::get('/dashboard', [PelayanController::class, 'index'])->name('dashboard');
-    Route::get('/pesanan', [PelayanController::class, 'pesanan'])->name('pesanan');
-    Route::get('/meja', [PelayanController::class, 'meja'])->name('meja');
+    Route::get('/reservasi', [PelayanController::class, 'reservasi'])->name('reservasi');
+
+    // Detail Reservasi
+    Route::get('/reservasi/{id}/detail', [PelayanController::class, 'detailReservasi'])->name('reservasi.detail');
+
+    // Manajemen Meja untuk Pelayan
+    Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
+    Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggleStatus'])->name('meja.toggle');
 });
 
 // Koki Routes

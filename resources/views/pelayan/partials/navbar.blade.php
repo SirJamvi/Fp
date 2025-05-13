@@ -6,9 +6,9 @@
         order
     </a>
     
-    <a href="{{ route('pelayan.pesanan') }}" 
+    <a href="{{ route('pelayan.reservasi') }}" 
         class="flex items-center p-3 rounded-lg 
-        {{ request()->routeIs('pelayan.pesanan') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
+        {{ request()->routeIs('pelayan.reservasi') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
         <i class="fas fa-clipboard-list mr-3"></i>
         Reservasi Manager
     </a>
