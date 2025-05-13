@@ -1,40 +1,62 @@
 @extends('pelayan.layout.app')
 
-@section('title', 'Dashboard Pelayan')
+@section('title', 'Table Management')
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <h6>Status Meja</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        @for ($i = 1; $i <= 12; $i++)
-                            <div class="col-md-3 mb-4">
-                                <div class="card {{ in_array($i, [1, 3, 5, 7, 9]) ? 'bg-danger' : (in_array($i, [2, 8]) ? 'bg-warning' : 'bg-success') }} text-white">
-                                    <div class="card-body text-center">
-                                        <h4 class="mb-2">Meja {{ sprintf('%02d', $i) }}</h4>
-                                        <p class="mb-0">
-                                            {{ in_array($i, [1, 3, 5, 7, 9]) ? 'Terisi' : (in_array($i, [2, 8]) ? 'Dipesan' : 'Kosong') }}
-                                        </p>
-                                        @if(in_array($i, [1, 3, 5, 7, 9]))
-                                            <small>Pesanan: P-20250507-{{ sprintf('%03d', $i) }}</small>
-                                        @endif
-                                    </div>
-                                    <div class="card-footer d-flex align-items-center justify-content-center">
-                                        <button class="btn btn-sm {{ in_array($i, [1, 3, 5, 7, 9]) ? 'btn-light' : 'btn-dark' }}">
-                                            {{ in_array($i, [1, 3, 5, 7, 9]) ? 'Lihat Pesanan' : 'Tambah Pesanan!' }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        @endfor
-                    </div>
-                </div>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Table</h4>
+        <div class="d-flex">
+            <form method="GET" action="{{ route('pelayan.meja') }}" class="d-flex align-items-center me-2">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Search...">
+                <button class="btn btn-sm btn-outline-secondary ms-2" type="submit">🔍</button>
+                @if(request('search'))
+                    <a href="{{ route('pelayan.meja') }}" class="btn btn-sm btn-outline-danger ms-2">Reset</a>
+                @endif
+            </form>
+
+            <button class="btn btn-sm btn-outline-secondary">
+                🔽 Filter
+            </button>
+        </div>
+    </div>
+
+    <div class="card p-3">
+        <div class="table-responsive">
+            <table class="table table-borderless align-middle">
+                <thead class="text-muted">
+                    <tr>
+                        <th><input type="checkbox" /></th>
+                        <th>No. Table</th>
+                        <th>Area</th>
+                        <th>Capacity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($meja as $item)
+                        <tr class="border-bottom">
+                            <td><input type="checkbox" value="{{ $item->id }}"></td>
+                            <td>{{ $item->nomor_meja }}</td>
+                            <td>{{ $item->area }}</td>
+                            <td>{{ $item->kapasitas }} Orang</td>
+                            <td>
+                                <form action="{{ route('pelayan.meja.toggle', $item->id) }}" method="POST">
+                                    @csrf
+                                    <label class="switch">
+                                        <input type="checkbox" onchange="this.form.submit()" {{ $item->status !== 'nonaktif' ? 'checked' : '' }}>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center">Tidak ada data meja.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

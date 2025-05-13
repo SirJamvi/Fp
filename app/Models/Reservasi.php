@@ -38,6 +38,12 @@ class Reservasi extends Model
         return $this->belongsTo(Pengguna::class, 'user_id', 'id');
     }
 
+    public function user()
+{
+    return $this->belongsTo(Pengguna::class, 'user_id', 'id');
+}
+
+
     public function meja()
     {
         return $this->belongsTo(Meja::class, 'meja_id', 'id');
@@ -47,5 +53,11 @@ class Reservasi extends Model
     {
         return $this->hasMany(Transaction::class, 'reservasi_id');
     }
+
+    public function orders()
+{
+    return $this->hasMany(Order::class);
+}
+
 }
 
