@@ -4,7 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AdminMiddleware;
-// Hapus use Authenticate dan ganti dengan:
+use App\Http\Middleware\PelayanMiddleware;
+use App\Http\Middleware\KokiMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,9 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'admin' => AdminMiddleware::class,
-            'auth' => \Illuminate\Auth\Middleware\Authenticate::class, // Lokasi baru di Laravel 11
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
+            'admin' => AdminMiddleware::class,
+            'pelayan' => PelayanMiddleware::class,
+            'koki' => KokiMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -3,46 +3,51 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\MejaController;
+use App\Http\Controllers\Admin\PenggunaController;
+use App\Http\Controllers\Admin\ReservasiController as AdminReservasiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Models\Menu;
+use App\Http\Controllers\Pelayan\PelayanController;
+use App\Http\Controllers\Pelayan\PelayanMejaController;
+use App\Http\Controllers\Koki\KokiController;
 
 Route::get('/', function () {
-    $menus = Menu::where('is_available', true)->get(); // Ambil data dari DB
-    return view('welcome', compact('menus')); // kirim $menus ke welcome.blade.php
+    $menus = Menu::where('is_available', true)->get();
+    return view('welcome', compact('menus'));
 });
 
-// Authentication Routes
+// Authentication
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Admin Routes Group
+// Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // Dashboard
-    Route::get('/', [AdminController::class, 'dashboard']);
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-
-    // Menu Management (Resource Controller)
     Route::resource('menu', MenuController::class);
+    Route::resource('meja', MejaController::class);
+    Route::resource('kelola-akun', PenggunaController::class);
+    Route::get('/reservasi', [AdminReservasiController::class, 'index'])->name('reservasi');
+    Route::get('/laporan', fn () => view('admin.laporan', ['title' => 'Laporan']))->name('laporan');
+    Route::get('/info-cust', fn () => view('admin.info-cust', ['title' => 'Info Pelanggan']))->name('info-cust');
+});
 
-    // Additional Admin Pages
-    Route::get('/manajemen-meja', function () {
-        return view('admin.manajemen-meja', ['title' => 'Manajemen Meja']);
-    })->name('manajemen-meja');
+// Pelayan Routes
+Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
+    Route::get('/dashboard', [PelayanController::class, 'index'])->name('dashboard');
+    Route::post('/order/store', [PelayanController::class, 'storeOrder'])->name('order.store');
+    Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])->name('order.pay');
+    Route::get('/order/summary/{reservasi_id}', [PelayanController::class, 'showOrderSummary'])->name('order.summary');
+    Route::get('/reservasi', [PelayanController::class, 'reservasi'])->name('reservasi');
+    Route::get('/reservasi/{id}/detail', [PelayanController::class, 'detailReservasi'])->name('reservasi.detail');
+    Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
+    Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggleStatus'])->name('meja.toggle');
+});
 
-    Route::get('/reservasi', function () {
-        return view('admin.reservasi', ['title' => 'Reservasi']);
-    })->name('reservasi');
-
-    Route::get('/laporan', function () {
-        return view('admin.laporan', ['title' => 'Laporan']);
-    })->name('laporan');
-
-    Route::get('/info-cust', function () {
-        return view('admin.info-cust', ['title' => 'Info Pelanggan']);
-    })->name('info-cust');
-
-    Route::get('/kelola-akun', function () {
-        return view('admin.kelola-akun', ['title' => 'Kelola Akun']);
-    })->name('kelola-akun');
+// Koki Routes
+Route::prefix('koki')->name('koki.')->middleware(['auth', 'koki'])->group(function () {
+    Route::get('/dashboard', [KokiController::class, 'index'])->name('dashboard');
+    Route::get('/daftar-pesanan', [KokiController::class, 'daftarPesanan'])->name('daftar-pesanan');
+    Route::get('/stok-bahan', [KokiController::class, 'stokBahan'])->name('stok-bahan');
 });

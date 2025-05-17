@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Menu extends Model
 {
@@ -50,4 +51,15 @@ class Menu extends Model
             'other' => 'Other',
         ];
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'menu_id', 'id');
+    }
+
+    public function transactions()
+    {
+    return $this->hasMany(Transaksi::class, 'menu_id', 'id');
+    }
+
 }
