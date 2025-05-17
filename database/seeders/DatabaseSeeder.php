@@ -26,24 +26,24 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Buat Menu (jika tabel menu ada)
-        DB::table('menus')->insert([
-            [
-                'nama_menu' => 'Nasi Goreng Special',
-                'harga' => 35000,
-                'kategori' => 'makanan',
-                'deskripsi' => 'Nasi goreng dengan telur, ayam, dan seafood',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'nama_menu' => 'Es Teh Manis',
-                'harga' => 8000,
-                'kategori' => 'minuman',
-                'deskripsi' => 'Es teh dengan gula aren',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        ]);
+        // DB::table('menus')->insert([
+        //     [
+        //         'nama_menu' => 'Nasi Goreng Special',
+        //         'harga' => 35000,
+        //         'kategori' => 'makanan',
+        //         'deskripsi' => 'Nasi goreng dengan telur, ayam, dan seafood',
+        //         'created_at' => now(),
+        //         'updated_at' => now(),
+        //     ],
+        //     [
+        //         'nama_menu' => 'Es Teh Manis',
+        //         'harga' => 8000,
+        //         'kategori' => 'minuman',
+        //         'deskripsi' => 'Es teh dengan gula aren',
+        //         'created_at' => now(),
+        //         'updated_at' => now(),
+        //     ]
+        // ]);
 
         // Buat Pelanggan
         DB::table('pengguna')->insert([

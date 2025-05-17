@@ -1,3 +1,25 @@
+/* resources/css/app.css */
+
+/* ====================================================================
+   IMPORT BOOTSTRAP CSS (FILE KOMPILASI)
+   Anda menggunakan file app.css (plain CSS), jadi Anda perlu mengimpor
+   file CSS Bootstrap yang sudah jadi (terkompilasi) dari dalam folder node_modules.
+
+   Pastikan Anda sudah install Bootstrap: npm install bootstrap
+   Path import berikut seharusnya mengarah ke file CSS di dalam node_modules.
+   Path "bootstrap/dist/css/bootstrap.css" (atau .min.css) biasanya merujuk ke
+   node_modules/bootstrap/dist/css/bootstrap.css (atau .min.css).
+   ==================================================================== */
+@import "bootstrap/dist/css/bootstrap.css"; /* Anda juga bisa coba bootstrap.min.css */
+
+
+/* ====================================================================
+   Tailwind directives (biarkan ini di bawah import Bootstrap)
+   Urutan ini penting agar style Bootstrap dimuat duluan, lalu Tailwind
+   utility classes bisa menimpanya jika ada konflik.
+   ==================================================================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tambahan CSS kustom Anda bisa diletakkan di bawah ini */
