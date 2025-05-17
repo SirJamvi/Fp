@@ -7,12 +7,14 @@ use App\Http\Controllers\Admin\MejaController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Admin\ReservasiController as AdminReservasiController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Models\Menu;
 use App\Http\Controllers\Pelayan\PelayanController;
 use App\Http\Controllers\Pelayan\PelayanMejaController;
 use App\Http\Controllers\Koki\KokiController;
 
 Route::get('/', function () {
-    return view('welcome');
+    $menus = Menu::where('is_available', true)->get();
+    return view('welcome', compact('menus'));
 });
 
 // Authentication
@@ -33,23 +35,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
 // Pelayan Routes
 Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
-    // Dashboard Pelayan sekarang akan menjadi halaman utama untuk order
-    Route::get('/dashboard', [PelayanController::class, 'index'])->name('dashboard'); // Ini akan menampilkan form order
-
-    // Rute untuk memproses pesanan awal (membuat reservasi dan order items) via AJAX
-    // Method ini akan mengembalikan JSON dengan data reservasi yang dibuat
+    Route::get('/dashboard', [PelayanController::class, 'index'])->name('dashboard');
     Route::post('/order/store', [PelayanController::class, 'storeOrder'])->name('order.store');
-
-    // Rute untuk memproses pembayaran (Cash/QRIS) via AJAX
-    Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])->name('order.pay'); // <<< ROUTE BARU UNTUK PEMBAYARAN
-
-    // Halaman untuk menampilkan ringkasan pesanan setelah berhasil dibuat DAN dibayar
+    Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])->name('order.pay');
     Route::get('/order/summary/{reservasi_id}', [PelayanController::class, 'showOrderSummary'])->name('order.summary');
-
-
     Route::get('/reservasi', [PelayanController::class, 'reservasi'])->name('reservasi');
     Route::get('/reservasi/{id}/detail', [PelayanController::class, 'detailReservasi'])->name('reservasi.detail');
-
     Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
     Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggleStatus'])->name('meja.toggle');
 });
