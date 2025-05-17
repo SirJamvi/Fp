@@ -78,7 +78,7 @@
 <section id="menu" class="menu-main py-5" data-aos="fade-up">
   <div class="menu-box-shadow">
     <div class="container">
-      
+
       <!-- Title -->
       <div class="text-center mb-4">
         <h2 class="block-title text-change active">Menu</h2>
@@ -86,96 +86,66 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="tab-tittle-menu">
-        <div class="slider slider-nav">
-          <div class="tab-title-menu">
-            <h2>STARTERS</h2>
-            <p><i class="fas fa-utensils"></i></p>
-          </div>
-          <div class="tab-title-menu">
-            <h2>MAIN DISHES</h2>
-            <p><i class="fas fa-drumstick-bite"></i></p>
-          </div>
-          <div class="tab-title-menu">
-            <h2>DESSERTS</h2>
-            <p><i class="fas fa-ice-cream"></i></p>
-          </div>
-          <div class="tab-title-menu">
-            <h2>DRINKS</h2>
-            <p><i class="fas fa-coffee"></i></p>
-          </div>
+      <div class="tab-tittle-menu d-flex justify-content-between text-center mb-4">
+        <div class="tab-title-menu active" data-tab="food">
+          <h2>FOOD</h2>
+          <p><i class="fas fa-utensils fa-2x"></i></p>
         </div>
+        <div class="tab-title-menu" data-tab="beverage">
+          <h2>BEVERAGE</h2>
+          <p><i class="fas fa-wine-glass-alt fa-2x"></i></p>
+        </div>
+        <div class="tab-title-menu" data-tab="dessert">
+          <h2>DESSERTS</h2>
+          <p><i class="fas fa-cake-candles fa-2x"></i></p>
+        </div>
+        <div class="tab-title-menu" data-tab="appetizer">
+          <h2>APPETIZER</h2>
+          <p><i class="fas fa-leaf fa-2x"></i></p>
+        </div>
+        <div class="tab-title-menu" data-tab="other">
+          <h2>OTHER</h2>
+          <p><i class="fas fa-bars fa-2x"></i></p>
+        </div>
+      </div>
 
-        <!-- Tab Content -->
-        <div class="slider slider-single">
+      <!-- Tab Contents -->
+      <div class="tab-content">
 
-          <!-- STARTERS -->
-          <div class="single-tab-menu">
+        @foreach(['food', 'beverage', 'dessert', 'appetizer', 'other'] as $category)
+          <!-- Category -->
+          <div class="tab-pane fade show {{ $loop->first ? 'active' : '' }}" id="{{ $category }}">
             <div class="row">
-              @foreach (range(1, 3) as $i)
-              <div class="col-md-6 menu-item-box">
-                <div class="menu-item">
-                  <img src="images/Bruschetta.jpeg" alt="Bruschetta">
-                  <div class="menu-details">
-                    <h4>Bruschetta <span class="price">25K</span></h4>
-                    <p>Grilled bread with tomato, garlic & basil.</p>
+              @foreach($menus as $menu)
+                @if($menu->category === $category)
+                  <div class="col-md-6 menu-item-box d-flex align-items-center mb-4">
+                    <div class="menu-img-wrapper">
+                      <img src="{{ $menu->image ? Storage::url($menu->image) : asset('images/default.jpg') }}" alt="{{ $menu->name }}" class="menu-img">
+                    </div>
+                    <div class="menu-details ms-3 flex-grow-1">
+                      <h4 class="menu-title">{{ $menu->name }}</h4>
+                      <p class="menu-desc">{{ $menu->description }}</p>
+                    </div>
+                    <div class="menu-price-circle">
+                      <span>
+                        @if($menu->price >= 1000)
+                          {{ number_format($menu->price / 1000, 1) }}k
+                        @else
+                          {{ number_format($menu->price, 0, ',', '.') }}
+                        @endif
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
+                @endif
               @endforeach
             </div>
           </div>
+        @endforeach
 
-          <!-- MAIN DISHES -->
-          <div class="single-tab-menu">
-            <div class="row">
-              <div class="col-md-6 menu-item-box">
-                <div class="menu-item">
-                  <img src="images/GrilledSalmon.jpeg" alt="Grilled Salmon">
-                  <div class="menu-details">
-                    <h4>Grilled Salmon <span class="price">85K</span></h4>
-                    <p>Served with lemon butter sauce and vegetables.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      </div> <!-- End .tab-content -->
 
-          <!-- DESSERTS -->
-          <div class="single-tab-menu">
-            <div class="row">
-              <div class="col-md-6 menu-item-box">
-                <div class="menu-item">
-                  <img src="images/ChocolateLavaCake.jpeg" alt="Chocolate Lava Cake">
-                  <div class="menu-details">
-                    <h4>Chocolate Lava Cake <span class="price">35K</span></h4>
-                    <p>Warm chocolate cake with melting center.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- DRINKS -->
-          <div class="single-tab-menu">
-            <div class="row">
-              <div class="col-md-6 menu-item-box">
-                <div class="menu-item">
-                  <img src="images/Mojito.jpeg" alt="Mojito">
-                  <div class="menu-details">
-                    <h4>Mojito <span class="price">30K</span></h4>
-                    <p>Fresh mint, lime juice, and soda.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div> <!-- .slider-single -->
-      </div> <!-- .tab-tittle-menu -->
-
-    </div> <!-- .container -->
-  </div> <!-- .menu-box-shadow -->
+    </div> <!-- End .container -->
+  </div> <!-- End .menu-box-shadow -->
 </section>
 
 
@@ -704,6 +674,22 @@
   }, false);
 </script>
 
+<script>
+  document.querySelectorAll('.tab-title-menu').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Ubah tab aktif
+      document.querySelectorAll('.tab-title-menu').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Tampilkan konten sesuai tab
+      const tabId = tab.getAttribute('data-tab');
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+</script>
+
+
 
 
 
@@ -715,7 +701,6 @@
   </div>
 </footer>
 
-<!-- JavaScript Libraries -->>> 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 

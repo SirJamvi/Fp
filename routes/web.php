@@ -4,10 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Models\Menu;
 
-// Public Routes
 Route::get('/', function () {
-    return view('welcome');
+    $menus = Menu::where('is_available', true)->get(); // Ambil data dari DB
+    return view('welcome', compact('menus')); // kirim $menus ke welcome.blade.php
 });
 
 // Authentication Routes
