@@ -391,7 +391,7 @@
                         <span id="totalItems">0</span>
                     </div>
                     <div class="grand-total">
-                        <span>Total Harga:</span>
+                        <span>Total Harga (Estimasi):</span> {{-- Added "Estimasi" --}}
                         <span id="grandTotal">Rp 0</span>
                     </div>
                 </div>
@@ -426,16 +426,16 @@
                 </div>
                 <div class="modal-body">
                      {{-- Display order summary info in modal header --}}
-                     {{-- Hapus duplikasi di sini, gunakan elemen di bagian atas modal --}}
-                     <div class="mb-3 p-2 border rounded">
+                    <div class="mb-3 p-2 border rounded">
                          <p class="mb-1">Kode Order: <strong id="modalKodeOrder">N/A</strong></p>
-                         <h5 class="mb-0">Total Tagihan: <strong>Rp <span id="modalTotalBill">0</span></strong></h5>
+                         {{-- REMOVED hardcoded "Rp " here. JavaScript will add it via formatRupiah --}}
+                         <h5 class="mb-0">Total Tagihan: <strong><span id="modalTotalBill">Rp 0</span></strong></h5> {{-- Removed "Rp " --}}
                      </div>
 
                     {{-- Payment Options Section --}}
                     <div id="paymentOptions">
                         <button type="button" class="btn btn-success btn-block btn-lg mb-3" id="btnCash">
-                             <i class="bi bi-wallet2 me-2"></i> Tunai (Cash)
+                            <i class="bi bi-wallet2 me-2"></i> Tunai (Cash)
                         </button>
                         <button type="button" class="btn btn-info btn-block btn-lg" id="btnQris">
                              <i class="bi bi-qr-code me-2"></i> Non-Tunai (QRIS/Midtrans)
@@ -444,11 +444,6 @@
 
                     {{-- Cash Payment Form Section --}}
                     <div id="cashPaymentForm" style="display: none;">
-                         {{-- Hapus duplikasi di sini --}}
-                         {{-- <div class="mb-3 p-2 border rounded">
-                             <p class="mb-1">Kode Order: <strong id="cashModalKodeOrder">N/A</strong></p>
-                             <h5 class="mb-0">Total Tagihan: <strong>Rp <span id="cashModalTotalBill">0</span></strong></h5>
-                         </div> --}}
                         <div class="form-group mb-3">
                             <label for="uangDiterima" class="form-label">Uang yang Diterima:</label>
                             <input type="number" class="form-control form-control-lg" id="uangDiterima" placeholder="Masukkan nominal uang">
@@ -465,17 +460,12 @@
 
                     {{-- QRIS Payment Info Section --}}
                      <div id="qrisPaymentInfo" style="display: none;">
-                         {{-- Hapus duplikasi di sini --}}
-                         {{-- <div class="mb-3 p-2 border rounded">
-                             <p class="mb-1">Kode Order: <strong id="qrisModalKodeOrder">N/A</strong></p>
-                             <h5 class="mb-0">Total Tagihan: <strong>Rp <span id="qrisModalTotalBill">0</span></strong></h5>
-                         </div> --}}
                          <p class="text-center py-3"><i class="bi bi-info-circle me-2"></i> Anda memilih pembayaran Non-Tunai.</p>
                          <p class="text-center text-muted small">Silakan lanjutkan proses di terminal pembayaran atau scan QR code (jika tersedia). Klik konfirmasi setelah pembayaran berhasil dilakukan.</p>
                          <button type="button" class="btn btn-primary btn-block btn-lg mt-3" id="btnConfirmQris">
                              <i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai
                         </button>
-                         <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptionsQris">Kembali</button>
+                        <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptionsQris">Kembali</button>
                      </div>
 
                     {{-- Loading Indicator --}}
@@ -509,9 +499,17 @@
 @endsection
 
 @push('scripts')
-{{-- Load Midtrans Snap script --}}
-{{-- Use your actual Client Key --}}
+{{--
+    |--------------------------------------------------------------------------
+    | PENTING: Hapus pemuatan skrip Midtrans Snap dari sini!
+    |--------------------------------------------------------------------------
+    | Skrip Midtrans Snap seharusnya hanya dimuat sekali di file layout utama.
+    | Memuatnya di sini menyebabkan konflik dan error.
+    | Pemuatan sudah ada di layout/app.blade.php.
+    --}}
+{{-- Hapus baris berikut:
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+--}}
 
 {{-- The main app.js file loaded by @vite will import other refactored JS files --}}
 {{-- Make sure your layout file includes @vite(['resources/js/app.js']) --}}
