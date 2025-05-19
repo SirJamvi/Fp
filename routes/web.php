@@ -12,6 +12,7 @@ use App\Http\Controllers\Pelayan\PelayanController;
 use App\Http\Controllers\Pelayan\PelayanMejaController;
 use App\Http\Controllers\Koki\KokiController;
 use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\TransaksiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,9 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/bayar', [\App\Http\Controllers\TransaksiController::class, 'bayar']);
+
 
 // Public Routes (tanpa auth)
 Route::get('/user/bukti-pembayaran/{kodeReservasi}', [UserController::class, 'buktiPembayaran'])

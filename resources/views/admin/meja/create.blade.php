@@ -1,3 +1,4 @@
+{{-- resources/views/admin/meja/create.blade.php --}}
 <x-layout>
     <x-slot:title>Add Table</x-slot:title>
 
@@ -36,9 +37,13 @@
 
             <div>
                 <label for="area" class="block text-sm font-medium text-gray-700">Area <span class="text-red-500">*</span></label>
-                <input type="text" id="area" name="area" required
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 @error('area') border-red-500 @enderror"
-                    value="{{ old('area') }}">
+                <select id="area" name="area" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 @error('area') border-red-500 @enderror">
+                    <option value="">-- Pilih Area --</option>
+                    <option value="indoor" {{ old('area') == 'indoor' ? 'selected' : '' }}>Indoor</option>
+                    <option value="outdoor" {{ old('area') == 'outdoor' ? 'selected' : '' }}>Outdoor</option>
+                    <option value="vvip" {{ old('area') == 'vvip' ? 'selected' : '' }}>VVIP</option>
+                </select>
                 @error('area')
                     <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
                 @enderror

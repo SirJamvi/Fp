@@ -21,6 +21,7 @@
                 <thead class="bg-gray-50 text-left">
                     <tr>
                         <th class="px-4 py-2">Nomor Meja</th>
+                        <th class="px-4 py-2">Area</th> {{-- Kolom Area --}}
                         <th class="px-4 py-2">Kapasitas</th>
                         <th class="px-4 py-2">Status</th>
                         <th class="px-4 py-2">Aksi</th>
@@ -30,6 +31,7 @@
                     @foreach($meja as $meja)
                         <tr>
                             <td class="px-4 py-2">{{ $meja->nomor_meja }}</td>
+                            <td class="px-4 py-2">{{ $meja->area }}</td> {{-- Tampilkan area --}}
                             <td class="px-4 py-2">{{ $meja->kapasitas }}</td>
                             <td class="px-4 py-2">{{ ucfirst($meja->status) }}</td>
                             <td class="px-4 py-2">
