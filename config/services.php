@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Tambahkan konfigurasi Midtrans ini
+    'midtrans' => [
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'is_production' => env('MIDTRANS_IS_PRODUCTION', false), // Tambahkan ini jika Anda ingin mengatur mode produksi/sandbox via .env
+        'snap_url' => env('MIDTRANS_SNAP_URL'), // Tambahkan ini jika Anda ingin mengatur URL Snap via .env
+    ],
+
 ];
