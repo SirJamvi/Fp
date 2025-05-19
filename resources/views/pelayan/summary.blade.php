@@ -52,6 +52,19 @@
             {{-- Use $reservasi variable here, NOT $orderSummary['reservasi'] --}}
             @if(isset($reservasi) && $reservasi->payment_method)
             <div class="payment-details mb-4">
+
+                {{-- Info Meja Gabungan --}}
+                @if(!empty($orderSummary['combined_tables']) && count($orderSummary['combined_tables']) > 1)
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="bi bi-table me-2"></i>Meja yang Digabungkan</h5>
+                        <ul class="mb-0">
+                            @foreach($orderSummary['combined_tables'] as $meja)
+                                <li>Meja {{ $meja['nomor_meja'] }} (Kapasitas: {{ $meja['kapasitas'] }})</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <h5 class="fw-semibold mb-3">Detail Pembayaran:</h5>
                 <div class="row">
                     <div class="col-md-6">

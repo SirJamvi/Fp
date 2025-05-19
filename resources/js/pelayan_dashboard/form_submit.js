@@ -1,40 +1,23 @@
 // resources/js/pelayan_dashboard/form_submit.js
 
-// Import modules needed for form submission and payment handling
-import { getCartItems, clearCart } from './cart_manager'; // Need cart data and clear function
-// Import showPaymentModal, hidePaymentModal, and formatRupiah from payment_modal.js
-// NOTE: In this older version, showPaymentSuccess might not be imported/used here yet.
-import { showPaymentModal, hidePaymentModal, formatRupiah } from './payment_modal'; // <-- Imported formatRupiah
-import { updateSelectedTableInfo } from './table_info'; // Need to update table info on change
-// Import triggerMidtransSnap from midtrans_integration.js
+import { getCartItems, clearCart } from './cart_manager';
+import { showPaymentModal, hidePaymentModal, formatRupiah } from './payment_modal';
 import { triggerMidtransSnap } from './midtrans_integration';
 
+// Elemen DOM - Pastikan semua elemen yang dibutuhkan diinisialisasi di initFormSubmit
+let orderForm, submitOrderBtn, mejaSelect, jumlahTamuInput, loadingIndicatorModal,
+    paymentSuccessMessageModal, paymentErrorMessageModal, btnBayarCashModal,
+    btnConfirmQrisModal, btnBackToOptionsModal, btnBackToOptionsQrisModal,
+    uangDiterimaInputModal, processPaymentRouteInput, orderSummaryRouteInput,
+    paymentModalEl; // Tambahkan referensi ke elemen modal itu sendiri
 
-// --- Elemen DOM (diambil di main.js dan diteruskan) ---
-let orderForm;
-let submitOrderBtn;
-let mejaSelect;
-let jumlahTamuInput;
-let loadingIndicatorModal; // Loading indicator inside the modal
-let paymentSuccessMessageModal; // Success message inside modal
-let paymentErrorMessageModal; // Error message inside modal
-let btnBayarCashModal; // Cash button in modal
-let btnConfirmQrisModal; // QRIS button in modal
-let btnBackToOptionsModal; // Back button in modal
-let btnBackToOptionsQrisModal; // Back button in modal
-let uangDiterimaInputModal; // Cash input in modal
-let processPaymentRouteInput; // Reference to the hidden input for the route
-// NOTE: In this older version, orderSummaryRouteInput might not be used here yet
-
-
-// Export fungsi inisialisasi untuk menerima elemen DOM
 export function initFormSubmit(elements) {
-    console.log('Initializing Form Submit module...'); // Added Log
+    // Inisialisasi elemen DOM dari objek elements yang diteruskan dari main.js
     orderForm = elements.orderForm;
     submitOrderBtn = elements.submitOrderBtn;
     mejaSelect = elements.mejaSelect;
     jumlahTamuInput = elements.jumlahTamuInput;
-    loadingIndicatorModal = elements.loadingIndicator; // Loading indicator inside the modal
+    loadingIndicatorModal = elements.loadingIndicator;
     paymentSuccessMessageModal = elements.paymentSuccessMessage;
     paymentErrorMessageModal = elements.paymentErrorMessage;
     btnBayarCashModal = elements.btnBayarCash;
@@ -42,324 +25,316 @@ export function initFormSubmit(elements) {
     btnBackToOptionsModal = elements.btnBackToOptions;
     btnBackToOptionsQrisModal = elements.btnBackToOptionsQris;
     uangDiterimaInputModal = elements.uangDiterimaInput;
-    processPaymentRouteInput = elements.processPaymentRouteInput; // Get the route element
-    // orderSummaryRouteInput = elements.orderSummaryRouteInput; // Might not be in elements yet
+    processPaymentRouteInput = elements.processPaymentRouteInput;
+    orderSummaryRouteInput = elements.orderSummaryRouteInput; // Ambil elemen route summary
+    paymentModalEl = elements.paymentModalEl; // Ambil elemen modal
 
-
-    console.log('Form Submit initialized. Attaching listeners...'); // Added Log
-    attachFormSubmitListeners(); // Attach listeners after getting elements
-    // checkSubmitButtonStatus is called from cart_manager and table_info after updates
+    attachFormSubmitListeners();
 }
 
-// Fungsi untuk mengecek status tombol submit
-// Tombol submit aktif jika keranjang tidak kosong DAN meja sudah dipilih
+// Fungsi untuk memeriksa status tombol submit (diimpor dan digunakan oleh cart_manager dan table_info)
 export function checkSubmitButtonStatus() {
-     console.log('Executing checkSubmitButtonStatus...');
-     if (!submitOrderBtn || !mejaSelect) {
-         console.warn('Submit button or meja select element not found. Cannot check submit button status.');
-         return;
-     }
-    const cart = getCartItems(); // Get current cart state
-    const isCartEmpty = Object.keys(cart).length === 0;
-    const isTableSelected = mejaSelect.value !== "";
-
-    console.log(`Submit button status check: Cart Empty - ${isCartEmpty}, Table Selected - ${isTableSelected}.`);
-
-    if (!isCartEmpty && isTableSelected) {
-        submitOrderBtn.disabled = false;
-        console.log('Submit button enabled.');
-    } else {
-        submitOrderBtn.disabled = true;
-         console.log('Submit button disabled.');
+    // console.log('Executing checkSubmitButtonStatus...'); // Debug log
+    if (!submitOrderBtn || !mejaSelect) {
+        console.warn('Submit button or meja select element not found. Cannot check submit button status.');
+        return;
     }
-    console.log(`Submit button final disabled state: ${submitOrderBtn.disabled}`);
+   const cart = getCartItems();
+   const isCartEmpty = Object.keys(cart).length === 0;
+   const isTableSelected = mejaSelect.value !== "";
+
+   // console.log(`Submit button status check: Cart Empty - ${isCartEmpty}, Table Selected - ${isTableSelected}.`); // Debug log
+   if (!isCartEmpty && isTableSelected) {
+       submitOrderBtn.disabled = false;
+       // console.log('Submit button enabled.'); // Debug log
+   } else {
+       submitOrderBtn.disabled = true;
+       // console.log('Submit button disabled.'); // Debug log
+   }
+   // console.log(`Submit button final disabled state: ${submitOrderBtn.disabled}`); // Debug log
 }
 
 
-// Form Submission (AJAX to storeOrder)
+// Fungsi untuk melampirkan event listeners pada form dan elemen terkait
 function attachFormSubmitListeners() {
-    if (orderForm && submitOrderBtn) {
-        orderForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            console.log('Order form submitted.');
+   if (orderForm && submitOrderBtn) {
+       orderForm.addEventListener('submit', function(e) {
+           e.preventDefault();
+           console.log('Order form submitted.');
 
-            const cart = getCartItems(); // Get current cart state
+           const cart = getCartItems();
 
-            if (Object.keys(cart).length === 0) {
+           if (Object.keys(cart).length === 0) {
                 alert('Keranjang pesanan kosong. Silakan pilih menu terlebih dahulu.');
-                console.warn('Order submission cancelled: Cart is empty.');
-                return false;
-            }
-            if (!mejaSelect || mejaSelect.value === "") {
-                alert('Silakan pilih meja terlebih dahulu.');
+               console.warn('Order submission cancelled: Cart is empty.');
+               return false;
+           }
+           if (!mejaSelect || mejaSelect.value === "") {
+               alert('Silakan pilih meja terlebih dahulu.');
                  if(mejaSelect) mejaSelect.focus();
-                 console.warn('Order submission cancelled: No table selected.');
-                return false;
-            }
-            if (!jumlahTamuInput || !jumlahTamuInput.value || parseInt(jumlahTamuInput.value, 10) < 1) {
+                console.warn('Order submission cancelled: No table selected.');
+               return false;
+           }
+           if (!jumlahTamuInput || !jumlahTamuInput.value || parseInt(jumlahTamuInput.value, 10) < 1) {
                 alert('Jumlah tamu harus diisi dan minimal 1.');
-                if(jumlahTamuInput) jumlahTamuInput.focus();
-                 console.warn('Order submission cancelled: Invalid number of guests.');
-                return false;
-            }
+               if(jumlahTamuInput) jumlahTamuInput.focus();
+                console.warn('Order submission cancelled: Invalid number of guests.');
+               return false;
+           }
 
-            const formData = new FormData(orderForm);
-             console.log('Collecting form data.');
-             console.log('FormData contents:');
-             for (let pair of formData.entries()) {
-                 console.log(pair[0]+ ': ' + pair[1]);
-             }
+           const formData = new FormData(orderForm);
+           console.log('Collecting form data.');
+            // Debug log untuk melihat isi formData
+            // console.log('FormData contents:');
+            // for (let pair of formData.entries()) {
+            //     console.log(pair[0]+ ': ' + pair[1]);
+            // }
 
+            // Nonaktifkan tombol submit dan tampilkan spinner saat proses
+            $(submitOrderBtn).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...');
+           console.log('Sending order data via AJAX to storeOrder...');
 
-            // Show loading indicator on the main submit button
-             $(submitOrderBtn).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...');
+           // Kirim data pesanan ke backend menggunakan AJAX
+           $.ajax({
+               url: orderForm.action,
+               method: orderForm.method,
+               data: formData,
+               processData: false, // Penting untuk FormData
+               contentType: false, // Penting untuk FormData
+               headers: { // Tambahkan CSRF token untuk keamanan
+                   'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+               },
+               success: function(response) {
+                   console.log('Order store AJAX success:', response);
+                    // Aktifkan kembali tombol submit setelah respons diterima
+                    $(submitOrderBtn).prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Proses Pesanan');
 
+                   if (response.success) {
+                       console.log('Order saved successfully. Showing payment modal.');
+                       // Ambil elemen modal pembayaran
+                       const paymentModalEl = document.getElementById('paymentModal');
+                       if (paymentModalEl) {
+                            // Simpan ID reservasi, total tagihan, dan kode order pada elemen modal
+                            paymentModalEl.dataset.reservasiId = response.reservasi_id;
+                            // PENTING: Gunakan total_bill dari respons server untuk modal
+                            paymentModalEl.dataset.totalBill = parseFloat(response.total_bill);
+                            paymentModalEl.dataset.kodeOrder = response.kode_reservasi;
+                            console.log('Stored order data on modal element:', paymentModalEl.dataset);
 
-            console.log('Sending order data via AJAX to storeOrder...');
+                            // Tampilkan modal pembayaran dengan data dari respons server
+                            showPaymentModal(response.reservasi_id, response.total_bill, response.kode_reservasi);
+                       } else {
+                            console.warn('Payment modal element not found, cannot store order data or show modal.');
+                            alert('Terjadi kesalahan internal: Elemen modal pembayaran tidak ditemukan.');
+                       }
+                   } else {
+                       console.warn('Server reported order store failed:', response.message);
+                       alert('Gagal menyimpan pesanan: ' + response.message);
+                       if (response.errors) {
+                           console.error('Validation errors:', response.errors);
+                           // Anda bisa menambahkan logika untuk menampilkan error validasi di UI di sini
+                       }
+                   }
+               },
+               error: function(xhr, status, error) {
+                   console.error('AJAX Store Order Error:', status, error, xhr.responseText);
+                   // Aktifkan kembali tombol submit jika terjadi error
+                   if (submitOrderBtn) $(submitOrderBtn).prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Proses Pesanan');
 
-            $.ajax({
-                url: orderForm.action,
-                method: orderForm.method,
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    console.log('Order store AJAX success:', response);
-                    // Hide main submit button loading indicator
-                     $(submitOrderBtn).prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Proses Pesanan');
+                   let errorMessage = 'Terjadi kesalahan saat menyimpan pesanan.';
+                   if (xhr.responseJSON && xhr.responseJSON.message) {
+                       errorMessage = xhr.responseJSON.message;
+                   } else if (xhr.status === 422) {
+                       errorMessage = 'Validasi gagal. Silakan periksa input Anda.';
+                       console.log('Validation errors response:', xhr.responseJSON.errors);
+                       // Anda bisa menambahkan logika untuk menampilkan error validasi di UI di sini
+                   } else {
+                       errorMessage += ' (' + status + ': ' + error + ')';
+                   }
+                   alert('Error: ' + errorMessage);
+               }
+           });
+       });
+   } else {
+        if (!orderForm) console.warn('Order form element not found. Submit listener not attached.');
+        if (!submitOrderBtn) console.warn('Submit order button not found. Submit listener not attached.');
+   }
 
-
-                    if (response.success) {
-                        console.log('Order saved successfully. Showing payment modal.');
-                        // Show the payment modal with order details
-                        // Store reservasi ID on the modal element for later use
-                        const paymentModalEl = document.getElementById('paymentModal');
-                        if (paymentModalEl) {
-                             paymentModalEl.dataset.reservasiId = response.reservasi_id;
-                             paymentModalEl.dataset.totalBill = parseFloat(response.total_bill); // Store total bill too
-                             paymentModalEl.dataset.kodeOrder = response.kode_reservasi; // Store kode order too
-                             console.log('Stored order data on modal element:', paymentModalEl.dataset);
-                        } else {
-                             console.warn('Payment modal element not found, cannot store order data.');
-                        }
-
-                        showPaymentModal(response.reservasi_id, response.total_bill, response.kode_reservasi);
-
-                         // Optional: Clear cart after successful order creation (before payment)
-                         // clearCart(); // Decide if cart should clear here or after successful payment
-
-                    } else {
-                        console.warn('Server reported order store failed:', response.message);
-                        alert('Gagal menyimpan pesanan: ' + response.message);
-                        if (response.errors) {
-                            console.error('Validation errors:', response.errors);
-                        }
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX Store Order Error:', status, error, xhr.responseText);
-                     if (submitOrderBtn) $(submitOrderBtn).prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Proses Pesanan');
-
-
-                    let errorMessage = 'Terjadi kesalahan saat menyimpan pesanan.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    } else if (xhr.status === 422) {
-                        errorMessage = 'Validasi gagal. Silakan periksa input Anda.';
-                        console.log('Validation errors response:', xhr.responseJSON.errors);
-                    } else {
-                        errorMessage += ' (' + status + ': ' + error + ')';
-                    }
-                    alert('Error: ' + errorMessage);
-                }
-            });
-        });
+   // Lampirkan listener untuk perubahan pada dropdown meja dan input jumlah tamu
+   // agar tombol submit diperbarui statusnya
+   if (mejaSelect) {
+       mejaSelect.addEventListener('change', checkSubmitButtonStatus);
+       console.log('Meja select change listener attached.');
+   } else {
+        console.warn('mejaSelect not found. Change listener not attached.');
+   }
+    if (jumlahTamuInput) {
+        jumlahTamuInput.addEventListener('input', checkSubmitButtonStatus);
+        console.log('Jumlah tamu input listener attached.');
     } else {
-         if (!orderForm) console.warn('Order form element not found. Submit listener not attached.');
-         if (!submitOrderBtn) console.warn('Submit order button not found. Submit listener not attached.');
+        console.warn('jumlahTamuInput not found. Input listener not attached.');
     }
-
-    // Attach change listener to mejaSelect to update submit button status
-    if (mejaSelect) {
-        mejaSelect.addEventListener('change', checkSubmitButtonStatus);
-        console.log('Meja select change listener attached in form_submit.js');
-    } else {
-         console.warn('mejaSelect not found in form_submit.js. Change listener not attached.');
-    }
-     // Attach input listener to jumlahTamuInput if needed for validation logic
-     if (jumlahTamuInput) {
-         jumlahTamuInput.addEventListener('input', checkSubmitButtonStatus); // Or more specific validation check
-         console.log('Jumlah tamu input listener attached in form_submit.js');
-     } else {
-         console.warn('jumlahTamuInput not found in form_submit.js. Input listener not attached.');
-     }
 }
 
-// Function to handle the actual payment processing AJAX call
-// Called from payment_modal.js when Pay Cash or Confirm QRIS is clicked
+// Fungsi untuk memproses pembayaran via AJAX
 export function processPaymentAjax(paymentMethod, amountPaid = null) {
     console.log(`Processing payment via AJAX. Method: ${paymentMethod}, Amount: ${amountPaid}`);
-
-    // Get current reservation ID from the data attribute on the modal element
-    const paymentModalEl = document.getElementById('paymentModal');
+    // Ambil ID reservasi dari data attribute modal
     const currentReservasiId = paymentModalEl ? paymentModalEl.dataset.reservasiId : null;
-    // Get the route URL from the hidden input
+    // Ambil URL template route pembayaran dari input hidden
     const processPaymentRouteTemplate = processPaymentRouteInput ? processPaymentRouteInput.value : null;
-    // NOTE: In this older version, orderSummaryRouteInput might not be used here yet
-
 
     if (!currentReservasiId || !processPaymentRouteTemplate) {
         console.error('Cannot process payment: Reservation ID or Route URL template is missing.');
         alert('Internal error: Reservation ID or Route URL not found.');
-        hidePaymentModal(); // Hide modal on error
+        if (paymentModalEl) hidePaymentModal(); // Sembunyikan modal jika ada error fatal
         return;
     }
 
-    // Construct the final payment URL by replacing the placeholder
+    // Bentuk URL pembayaran final dengan mengganti placeholder :reservasiId
     const finalPaymentUrl = processPaymentRouteTemplate.replace(':reservasiId', currentReservasiId);
-    console.log('Constructed payment AJAX URL:', finalPaymentUrl);
 
-    // NOTE: In this older version, there might not be a separate summary URL/redirect logic here
-    // The success handling might just redirect to a default page or refresh.
-
-
-    // Show loading indicator in modal
+    // Tampilkan indikator loading dan nonaktifkan tombol
     if (loadingIndicatorModal) loadingIndicatorModal.style.display = 'block';
-    // Disable buttons in modal
-    // Ensure these elements exist before disabling
     if (btnBayarCashModal) $(btnBayarCashModal).prop('disabled', true);
-    if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...'); // Specific text for QRIS confirm
+    if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...');
     if (btnBackToOptionsModal) btnBackToOptionsModal.disabled = true;
-    if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = true; // Disable both back buttons
-    if (uangDiterimaInputModal && paymentMethod === 'cash') uangDiterimaInputModal.disabled = true; // Disable cash input if cash method
+    if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = true;
+    if (uangDiterimaInputModal && paymentMethod === 'cash') uangDiterimaInputModal.disabled = true;
 
-
+    // Data yang akan dikirim ke backend
     const postData = {
-        _token: $('meta[name="csrf-token"]').attr('content'),
-        payment_method: paymentMethod,
+        _token: $('meta[name="csrf-token"]').attr('content'), // CSRF token
+        payment_method: paymentMethod, // Metode pembayaran (cash/qris)
     };
-
+    // Tambahkan jumlah uang yang diterima jika metode pembayaran adalah tunai
     if (paymentMethod === 'cash') {
         postData.amount_paid = amountPaid;
     }
-    // For QRIS, amount_paid might be sent later via Midtrans callback,
-    // but the initial call might just confirm the method.
-    // The backend processPayment method handles the logic based on method.
 
     console.log(`Sending payment data for Reservasi ID ${currentReservasiId}:`, postData);
 
-
+    // Kirim permintaan pembayaran ke backend via AJAX
     $.ajax({
-        url: finalPaymentUrl, // Use the constructed Payment URL
+        url: finalPaymentUrl,
         method: 'POST',
         data: postData,
         success: function(response) {
             console.log('Payment AJAX success:', response);
-            // Hide loading indicator
-             if (loadingIndicatorModal) loadingIndicatorModal.style.display = 'none';
-
+            // Sembunyikan indikator loading
+            if (loadingIndicatorModal) loadingIndicatorModal.style.display = 'none';
 
             if (response.success) {
-                console.log('Payment successful.');
-                 // Display success message in modal briefly before redirect
-                 if (paymentSuccessMessageModal) {
-                     // Check if response.change exists before adding to message
-                     // NOTE: formatRupiah might not be correctly imported/used here yet in this version
-                     const changeMessage = response.change !== undefined && response.change !== null
-                                           ? ' Kembalian: ' + response.change // Using raw change value
-                                           : '';
-                     paymentSuccessMessageModal.textContent = response.message + changeMessage;
-                     paymentSuccessMessageModal.style.display = 'block';
-                 }
-
-
-                // Clear cart after successful payment
-                clearCart();
-
-                // *** Midtrans Snap Trigger for QRIS ***
-                // The backend should return 'snap_token' for QRIS payment
+                // Jika pembayaran QRIS dan ada snap_token, picu popup Midtrans Snap
                 if (paymentMethod === 'qris' && response.snap_token) {
-                    console.log('Received Snap Token for QRIS. Triggering Midtrans Snap.');
-                    // Check if Snap JS is loaded
-                    if (typeof Snap === 'undefined') {
-                        console.error('Midtrans Snap JS is not loaded. Cannot trigger Snap.');
-                        alert('Gagal memuat Midtrans. Silakan coba lagi.');
-                        // Re-enable buttons if Snap JS is missing
-                         if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
-                         if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
-                        return; // Stop here if Snap is not available
-                    }
+                    console.log('Received Snap Token for QRIS. Attempting to trigger Midtrans Snap.');
+                    const snapCalledSuccessfully = triggerMidtransSnap(response.snap_token);
 
-                    // Call Snap.pay() with the token
-                    triggerMidtransSnap(response.snap_token);
-                    // The rest of the success handling (hiding modal, redirect) will happen
-                    // inside the Midtrans Snap callbacks (onSuccess, onPending, onError, onClose)
-                    // So, we RETURN here and let Midtrans Snap handle the flow.
-                    return; // Stop further execution in this success handler
+                    if (snapCalledSuccessfully) {
+                        // Jika Snap berhasil dipicu, Snap callbacks akan menangani UI selanjutnya.
+                        // Jangan lanjutkan dengan pesan sukses/redirect generik di sini.
+                        console.log('Midtrans Snap.pay() was invoked. Waiting for Midtrans callbacks.');
+                        return; // Keluar dari fungsi success AJAX
+                    } else {
+                        // Jika triggerMidtransSnap mengembalikan false (misal Snap JS belum dimuat)
+                        console.warn('Midtrans Snap UI could not be displayed.');
+                        // Aktifkan kembali tombol QRIS dan tombol kembali
+                        if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
+                        if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
+                        // Jangan lanjutkan ke pesan sukses generik atau clear cart
+                        return;
+                    }
                 }
 
+                // Blok ini dijalankan untuk pembayaran CASH atau jika QRIS berhasil tanpa Snap (kasus tidak biasa untuk Snap)
+                console.log('Payment successful (Cash or non-Snap QRIS). Processing post-payment actions.');
+                if (paymentSuccessMessageModal) {
+                    // Tampilkan pesan sukses pembayaran
+                    const changeAmount = (response.change !== undefined && response.change !== null) ? parseFloat(response.change) : 0;
+                    const changeMessage = paymentMethod === 'cash' && changeAmount >= 0 ?
+                        ' Kembalian: ' + formatRupiah(changeAmount) :
+                        '';
+                    paymentSuccessMessageModal.textContent = response.message + changeMessage;
+                    paymentSuccessMessageModal.style.display = 'block';
+                }
 
-                // For Cash payment, or if QRIS doesn't involve Snap modal (less common)
-                // This version likely just redirects directly after success
-                console.log('Payment successful (Cash or QRIS without Snap modal). Redirecting...');
-                setTimeout(function() {
-                    // NOTE: This redirect URL might be hardcoded or derived differently in this version
-                    // It might not use the orderSummaryRouteInput
-                    const redirectUrl = response.redirect_url || '{{ route("pelayan.dashboard") }}'; // Fallback to dashboard
-                    console.log('Redirecting to:', redirectUrl);
-                    hidePaymentModal(); // Hide the modal before redirect
-                    window.location.href = redirectUrl; // Redirect
-                }, 1500); // Delay redirect slightly
+                // Kosongkan keranjang setelah pembayaran berhasil
+                clearCart();
 
-            } else {
-                console.warn('Payment failed:', response.message);
-                // Display error message in modal
-                 if (paymentErrorMessageModal) {
-                     paymentErrorMessageModal.textContent = response.message;
-                     paymentErrorMessageModal.style.display = 'block';
-                 }
+                // Tampilkan tombol aksi setelah sukses (Kembali ke Dashboard / Lihat Ringkasan)
+                const paymentSuccessActionsDiv = document.getElementById('paymentSuccessActions');
+                const btnBackToDashboard = document.getElementById('btnBackToDashboard');
+                const btnViewSummary = document.getElementById('btnViewSummary');
+                const orderSummaryRouteTemplate = orderSummaryRouteInput ? orderSummaryRouteInput.value : null;
 
-                // Re-enable relevant buttons based on payment method if not redirecting
-                // Ensure these elements exist before re-enabling
+                if (paymentSuccessActionsDiv) paymentSuccessActionsDiv.style.display = 'block';
+
+                // Atur listener untuk tombol "Kembali ke Dashboard"
+                if (btnBackToDashboard) {
+                    btnBackToDashboard.onclick = function() {
+                        window.location.href = '/pelayan/dashboard'; // Redirect ke dashboard
+                    };
+                }
+
+                // Atur listener untuk tombol "Lihat Ringkasan Pesanan"
+                if (btnViewSummary && currentReservasiId && orderSummaryRouteTemplate) {
+                    const finalSummaryUrl = orderSummaryRouteTemplate.replace(':reservasiId', currentReservasiId);
+                    btnViewSummary.onclick = function() {
+                        window.location.href = finalSummaryUrl; // Redirect ke halaman ringkasan
+                    };
+                } else {
+                    // Sembunyikan tombol "Lihat Ringkasan" jika URL tidak tersedia
+                    if (btnViewSummary) btnViewSummary.style.display = 'none';
+                }
+
+                // Sembunyikan form pembayaran dan pilihan metode
+                document.getElementById('paymentOptions').style.display = 'none';
+                document.getElementById('cashPaymentForm').style.display = 'none';
+                document.getElementById('qrisPaymentInfo').style.display = 'none';
+
+
+            } else { // response.success is false (pembayaran gagal di server)
+                console.warn('Payment failed on server:', response.message);
+                if (paymentErrorMessageModal) {
+                    paymentErrorMessageModal.textContent = response.message;
+                    paymentErrorMessageModal.style.display = 'block';
+                }
+                // Aktifkan kembali tombol yang relevan agar user bisa mencoba lagi atau kembali
                 if (paymentMethod === 'cash') {
-                    // Re-enable Pay Cash button
-                     if (btnBayarCashModal) $(btnBayarCashModal).prop('disabled', false).html('<i class="bi bi-cash me-2"></i> Bayar Tunai');
-                     if (uangDiterimaInputModal) uangDiterimaInputModal.disabled = false;
-                     if (btnBackToOptionsModal) btnBackToOptionsModal.disabled = false;
-
+                    if (btnBayarCashModal) $(btnBayarCashModal).prop('disabled', false).html('<i class="bi bi-cash me-2"></i> Bayar Tunai');
+                    if (uangDiterimaInputModal) uangDiterimaInputModal.disabled = false;
+                    if (btnBackToOptionsModal) btnBackToOptionsModal.disabled = false;
                 } else if (paymentMethod === 'qris') {
-                    // Re-enable Confirm QRIS button
-                     if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
-                     if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
+                    if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
+                    if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
                 }
             }
         },
         error: function(xhr, status, error) {
             console.error('AJAX Payment Error:', status, error, xhr.responseText);
-             if (loadingIndicatorModal) loadingIndicatorModal.style.display = 'none';
+            // Sembunyikan indikator loading
+            if (loadingIndicatorModal) loadingIndicatorModal.style.display = 'none';
 
-            // Re-enable buttons in modal on error
-            // Ensure these elements exist before re-enabling
-             if (btnBayarCashModal) $(btnBayarCashModal).prop('disabled', false).html('<i class="bi bi-cash me-2"></i> Bayar Tunai');
-             if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
-             if (btnBackToOptionsModal) btnBackToOptionsModal.disabled = false;
-             if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
-             if (uangDiterimaInputModal) uangDiterimaInputModal.disabled = false;
+            // Aktifkan kembali semua tombol yang relevan jika terjadi error generik
+            if (btnBayarCashModal) $(btnBayarCashModal).prop('disabled', false).html('<i class="bi bi-cash me-2"></i> Bayar Tunai');
+            if (btnConfirmQrisModal) $(btnConfirmQrisModal).prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai');
+            if (btnBackToOptionsModal) btnBackToOptionsModal.disabled = false;
+            if (btnBackToOptionsQrisModal) btnBackToOptionsQrisModal.disabled = false;
+            if (uangDiterimaInputModal) uangDiterimaInputModal.disabled = false;
 
-
-            let errorMessage = 'Terjadi kesalahan saat memproses pembayaran.';
+            let errorMessageText = 'Terjadi kesalahan saat memproses pembayaran.';
             if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
+                errorMessageText = xhr.responseJSON.message;
             } else {
-                errorMessage += ' (' + status + ': ' + error + ')';
+                errorMessageText += ' (' + status + ': ' + error + ')';
             }
-             if (paymentErrorMessageModal) {
-                 paymentErrorMessageModal.textContent = 'Error: ' + errorMessage;
-                 paymentErrorMessageModal.style.display = 'block';
-             }
+            if (paymentErrorMessageModal) {
+                paymentErrorMessageModal.textContent = 'Error: ' + errorMessageText;
+                paymentErrorMessageModal.style.display = 'block';
+            }
         }
     });
 }
+
+// Ekspor fungsi lain yang mungkin dibutuhkan oleh modul lain, seperti checkSubmitButtonStatus
+// (Sudah diekspor di bagian atas)

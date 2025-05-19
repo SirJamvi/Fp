@@ -1,77 +1,78 @@
 // resources/js/pelayan_dashboard/midtrans_integration.js
 
-// Import hidePaymentModal from payment_modal.js
-import { hidePaymentModal } from './payment_modal';
-
-// Ensure Snap JS is loaded before attempting to use it
-// The script tag is in dashboard.blade.php
-
-// Function to trigger Midtrans Snap payment modal
+/**
+ * Memicu popup Midtrans Snap
+ * @param {string} snapToken — token yang dikembalikan oleh server
+ * @returns {boolean} true jika pemanggilan berhasil dipicu, false jika gagal
+ */
 export function triggerMidtransSnap(snapToken) {
-    console.log('Attempting to trigger Midtrans Snap with token:', snapToken); // Added Log
-
-    // Check if Snap JS is loaded and Snap object is available
-    if (typeof Snap === 'undefined') {
-        console.error('Midtrans Snap JS is not loaded. Cannot trigger Snap.'); // Added Log
+    // Cek apakah library Snap sudah dimuat
+    if (typeof window.snap === 'undefined') {
+        console.error('Midtrans Snap JS is not loaded. Cannot trigger snap.');
         alert('Gagal memuat Midtrans. Silakan coba lagi.');
-        // Consider re-enabling payment buttons here if Snap JS is missing
-        return;
+        return false;
     }
 
-    if (!snapToken) {
-        console.error('Snap Token is missing. Cannot trigger Midtrans Snap.'); // Added Log
-        alert('Gagal mendapatkan token pembayaran dari server.');
-        // Consider re-enabling payment buttons here if token is missing
-        return;
-    }
-
-    // Trigger the Snap payment modal
     try {
-        Snap.pay(snapToken, {
+        window.snap.pay(snapToken, {
             onSuccess: function(result) {
-                /* You may add your own implementation here */
-                console.log('Midtrans Snap Success:', result); // Added Log
-                alert("Pembayaran Berhasil!");
-                // Handle successful payment (e.g., update UI, redirect)
-                // The backend should also handle the Midtrans notification callback
-                // You might redirect to a success page or update the current page status
-                // For now, let's just hide the modal and maybe show a message
-                hidePaymentModal();
-                // Redirect to summary page or refresh dashboard if needed
-                // window.location.href = '/pelayan/order/summary/' + result.order_id; // Example redirect
-                 // Or, if you want to show success message in the modal itself:
-                 // showPaymentSuccess('Pembayaran Non-Tunai Berhasil!', '/pelayan/order/summary/' + result.order_id); // Requires showPaymentSuccess to be exported and imported
+                console.log('Pembayaran sukses:', result);
+                // redirect atau update UI di sini
+                // Anda mungkin ingin memicu refresh halaman atau menampilkan pesan sukses
+                // setelah pembayaran Midtrans berhasil.
+                // Contoh: window.location.reload();
+                // Atau panggil fungsi di form_submit.js untuk menampilkan pesan sukses dan tombol aksi
+                // Misalnya, panggil fungsi baru di form_submit.js: handlePaymentSuccess(result);
+                // Untuk saat ini, kita log saja dan biarkan user menutup modal.
             },
             onPending: function(result) {
-                /* You may add your own implementation here */
-                console.log('Midtrans Snap Pending:', result); // Added Log
-                alert("Menunggu pembayaran Anda.");
-                // Handle pending payment (e.g., update UI to pending state)
-                hidePaymentModal(); // Hide modal, user completes payment outside
+                console.log('Pembayaran pending:', result);
+                // beri tahu user untuk melanjutkan pembayaran
+                alert('Pembayaran Anda tertunda. Harap selesaikan pembayaran melalui metode yang Anda pilih.');
             },
             onError: function(result) {
-                /* You may add your own implementation here */
-                console.log('Midtrans Snap Error:', result); // Added Log
-                alert("Pembayaran Gagal!");
-                // Handle error (e.g., show error message, allow retry)
-                hidePaymentModal(); // Hide modal
-                // Show error message in the main dashboard or modal if it was still open
+                console.error('Pembayaran error:', result);
+                alert('Pembayaran gagal. Silakan coba lagi.');
             },
             onClose: function() {
-                /* You may add your own implementation here */
-                console.log('Midtrans Snap closed without finishing.'); // Added Log
-                // Handle modal close (e.g., user closed the popup)
-                // You might want to re-enable payment buttons
+                console.warn('User menutup popup Snap tanpa menyelesaikan pembayaran.');
+                // Anda bisa memberi tahu user bahwa pembayaran belum selesai
+                // alert('Anda belum menyelesaikan pembayaran.'); // Mungkin terlalu mengganggu, log saja cukup
             }
         });
-        console.log('Midtrans Snap.pay() called.'); // Added Log
+        console.log('Midtrans snap.pay() called.');
+        return true;
     } catch (e) {
-        console.error('Error calling Snap.pay():', e); // Added Log
+        console.error('Error calling snap.pay():', e);
         alert('Terjadi kesalahan saat memulai pembayaran Midtrans.');
-        // Consider re-enabling payment buttons here
+        return false;
     }
 }
 
-// Note: The Midtrans Notification URL (webhook) must be configured in your Midtrans Dashboard
-// This function only handles the frontend Snap popup interaction.
-// The actual payment status update should primarily rely on the backend Notification URL.
+/**
+ * (Opsional) Fungsi untuk menambahkan tag <script> Snap.js ke <head> secara dinamis.
+ * Panggil ini sekali dengan clientKey Anda sebelum memicu triggerMidtransSnap.
+ * Namun, disarankan memuatnya di layout utama Blade untuk menghindari duplikasi.
+ */
+export function loadMidtransSnapJs(clientKey, isProduction = false) {
+    const baseUrl = isProduction
+        ? 'https://app.midtrans.com/snap/snap.js'
+        : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+    if (document.querySelector(`script[src="${baseUrl}"]`)) {
+        console.log('Midtrans Snap script already exists.');
+        return; // sudah ada, tidak perlu tambah lagi
+    }
+
+    const script = document.createElement('script');
+    script.src = baseUrl;
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true; // Muat secara asynchronous
+    script.onload = () => console.log('Midtrans Snap script loaded.');
+    script.onerror = () => {
+        console.error('Failed to load Midtrans Snap script.');
+        alert('Gagal memuat skrip pembayaran. Silakan muat ulang halaman.');
+    };
+    document.head.appendChild(script);
+    console.log('Attempted to append Midtrans Snap script to head.');
+}

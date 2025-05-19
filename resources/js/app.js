@@ -1,12 +1,17 @@
 // resources/js/app.js
 
-// Import Bootstrap JS (if you are using the full bundle)
-import 'bootstrap'; // Assuming you installed bootstrap via npm
+// Import Bootstrap (assuming you are using it)
+import 'bootstrap';
 
-// Import your main dashboard script
-import './pelayan_dashboard/main';
+// Import your custom modules
+import './pelayan_dashboard/main.js';
+import './pelayan_dashboard/cart_manager.js';
+import './pelayan_dashboard/menu_filter.js';
+import './pelayan_dashboard/table_info.js';
+import './pelayan_dashboard/form_submit.js';
+import './pelayan_dashboard/payment_modal.js';
+// midtrans_integration.js tidak perlu diimpor di sini
+// karena fungsi triggerMidtransSnap diakses melalui import di form_submit.js
+// dan library Snap itu sendiri dimuat secara global via tag <script> di Blade.
 
-// You can add other global imports here if needed
-// import 'jquery'; // If you need jQuery globally
-
-console.log('app.js loaded'); // Added Log
+console.log('app.js loaded and custom modules imported.');

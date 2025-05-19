@@ -103,6 +103,10 @@ input:checked + .slider:before {
         </div>
     </div>
 
+    {{-- Load Midtrans Snap script - DImuat HANYA DI SINI --}}
+    {{-- Use your actual Client Key --}}
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('services.midtrans.client_key') }}"></script>
     @stack('scripts') {{-- Script dari child view seperti dashboard.blade.php akan dimuat di sini --}}
 </body>
 </html>
