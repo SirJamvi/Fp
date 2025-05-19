@@ -23,6 +23,11 @@
         @endif
     </form>
 
+    {{-- Tombol Konfirmasi QR di pojok kanan atas --}}
+    <div class="d-flex justify-content-end mb-2">
+        <a href="{{ route('pelayan.scanqr') }}" class="btn btn-success">Konfirmasi</a>
+    </div>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -36,20 +41,22 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($reservasi as $item)
+            @forelse ($reservasi as $item)
                 <tr>
                     <td>{{ $item->kode_reservasi }}</td>
                     <td>{{ $item->pengguna->nama ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan)->format('H:i d M, Y') }}</td>
                     <td>{{ $item->pengguna->metode_pembayaran ?? 'Cash' }}</td>
                     <td>
-                        <span class="text-{{ rand(0,1) ? 'success' : 'danger' }}">
-                            {{ rand(0,1) ? 'Hadir' : 'Tidak Hadir' }}
-                        </span>
+                        @php
+                            $statusHadir = $item->status === 'selesai' ? 'Hadir' : 'Tidak Hadir';
+                            $warnaHadir = $item->status === 'selesai' ? 'success' : 'danger';
+                        @endphp
+                        <span class="text-{{ $warnaHadir }}">{{ $statusHadir }}</span>
                     </td>
                     <td>
                         @php
-                            $statusMakanan = $item->orders->pluck('status_makanan')->unique()->implode(', ');
+                            $statusMakanan = $item->orders->pluck('status_makanan')->unique()->filter()->implode(', ');
                         @endphp
                         <span class="badge bg-secondary">{{ $statusMakanan ?: 'Belum Ada' }}</span>
                     </td>
@@ -57,7 +64,11 @@
                         <a href="{{ route('pelayan.reservasi.detail', $item->id) }}" class="btn btn-primary btn-sm">Details</a>
                     </td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="7" class="text-center">Tidak ada reservasi ditemukan.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 

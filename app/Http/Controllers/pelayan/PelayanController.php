@@ -64,6 +64,39 @@ class PelayanController extends Controller
         ]);
     }
 
+    public function scanQr(Request $request)
+    {
+        return view('pelayan.scanqr', [
+            'title' => 'Scan QR Code'
+        ]);
+    }
+
+ public function prosesScanQr($kodeReservasi)
+{
+    // Bersihkan kode reservasi dari URL jika ada
+    $baseUrl = url('/pelayan/scanqr/proses/');
+    if (strpos($kodeReservasi, $baseUrl) !== false) {
+        $kodeReservasi = str_replace($baseUrl, '', $kodeReservasi);
+    }
+    
+    $kodeReservasi = trim($kodeReservasi);
+
+    // Proses reservasi...
+    $reservasi = Reservasi::where('kode_reservasi', $kodeReservasi)->first();
+
+    if (!$reservasi) {
+        return redirect()->route('pelayan.scanqr')->with('error', 'Reservasi tidak ditemukan');
+    }
+
+    // Update status reservasi
+    $reservasi->update([
+        'status' => 'selesai',
+        'waktu_kedatangan' => now()
+    ]);
+
+    return redirect()->route('pelayan.reservasi')->with('success', 'Reservasi berhasil dikonfirmasi');
+}
+
     public function detailReservasi($id)
     {
         $reservasi = Reservasi::with(['pengguna', 'meja'])->findOrFail($id);
