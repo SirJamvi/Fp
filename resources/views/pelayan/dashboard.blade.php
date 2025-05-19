@@ -211,14 +211,13 @@
 
 @section('content')
 <div class="container-fluid content-wrapper">
-    {{-- Notifications from session --}}
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show alert-spaced" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     @endif
-    {{-- Notifications from validation errors (remain visible on reload) --}}
+    
     @if ($errors->any())
     <div class="alert alert-danger alert-dismissible fade show alert-spaced" role="alert">
         <h5 class="alert-heading"><i class="bi bi-x-octagon-fill me-2"></i> Terjadi Kesalahan Validasi:</h5>
@@ -231,12 +230,9 @@
     </div>
     @endif
 
-    {{-- ORDER FORM STARTS HERE --}}
-    {{-- Form action and method remain, will be intercepted by JS --}}
     <form action="{{ route('pelayan.order.store') }}" method="POST" id="orderForm">
     @csrf
     <div class="row">
-        {{-- Menu Column --}}
         <div class="col-lg-8 mb-4 mb-lg-0">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
@@ -244,14 +240,17 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        {{-- Select Table --}}
                         <div class="col-md-4 mb-2 mb-md-0">
                             <label for="meja_id" class="form-label fw-bold">Pilih Meja:</label>
                             <select name="meja_id" id="meja_id" class="form-select form-select-lg @error('meja_id') is-invalid @enderror" required>
                                 <option value="" disabled selected>-- Pilih Nomor Meja --</option>
                                 @foreach($mejas as $meja)
-                                <option value="{{ $meja->id }}" data-kapasitas="{{ $meja->kapasitas }}" data-area="{{ $meja->area }}" data-status="{{ $meja->status }}" {{ old('meja_id') == $meja->id ? 'selected' : '' }}>
-                                    {{ $meja->nomor_meja }} (Area: {{ $meja->area }}) - Status: {{ ucfirst($meja->status) }}
+                                <option value="{{ $meja->id }}" 
+                                        data-kapasitas="{{ $meja->kapasitas }}" 
+                                        data-area="{{ $meja->area }}" 
+                                        data-status="{{ $meja->status }}" 
+                                        {{ old('meja_id') == $meja->id ? 'selected' : '' }}>
+                                    {{ $meja->nomor_meja }} (Area: {{ $meja->area }}, Kapasitas: {{ $meja->kapasitas }}) - Status: {{ ucfirst($meja->status) }}
                                 </option>
                                 @endforeach
                             </select>
@@ -260,7 +259,6 @@
                             @enderror
                         </div>
 
-                        {{-- Number of Guests --}}
                         <div class="col-md-4 mb-2 mb-md-0">
                             <label for="jumlah_tamu" class="form-label fw-bold">Jumlah Tamu:</label>
                             <input type="number" name="jumlah_tamu" id="jumlah_tamu" class="form-control form-control-lg @error('jumlah_tamu') is-invalid @enderror" value="{{ old('jumlah_tamu', 1) }}" min="1" required placeholder="Cth: 4">
@@ -269,7 +267,6 @@
                             @enderror
                         </div>
 
-                        {{-- Customer Name --}}
                         <div class="col-md-4">
                             <label for="nama_pelanggan" class="form-label fw-bold">Nama Pelanggan <small class="text-muted">(Opsional)</small>:</label>
                             <input type="text" name="nama_pelanggan" id="nama_pelanggan" class="form-control form-control-lg @error('nama_pelanggan') is-invalid @enderror" value="{{ old('nama_pelanggan') }}" placeholder="Cth: Budi (Walk-in)">
@@ -278,10 +275,16 @@
                             @enderror
                         </div>
                     </div>
-                    {{-- Selected Table Info --}}
+                    
                     <div id="selectedTableInfo" class="mb-3 alert alert-info py-2" style="display: none;">
-                        Meja: - | Area: - | Status: -
+                        <i class="bi bi-info-circle me-2"></i>
+                        Kapasitas meja terpilih (<span id="selectedTableCapacity">0</span>) kurang dari jumlah tamu.
+                        Sistem akan otomatis mencari meja tambahan jika tersedia.
                     </div>
+
+                      
+
+                
 
 
                     {{-- Search Bar --}}
@@ -409,9 +412,7 @@
 </form>
     {{-- END OF ORDER FORM --}}
 
-    {{-- Tambahkan elemen input hidden untuk menyimpan URL route pembayaran --}}
     <input type="hidden" id="processPaymentRoute" value="{{ route('pelayan.order.pay', ['reservasi_id' => ':reservasiId']) }}">
-    {{-- Tambahkan elemen input hidden untuk menyimpan URL route summary --}}
     <input type="hidden" id="orderSummaryRoute" value="{{ route('pelayan.order.summary', ['reservasi_id' => ':reservasiId']) }}">
 
 
@@ -497,6 +498,130 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to show table combination notification
+    function showTableCombinationNotification(tables) {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show';
+        notification.innerHTML = `
+            <strong><i class="bi bi-info-circle me-2"></i>Meja Digabungkan:</strong>
+            <ul class="mb-1">
+                ${tables.map(t => `<li>Meja ${t.nomor_meja} (Kapasitas: ${t.kapasitas})</li>`).join('')}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.querySelector('.content-wrapper').prepend(notification);
+    }
+
+    // Handle table selection and guest count validation
+    document.getElementById('jumlah_tamu').addEventListener('change', function() {
+        const jumlahTamu = parseInt(this.value);
+        const mejaSelect = document.getElementById('meja_id');
+        const selectedOption = mejaSelect.options[mejaSelect.selectedIndex];
+        const infoDiv = document.getElementById('selectedTableInfo');
+        
+        if (selectedOption && selectedOption.value) {
+            const tableCapacity = parseInt(selectedOption.dataset.kapasitas);
+            
+            if (jumlahTamu > tableCapacity) {
+                document.getElementById('selectedTableCapacity').textContent = tableCapacity;
+                infoDiv.style.display = 'block';
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+    });
+
+    // Handle form submission
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const items = [];
+        
+        // Collect order items
+        document.querySelectorAll('.cart-item').forEach(item => {
+            items.push({
+                menu_id: item.dataset.menuId,
+                quantity: parseInt(item.querySelector('.quantity-input').value),
+                notes: item.querySelector('.item-notes-input')?.value || null
+            });
+        });
+        
+        formData.delete('items');
+        formData.append('items', JSON.stringify(items));
+        
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // If tables were combined
+                if (data.combined_tables && data.combined_tables.length > 1) {
+                    // Get table info from select options
+                    const tablesInfo = data.combined_tables.map(id => {
+                        const option = document.querySelector(`#meja_id option[value="${id}"]`);
+                        return {
+                            nomor_meja: option.text.split('(')[0].trim(),
+                            kapasitas: parseInt(option.dataset.kapasitas)
+                        };
+                    });
+                    
+                    showTableCombinationNotification(tablesInfo);
+                }
+                
+                // Proceed to payment modal
+                const paymentModal = document.getElementById('paymentModal');
+                paymentModal.dataset.reservasiId = data.reservasi_id;
+                document.getElementById('modalKodeOrder').textContent = data.kode_reservasi;
+                document.getElementById('modalTotalBill').textContent = 'Rp ' + formatRupiah(data.total_bill.toString());
+                
+                const modal = new bootstrap.Modal(paymentModal);
+                modal.show();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat memproses pesanan');
+        });
+    });
+
+    // Format Rupiah helper function
+    function formatRupiah(angka) {
+        return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function renderHiddenInputs(cartItems) {
+    const container = document.getElementById('hiddenInputs');
+    container.innerHTML = ''; // kosongkan terlebih dahulu
+    cartItems.forEach((item, index) => {
+        const menuInput = document.createElement('input');
+        menuInput.type = 'hidden';
+        menuInput.name = `items[${index}][menu_id]`;
+        menuInput.value = item.id;
+        container.appendChild(menuInput);
+
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'hidden';
+        qtyInput.name = `items[${index}][quantity]`;
+        qtyInput.value = item.quantity;
+        container.appendChild(qtyInput);
+    });
+
+});
+</script>
+@endpush
 
 @push('scripts')
 {{--

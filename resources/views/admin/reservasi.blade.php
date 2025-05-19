@@ -4,7 +4,6 @@
   <div class="p-6">
     <h3 class="text-2xl font-semibold mb-4">Reservation</h3>
 
-    {{-- Filter waktu --}}
     @php
       $currentFilter = request('filter');
       $baseUrl = route('admin.reservasi');
@@ -30,7 +29,6 @@
       </a>
     </div>
 
-    {{-- Search dan Export --}}
     <div class="flex justify-between mb-4">
       <form method="GET" class="flex gap-2 w-full">
         <input type="text" name="search" placeholder="Search by name or code"
@@ -46,7 +44,6 @@
       </form>
     </div>
 
-    {{-- Tabel Data Reservasi --}}
     @if($reservasis->count() > 0)
       <div class="overflow-auto">
         <table class="min-w-full border">
@@ -64,7 +61,7 @@
             @foreach ($reservasis as $r)
               <tr class="border-t">
                 <td class="p-2">{{ $r->kode_reservasi }}</td>
-                <td class="p-2">{{ optional($r->pengguna)->nama ?? '—' }}</td>
+                <td class="p-2">{{ $r->nama_pelanggan ?? '—' }}</td>
                 <td class="p-2">{{ $r->catatan ?? '-' }}</td>
                 <td class="p-2">{{ \Carbon\Carbon::parse($r->waktu_kedatangan)->format('d M Y H:i') }}</td>
                 <td class="p-2">{{ optional($r->meja)->nomor_meja ?? '-' }}</td>

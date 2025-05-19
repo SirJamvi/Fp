@@ -11,16 +11,40 @@ use App\Models\Menu;
 use App\Http\Controllers\Pelayan\PelayanController;
 use App\Http\Controllers\Pelayan\PelayanMejaController;
 use App\Http\Controllers\Koki\KokiController;
+use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\TransaksiController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
 
 Route::get('/', function () {
     $menus = Menu::where('is_available', true)->get();
     return view('welcome', compact('menus'));
 });
 
-// Authentication
+// Authentication Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/bayar', [\App\Http\Controllers\TransaksiController::class, 'bayar']);
+
+
+// Public Routes (tanpa auth)
+Route::get('/user/bukti-pembayaran/{kodeReservasi}', [UserController::class, 'buktiPembayaran'])
+    ->name('user.bukti.pembayaran');
+
+// Debug Routes (bisa dihapus di production)
+Route::get('/debug/scanqr', [PelayanController::class, 'scanQr']);
+Route::get('/debug/scanqr/proses/{kode}', [PelayanController::class, 'prosesScanQr']);
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
@@ -43,6 +67,11 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::get('/reservasi/{id}/detail', [PelayanController::class, 'detailReservasi'])->name('reservasi.detail');
     Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
     Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggleStatus'])->name('meja.toggle');
+
+    // Scan QR Code
+    Route::get('/scanqr', [PelayanController::class, 'scanQr'])->name('scanqr');
+    Route::get('/scanqr/proses/{kodeReservasi}', [PelayanController::class, 'prosesScanQr'])
+        ->name('scanqr.proses');
 });
 
 // Koki Routes
