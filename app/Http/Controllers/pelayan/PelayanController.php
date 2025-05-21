@@ -49,9 +49,9 @@ class PelayanController extends Controller
     }
 
     // Method storeOrder creates the reservation and initial orders
-    public function storeOrder(Request $request)
+   public function storeOrder(Request $request)
 {
-    // Validate request data
+    // Validasi input form
     $request->validate([
         'meja_id' => 'required|exists:meja,id',
         'nama_pelanggan' => 'nullable|string|max:255',
@@ -63,53 +63,73 @@ class PelayanController extends Controller
     ]);
 
     DB::beginTransaction();
+
     try {
         $mejaUtama = Meja::findOrFail($request->meja_id);
         $pelayan = Auth::user();
         $jumlahTamu = $request->jumlah_tamu;
-        $combinedTables = [$mejaUtama->id]; // Mulai dengan meja utama
 
-        // Check if the selected table is actually available before creating order
+        // Pastikan meja utama tersedia
         if ($mejaUtama->status !== 'tersedia') {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => "Meja nomor {$mejaUtama->nomor_meja} sedang tidak tersedia."], 400);
+            return response()->json([
+                'success' => false,
+                'message' => "Meja nomor {$mejaUtama->nomor_meja} sedang tidak tersedia."
+            ], 400);
         }
 
-        // Cek jika kapasitas meja utama tidak cukup
-        if ($mejaUtama->kapasitas < $jumlahTamu) {
-        $sisaTamu = $jumlahTamu - $mejaUtama->kapasitas;
+        $combinedTables = [$mejaUtama->id];
+        $totalCapacity = $mejaUtama->kapasitas;
 
-        $mejaTambahan = Meja::where('status', 'tersedia')
-            ->where('id', '!=', $mejaUtama->id)
-            ->where('area', $mejaUtama->area)
-            ->where('kapasitas', '>=', $sisaTamu)
-            ->orderBy('kapasitas', 'a sc')
-            ->first();
+        // Jika kapasitas meja utama kurang dari jumlah tamu,
+        // cari meja tambahan untuk menutupi kekurangan kapasitas.
+        if ($totalCapacity < $jumlahTamu) {
+            $mejaTambahanList = Meja::where('status', 'tersedia')
+                ->where('id', '!=', $mejaUtama->id)
+                ->where('area', $mejaUtama->area)
+                ->orderBy('kapasitas', 'asc')
+                ->get();
 
-        if (!$mejaTambahan) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Tidak ada meja tambahan yang tersedia untuk menggabungkan.'], 400);
+            foreach ($mejaTambahanList as $mejaTambahan) {
+                $combinedTables[] = $mejaTambahan->id;
+                $totalCapacity += $mejaTambahan->kapasitas;
+
+                if ($totalCapacity >= $jumlahTamu) {
+                    break; // kapasitas sudah cukup
+                }
+            }
+
+            // Jika kapasitas gabungan masih kurang, batalkan transaksi
+            if ($totalCapacity < $jumlahTamu) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada kombinasi meja yang tersedia untuk menampung jumlah tamu.'
+                ], 400);
+            }
         }
+        // Jika kapasitas meja utama sudah cukup (jumlahTamu <= kapasitas meja),
+        // tidak perlu cari tambahan meja dan langsung pakai meja utama saja.
 
-        $combinedTables[] = $mejaTambahan->id;
-        }
-
-
-        // Generate a unique reservation code
+        // Generate kode reservasi unik
         $kodeReservasi = 'RES-' . Carbon::now()->format('YmdHis') . Str::random(6);
         while (Reservasi::where('kode_reservasi', $kodeReservasi)->exists()) {
             $kodeReservasi = 'RES-' . Carbon::now()->format('YmdHis') . Str::random(6);
         }
 
-        // Calculate subtotal
+        // Hitung subtotal berdasarkan menu dan quantity
         $subtotal = 0;
         $orderItemsData = [];
         foreach ($request->items as $itemData) {
             $menu = Menu::findOrFail($itemData['menu_id']);
             if (!$menu->is_available) {
                 DB::rollBack();
-                return response()->json(['success' => false, 'message' => "Menu '{$menu->name}' tidak tersedia saat ini."], 400);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Menu '{$menu->name}' tidak tersedia saat ini."
+                ], 400);
             }
+
             $itemSubtotal = $menu->price * $itemData['quantity'];
             $subtotal += $itemSubtotal;
 
@@ -122,15 +142,15 @@ class PelayanController extends Controller
             ];
         }
 
-        $serviceCharge = 0;
-        $tax = 0;
-        $finalTotalBill = $subtotal;
+        $serviceCharge = 0; // Jika ada perhitungan service charge, tambahkan di sini
+        $tax = 0;           // Jika ada perhitungan pajak, tambahkan di sini
+        $finalTotalBill = $subtotal + $serviceCharge + $tax;
 
-        // Create the Reservation record
+        // Simpan data reservasi
         $reservasi = Reservasi::create([
             'kode_reservasi' => $kodeReservasi,
-            'meja_id' => $mejaUtama->id, // Simpan meja utama sebagai meja_id
-            'combined_tables' => json_encode($combinedTables), // Simpan semua meja yang digabung
+            'meja_id' => $mejaUtama->id,
+            'combined_tables' => json_encode($combinedTables),
             'user_id' => null,
             'staff_id' => $pelayan->id,
             'nama_pelanggan' => $request->nama_pelanggan ?? 'Walk-in Customer',
@@ -145,7 +165,7 @@ class PelayanController extends Controller
             'tax' => $tax,
         ]);
 
-        // Create Order records
+        // Simpan data order item
         foreach ($orderItemsData as $itemData) {
             Order::create([
                 'reservasi_id' => $reservasi->id,
@@ -159,7 +179,7 @@ class PelayanController extends Controller
             ]);
         }
 
-        // Update status semua meja yang digabungkan
+        // Update status semua meja gabungan jadi 'terisi'
         foreach ($combinedTables as $mejaId) {
             $meja = Meja::find($mejaId);
             if ($meja && $meja->status == 'tersedia') {
@@ -177,15 +197,19 @@ class PelayanController extends Controller
             'reservasi_id' => $reservasi->id,
             'total_bill' => $reservasi->total_bill,
             'kode_reservasi' => $reservasi->kode_reservasi,
-            'combined_tables' => $combinedTables // Kirim info meja yang digabungkan
+            'combined_tables' => $combinedTables,
         ]);
 
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error creating order during AJAX store: ' . $e->getMessage() . ' Stack trace: ' . $e->getTraceAsString());
-        return response()->json(['success' => false, 'message' => 'Gagal menyimpan pesanan: ' . $e->getMessage()], 500);
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menyimpan pesanan: ' . $e->getMessage()
+        ], 500);
     }
 }
+
 
     // Method to process payment via AJAX
     public function processPayment(Request $request, $reservasi_id)
@@ -385,58 +409,66 @@ class PelayanController extends Controller
 
     // Method showOrderSummary displays the summary view
     public function showOrderSummary($reservasi_id)
-    {
-        try {
-            $reservasi = Reservasi::with(['meja', 'orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
-            
-            // Get all combined tables
-            $combinedTables = [];
-            if ($reservasi->combined_tables) {
-                $combinedTables = Meja::whereIn('id', $reservasi->combined_tables)
+{
+    try {
+        $reservasi = Reservasi::with(['meja', 'orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
+
+        // Tangani meja gabungan
+        $combinedTables = [];
+        if ($reservasi->combined_tables) {
+            $combinedIds = is_string($reservasi->combined_tables)
+                ? json_decode($reservasi->combined_tables, true)
+                : $reservasi->combined_tables;
+
+            if (is_array($combinedIds)) {
+                $combinedTables = Meja::whereIn('id', $combinedIds)
                     ->orderBy('nomor_meja')
-                    ->get();
+                    ->get()
+                    ->toArray();
             }
-
-            $orderSummary = [
-                'reservasi_id' => $reservasi->id,
-                'kode_reservasi' => $reservasi->kode_reservasi,
-                'nomor_meja' => $reservasi->meja->nomor_meja ?? 'N/A',
-                'combined_tables' => $combinedTables,
-                'area_meja' => $reservasi->meja->area ?? 'N/A',
-                'nama_pelanggan' => $reservasi->nama_pelanggan,
-                'nama_pelayan' => $reservasi->staffYangMembuat->name ?? (Auth::check() ? Auth::user()->name : 'N/A'),
-                'waktu_pesan' => $reservasi->created_at,
-                'items' => [],
-                'total_keseluruhan' => $reservasi->total_bill,
-                'subtotal' => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'),
-                'service_charge' => $reservasi->service_charge ?? 0,
-                'tax' => $reservasi->tax ?? 0,
-                'payment_method' => $reservasi->payment_method ?? 'N/A',
-                'payment_status' => $reservasi->status,
-                'waktu_pembayaran' => $reservasi->waktu_selesai,
-            ];
-
-            foreach ($reservasi->orders as $order) {
-                $orderSummary['items'][] = [
-                    'nama_menu' => $order->menu->name ?? 'N/A',
-                    'quantity' => $order->quantity,
-                    'harga_satuan' => $order->price_at_order,
-                    'subtotal' => $order->total_price,
-                    'catatan' => $order->notes,
-                    'status' => $order->status,
-                ];
-            }
-
-            return view('pelayan.summary', [
-                'title' => 'Ringkasan Pesanan #' . $reservasi->kode_reservasi,
-                'orderSummary' => $orderSummary,
-                'reservasi' => $reservasi
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error showing order summary: " . $e->getMessage());
-            return redirect()->route('pelayan.dashboard')->with('error', 'Gagal menampilkan ringkasan pesanan.');
         }
+
+        $orderSummary = [
+            'reservasi_id' => $reservasi->id,
+            'kode_reservasi' => $reservasi->kode_reservasi,
+            'nomor_meja' => $reservasi->meja->nomor_meja ?? 'N/A',
+            'combined_tables' => $combinedTables,
+            'area_meja' => $reservasi->meja->area ?? 'N/A',
+            'nama_pelanggan' => $reservasi->nama_pelanggan,
+            'nama_pelayan' => $reservasi->staffYangMembuat->name ?? (Auth::check() ? Auth::user()->name : 'N/A'),
+            'waktu_pesan' => $reservasi->created_at,
+            'items' => [],
+            'total_keseluruhan' => $reservasi->total_bill,
+            'subtotal' => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'),
+            'service_charge' => $reservasi->service_charge ?? 0,
+            'tax' => $reservasi->tax ?? 0,
+            'payment_method' => $reservasi->payment_method ?? 'N/A',
+            'payment_status' => $reservasi->status,
+            'waktu_pembayaran' => $reservasi->waktu_selesai,
+        ];
+
+        foreach ($reservasi->orders as $order) {
+            $orderSummary['items'][] = [
+                'nama_menu' => $order->menu->name ?? 'N/A',
+                'quantity' => $order->quantity,
+                'harga_satuan' => $order->price_at_order,
+                'subtotal' => $order->total_price,
+                'catatan' => $order->notes,
+                'status' => $order->status,
+            ];
+        }
+
+        return view('pelayan.summary', [
+            'title' => 'Ringkasan Pesanan #' . $reservasi->kode_reservasi,
+            'orderSummary' => $orderSummary,
+            'reservasi' => $reservasi
+        ]);
+    } catch (\Exception $e) {
+        Log::error("Error showing order summary: " . $e->getMessage());
+        return redirect()->route('pelayan.dashboard')->with('error', 'Gagal menampilkan ringkasan pesanan.');
     }
+}
+
 
 
     // Method reservasi (list of reservations)
@@ -532,52 +564,37 @@ class PelayanController extends Controller
 
  public function prosesScanQr($kodeReservasi)
 {
-    // Bersihkan kode reservasi dari URL jika ada
-    $baseUrl = url('/pelayan/scanqr/proses/');
-    if (strpos($kodeReservasi, $baseUrl) !== false) {
-        $kodeReservasi = str_replace($baseUrl, '', $kodeReservasi);
-    }
-    
     $kodeReservasi = trim($kodeReservasi);
 
-    // Proses reservasi...
     $reservasi = Reservasi::where('kode_reservasi', $kodeReservasi)->first();
 
     if (!$reservasi) {
-        return redirect()->route('pelayan.scanqr')->with('error', 'Reservasi tidak ditemukan');
+        return redirect()->route('pelayan.scanqr')->with('error', 'Reservasi tidak ditemukan.');
     }
 
-    // Update status reservasi
-    $reservasi->update([
-        'status' => 'selesai',
-        'waktu_kedatangan' => now()
-    ]);
+    // Cek jika sudah pernah hadir
+    if ($reservasi->kehadiran_status === 'hadir') {
+        return redirect()->route('pelayan.reservasi')->with('error', 'Kehadiran sudah dikonfirmasi sebelumnya.');
+    }
 
-    return redirect()->route('pelayan.reservasi')->with('success', 'Reservasi berhasil dikonfirmasi');
+    // Update hanya kehadiran, tanpa mengubah status kalau sudah paid/selesai
+    $updateData = [
+        'kehadiran_status' => 'hadir',
+        'waktu_kedatangan' => now(),
+    ];
+
+    // Kalau status masih dipesan, ubah jadi active_order
+    if ($reservasi->status === 'dipesan') {
+        $updateData['status'] = 'active_order';
+    }
+
+    $reservasi->update($updateData);
+
+    return redirect()->route('pelayan.reservasi')->with('success', 'Kehadiran untuk reservasi #' . $reservasi->kode_reservasi . ' berhasil dikonfirmasi.');
 }
 
-    // Method detailReservasi to show details of an existing reservation
-    public function detailReservasi($id)
-    {
-        try {
-            // Use 'staffYangMembuat' relation if staff_id is foreign key to pengguna/users
-            $reservasi = Reservasi::with(['pengguna', 'meja', 'orders.menu', 'staffYangMembuat'])->findOrFail($id);
-            // Use total_bill which now includes fees
-            $totalHarga = $reservasi->total_bill;
 
-            return view('pelayan.reservasi_detail', [
-                'title' => 'Detail Reservasi #' . $reservasi->kode_reservasi, // Use reservation code in title
-                'reservasi' => $reservasi,
-                'totalHarga' => $totalHarga,
-                'subtotal' => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'), // Pass subtotal
-                'service_charge' => $reservasi->service_charge ?? 0, // Pass service charge
-                'tax' => $reservasi->tax ?? 0, // Pass tax
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error showing reservation detail: " . $e->getMessage());
-            return redirect()->route('pelayan.reservasi')->with('error', 'Gagal menampilkan detail reservasi.');
-        }
-    }
+
 
     // Method to manually mark a reservation as completed (e.g., after table is cleared)
     public function completeReservation($reservasi_id)

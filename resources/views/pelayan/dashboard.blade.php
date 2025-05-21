@@ -282,11 +282,6 @@
                         Sistem akan otomatis mencari meja tambahan jika tersedia.
                     </div>
 
-                      
-
-                
-
-
                     {{-- Search Bar --}}
                     <div class="search-bar input-group input-group-lg mb-3">
                         <span class="input-group-text" id="basic-addon1"><i class="bi bi-search"></i></span>
@@ -407,6 +402,8 @@
             <div id="hiddenInputs">
                 {{-- Hidden inputs for cart items will be generated here by JavaScript --}}
             </div>
+
+
         </div>
     </div>
 </form>
@@ -446,7 +443,7 @@
                     {{-- Cash Payment Form Section --}}
                     <div id="cashPaymentForm" style="display: none;">
                         <div class="form-group mb-3">
-                            <label for="uangDiterima" class="form-label">Uang yang Diterima:</label>
+                            <label for="uangDiterima" class="form-label">Masukan Uang Di terima:</label>
                             <input type="number" class="form-control form-control-lg" id="uangDiterima" placeholder="Masukkan nominal uang">
                         </div>
                         <div class="form-group mb-3">
@@ -496,132 +493,119 @@
         </div>
     </div>
 
+@push('scripts')
+<script src="{{ asset('js/order-payment.js') }}"></script>
+@endpush
+
+
 </div>
 @endsection
 
+
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Function to show table combination notification
-    function showTableCombinationNotification(tables) {
-        const notification = document.createElement('div');
-        notification.className = 'alert alert-info alert-dismissible fade show';
-        notification.innerHTML = `
-            <strong><i class="bi bi-info-circle me-2"></i>Meja Digabungkan:</strong>
-            <ul class="mb-1">
-                ${tables.map(t => `<li>Meja ${t.nomor_meja} (Kapasitas: ${t.kapasitas})</li>`).join('')}
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.querySelector('.content-wrapper').prepend(notification);
+document.addEventListener('DOMContentLoaded', function () {
+    const cart = [];
+    const cartItemsContainer = document.getElementById('cartItems');
+    const hiddenInputsContainer = document.getElementById('hiddenInputs');
+    const totalItemsSpan = document.getElementById('totalItems');
+    const grandTotalSpan = document.getElementById('grandTotal');
+    const submitOrderBtn = document.getElementById('submitOrderBtn');
+    const emptyCartMessage = document.getElementById('emptyCartMessage');
+
+    function formatRupiah(number) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(number);
     }
 
-    // Handle table selection and guest count validation
-    document.getElementById('jumlah_tamu').addEventListener('change', function() {
-        const jumlahTamu = parseInt(this.value);
-        const mejaSelect = document.getElementById('meja_id');
-        const selectedOption = mejaSelect.options[mejaSelect.selectedIndex];
-        const infoDiv = document.getElementById('selectedTableInfo');
-        
-        if (selectedOption && selectedOption.value) {
-            const tableCapacity = parseInt(selectedOption.dataset.kapasitas);
-            
-            if (jumlahTamu > tableCapacity) {
-                document.getElementById('selectedTableCapacity').textContent = tableCapacity;
-                infoDiv.style.display = 'block';
-            } else {
-                infoDiv.style.display = 'none';
-            }
+    function updateCartView() {
+        cartItemsContainer.innerHTML = '';
+        hiddenInputsContainer.innerHTML = '';
+
+        if (cart.length === 0) {
+            emptyCartMessage.style.display = 'block';
+            submitOrderBtn.disabled = true;
+            totalItemsSpan.textContent = '0';
+            grandTotalSpan.textContent = 'Rp 0';
+            return;
         }
-    });
 
-    // Handle form submission
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const items = [];
-        
-        // Collect order items
-        document.querySelectorAll('.cart-item').forEach(item => {
-            items.push({
-                menu_id: item.dataset.menuId,
-                quantity: parseInt(item.querySelector('.quantity-input').value),
-                notes: item.querySelector('.item-notes-input')?.value || null
-            });
-        });
-        
-        formData.delete('items');
-        formData.append('items', JSON.stringify(items));
-        
-        fetch(this.action, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // If tables were combined
-                if (data.combined_tables && data.combined_tables.length > 1) {
-                    // Get table info from select options
-                    const tablesInfo = data.combined_tables.map(id => {
-                        const option = document.querySelector(`#meja_id option[value="${id}"]`);
-                        return {
-                            nomor_meja: option.text.split('(')[0].trim(),
-                            kapasitas: parseInt(option.dataset.kapasitas)
-                        };
-                    });
-                    
-                    showTableCombinationNotification(tablesInfo);
-                }
-                
-                // Proceed to payment modal
-                const paymentModal = document.getElementById('paymentModal');
-                paymentModal.dataset.reservasiId = data.reservasi_id;
-                document.getElementById('modalKodeOrder').textContent = data.kode_reservasi;
-                document.getElementById('modalTotalBill').textContent = 'Rp ' + formatRupiah(data.total_bill.toString());
-                
-                const modal = new bootstrap.Modal(paymentModal);
-                modal.show();
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat memproses pesanan');
-        });
-    });
+        emptyCartMessage.style.display = 'none';
+        submitOrderBtn.disabled = false;
 
-    // Format Rupiah helper function
-    function formatRupiah(angka) {
-        return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        let totalItems = 0;
+        let grandTotal = 0;
+
+        cart.forEach((item, index) => {
+            // Display Cart Items
+            const itemRow = document.createElement('div');
+            itemRow.className = 'd-flex justify-content-between align-items-center mb-2';
+            itemRow.innerHTML = `
+                <div>
+                    <strong>${item.name}</strong><br>
+                    <small>Qty: ${item.quantity} x ${formatRupiah(item.price)}</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-item" data-id="${item.id}">&times;</button>
+            `;
+            cartItemsContainer.appendChild(itemRow);
+
+            // Create Hidden Inputs
+            hiddenInputsContainer.innerHTML += `
+                <input type="hidden" name="items[${index}][menu_id]" value="${item.id}">
+                <input type="hidden" name="items[${index}][quantity]" value="${item.quantity}">
+            `;
+
+            totalItems += item.quantity;
+            grandTotal += item.quantity * item.price;
+        });
+
+        totalItemsSpan.textContent = totalItems;
+        grandTotalSpan.textContent = formatRupiah(grandTotal);
     }
 
-    function renderHiddenInputs(cartItems) {
-    const container = document.getElementById('hiddenInputs');
-    container.innerHTML = ''; // kosongkan terlebih dahulu
-    cartItems.forEach((item, index) => {
-        const menuInput = document.createElement('input');
-        menuInput.type = 'hidden';
-        menuInput.name = `items[${index}][menu_id]`;
-        menuInput.value = item.id;
-        container.appendChild(menuInput);
+    function addToCart(item) {
+        const existing = cart.find(i => i.id === item.id);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart.push({ ...item, quantity: 1 });
+        }
+        updateCartView();
+    }
 
-        const qtyInput = document.createElement('input');
-        qtyInput.type = 'hidden';
-        qtyInput.name = `items[${index}][quantity]`;
-        qtyInput.value = item.quantity;
-        container.appendChild(qtyInput);
+    function removeFromCart(menuId) {
+        const index = cart.findIndex(i => i.id === menuId);
+        if (index !== -1) {
+            cart.splice(index, 1);
+        }
+        updateCartView();
+    }
+
+    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const item = {
+                id: parseInt(this.dataset.id),
+                name: this.dataset.name,
+                price: parseInt(this.dataset.price),
+                image: this.dataset.image
+            };
+            addToCart(item);
+        });
+    });
+
+    cartItemsContainer.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-item')) {
+            const id = parseInt(e.target.dataset.id);
+            removeFromCart(id);
+        }
     });
 
 });
 </script>
 @endpush
+
+
+
+
 
 @push('scripts')
 {{--

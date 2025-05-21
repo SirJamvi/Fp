@@ -51,11 +51,6 @@
                 <tr>
                     <td>{{ $item->kode_reservasi }}</td>
                     <td>
-                        @php
-                            $statusHadir = $item->status === 'selesai' ? 'Hadir' : 'Tidak Hadir';
-                            $warnaHadir = $item->status === 'selesai' ? 'success' : 'danger';
-                        @endphp
-                        <span class="text-{{ $warnaHadir }}">{{ $statusHadir }}</span>
                         @if($item->source === 'dine_in')
                             <span class="badge bg-info"><i class="bi bi-shop me-1"></i> Dine-in</span>
                         @elseif($item->source === 'online')
@@ -96,9 +91,19 @@
                                 default => 'secondary',
                             };
                             $kehadiranText = ucfirst($item->kehadiran_status ?? 'N/A');
+
+                            $scanBadge = '';
+                            if ($item->kehadiran_status === 'hadir') {
+                                $scanBadge = '<span class="badge bg-success ms-1">Sudah Scan</span>';
+                            } elseif ($item->kehadiran_status === 'belum_dikonfirmasi') {
+                                $scanBadge = '<span class="badge bg-info ms-1">Belum Scan</span>';
+                            }
                         @endphp
+
                         <span class="badge bg-{{ $kehadiranClass }}">{{ $kehadiranText }}</span>
+                        {!! $scanBadge !!}
                     </td>
+
                     <td>
                         @if($item->status === 'paid')
                             <span class="badge bg-success">Lunas ({{ ucfirst($item->payment_method ?? '-') }})</span>
@@ -125,3 +130,4 @@
     </div>
 </div>
 @endsection
+ 

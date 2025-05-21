@@ -25,7 +25,7 @@
     .info-grid strong { color: #495057; min-width: 120px; display: inline-block;}
     .items-table th { background-color: #f8f9fa; }
     .item-notes { font-size: 0.85em; color: #6c757d; padding-left: 1.5rem !important; }
-    .grand-total-value { font-size: 1.75rem; color: #198754; } /* Hijau Bootstrap */
+    .grand-total-value { font-size: 1.75rem; color: #198754; }
 </style>
 @endpush
 
@@ -36,58 +36,59 @@
             <h2><i class="bi bi-receipt-cutoff me-2"></i>{{ $title }}</h2>
         </div>
 
-        {{-- Check if orderSummary is set and not empty --}}
         @if(isset($orderSummary) && $orderSummary)
             <div class="info-grid mb-4">
-                {{-- Accessing keys directly from $orderSummary array --}}
-                <p><strong>ID Order:</strong> <span>#{{ $orderSummary['kode_reservasi'] ?? $orderSummary['reservasi_id'] ?? 'N/A' }}</span></p> {{-- Use kode_reservasi or reservasi_id --}}
+                <p><strong>ID Order:</strong> <span>#{{ $orderSummary['kode_reservasi'] ?? $orderSummary['reservasi_id'] ?? 'N/A' }}</span></p>
                 <p><strong>No. Meja:</strong> <span>{{ $orderSummary['nomor_meja'] ?? 'N/A' }} ({{ $orderSummary['area_meja'] ?? 'N/A' }})</span></p>
                 <p><strong>Pelanggan:</strong> <span>{{ $orderSummary['nama_pelanggan'] ?? 'N/A' }}</span></p>
                 <p><strong>Pelayan:</strong> <span>{{ $orderSummary['nama_pelayan'] ?? 'N/A' }}</span></p>
                 <p><strong>Waktu Pesan:</strong> <span>{{ isset($orderSummary['waktu_pesan']) ? \Carbon\Carbon::parse($orderSummary['waktu_pesan'])->translatedFormat('l, d M Y H:i') : 'N/A' }}</span></p>
             </div>
 
-            {{-- Tambahkan setelah info-grid --}}
-            {{-- Accessing payment details directly from the $reservasi object --}}
-            {{-- Use $reservasi variable here, NOT $orderSummary['reservasi'] --}}
+           @php
+                $combinedTables = is_array($orderSummary['combined_tables'] ?? null)
+                    ? $orderSummary['combined_tables']
+                    : [];
+            @endphp
+
+
+
+            {{-- Tampilkan jika meja gabungan lebih dari 1 --}}
+            @if(is_array($combinedTables) && count($combinedTables) > 1)
+            <div class="alert alert-info mb-4">
+                <h5><i class="bi bi-table me-2"></i>Meja yang Digabungkan</h5>
+                <ul class="mb-0">
+                    @foreach($combinedTables as $meja)
+                        <li>Meja {{ $meja['nomor_meja'] }} (Kapasitas: {{ $meja['kapasitas'] }})</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+
             @if(isset($reservasi) && $reservasi->payment_method)
             <div class="payment-details mb-4">
-
-                {{-- Info Meja Gabungan --}}
-                @if(!empty($orderSummary['combined_tables']) && count($orderSummary['combined_tables']) > 1)
-                    <div class="alert alert-info mb-4">
-                        <h5><i class="bi bi-table me-2"></i>Meja yang Digabungkan</h5>
-                        <ul class="mb-0">
-                            @foreach($orderSummary['combined_tables'] as $meja)
-                                <li>Meja {{ $meja['nomor_meja'] }} (Kapasitas: {{ $meja['kapasitas'] }})</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
                 <h5 class="fw-semibold mb-3">Detail Pembayaran:</h5>
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>Metode Pembayaran:</strong><br>
                             <span class="badge bg-primary">
-                                {{ strtoupper($reservasi->payment_method) }} {{-- Corrected: Use $reservasi->payment_method --}}
+                                {{ strtoupper($reservasi->payment_method) }}
                             </span>
                         </p>
 
-                        @if($reservasi->payment_method === 'cash') {{-- Corrected: Use $reservasi->payment_method --}}
+                        @if($reservasi->payment_method === 'cash')
                         <p><strong>Jumlah Uang:</strong><br>
-                            Rp {{ number_format($reservasi->amount_paid, 0, ',', '.') }} {{-- Corrected: Use $reservasi->amount_paid --}}
+                            Rp {{ number_format($reservasi->amount_paid, 0, ',', '.') }}
                         </p>
-
                         <p><strong>Kembalian:</strong><br>
-                            Rp {{ number_format($reservasi->change_given, 0, ',', '.') }} {{-- Corrected: Use $reservasi->change_given --}}
+                            Rp {{ number_format($reservasi->change_given, 0, ',', '.') }}
                         </p>
                         @endif
                     </div>
 
                     <div class="col-md-6">
                         <p><strong>Status Pembayaran:</strong><br>
-                            @if($reservasi->status === 'paid') {{-- Corrected: Use $reservasi->status (assuming 'paid' is the status for lunas) --}}
+                            @if($reservasi->status === 'paid')
                             <span class="badge bg-success">LUNAS</span>
                             @else
                             <span class="badge bg-warning text-dark">PENDING</span>
@@ -95,7 +96,7 @@
                         </p>
 
                         <p><strong>Waktu Pembayaran:</strong><br>
-                             {{ isset($reservasi->waktu_selesai) ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('d M Y H:i') : 'N/A' }} {{-- Corrected: Use $reservasi->waktu_selesai --}}
+                             {{ isset($reservasi->waktu_selesai) ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('d M Y H:i') : 'N/A' }}
                         </p>
                     </div>
                 </div>
@@ -115,7 +116,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- Accessing items from $orderSummary array --}}
                         @forelse($orderSummary['items'] as $index => $item)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
@@ -151,7 +151,6 @@
                 <a href="{{ route('pelayan.reservasi') }}" class="btn btn-outline-secondary btn-lg">
                     <i class="bi bi-list-ul me-1"></i> Daftar Reservasi
                 </a>
-                {{-- <button onclick="window.print()" class="btn btn-info btn-lg ms-2"><i class="bi bi-printer-fill me-1"></i> Cetak Struk</button> --}}
             </div>
         @else
             <div class="alert alert-warning text-center">Tidak ada detail pesanan untuk ditampilkan.</div>
