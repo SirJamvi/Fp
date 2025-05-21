@@ -4,44 +4,56 @@
 
 @section('content')
 <div class="container mt-4">
-    <h2>Scan QR Code</h2>
+    <h2 class="text-center mb-4">Scan QR Code Kehadiran</h2>
 
-    <div id="reader" style="width: 100%; max-width: 500px;" class="mx-auto my-4"></div>
-    <div id="result" class="alert alert-info text-center d-none"></div>
+    <div id="reader" style="width: 100%; max-width: 500px;" class="mx-auto my-4 border rounded"></div>
+
+    <div id="scan-feedback" class="text-center d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Memproses...</span>
+        </div>
+        <p class="mt-2">Memproses kode reservasi, harap tunggu...</p>
+    </div>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success text-center mt-3">{{ session('success') }}</div>
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger text-center mt-3">{{ session('error') }}</div>
     @endif
 
     <div class="text-center mt-3">
-        <a href="{{ route('pelayan.reservasi') }}" class="btn btn-secondary">Kembali ke Reservasi</a>
+        <a href="{{ route('pelayan.reservasi') }}" class="btn btn-secondary">← Kembali ke Reservasi</a>
     </div>
 </div>
 
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
-    const resultElement = document.getElementById('result');
+    let hasScanned = false; // Untuk mencegah pemrosesan ganda
+    const feedback = document.getElementById('scan-feedback');
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Cek jika hasil scan sudah mengandung URL
-        if (decodedText.includes('http://') || decodedText.includes('https://')) {
-            // Jika sudah URL lengkap, langsung redirect
-            window.location.href = decodedText;
-        } else {
-            // Jika hanya kode, buat URL lengkap
-            window.location.href = `/pelayan/scanqr/proses/${decodedText}`;
-        }
-        
-        // Optional: Tampilkan alert
-        alert("Memproses QR Code: " + decodedText);
+        if (hasScanned) return; // Cegah multiple scan
+
+        hasScanned = true;
+        feedback.classList.remove('d-none');
+
+        // Bersihkan reader untuk hentikan kamera
+        html5QrCode.stop().then(() => {
+            // Redirect ke backend proses
+            if (decodedText.includes('http://') || decodedText.includes('https://')) {
+                window.location.href = decodedText;
+            } else {
+                window.location.href = `/pelayan/scanqr/proses/${decodedText}`;
+            }
+        }).catch(err => {
+            alert('Gagal menghentikan kamera: ' + err);
+        });
     }
 
     function onScanFailure(error) {
-        // Abaikan error
+        // Tidak perlu tampilkan error untuk setiap frame gagal scan
     }
 
     const html5QrCode = new Html5Qrcode("reader");
@@ -51,11 +63,11 @@
         if (devices && devices.length) {
             const cameraId = devices[0].id;
             html5QrCode.start(cameraId, config, onScanSuccess, onScanFailure);
+        } else {
+            alert("Tidak ada kamera ditemukan.");
         }
     }).catch(err => {
-        resultElement.innerHTML = "Kamera tidak ditemukan.";
-        resultElement.classList.remove('d-none');
-        resultElement.classList.add('alert-danger');
+        alert("Kamera tidak bisa diakses: " + err);
     });
 </script>
 @endsection

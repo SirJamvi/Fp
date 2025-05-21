@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Transaction;
 
 class Order extends Model
 {
@@ -11,43 +12,51 @@ class Order extends Model
 
     protected $table = 'orders';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'reservasi_id', // Tambahkan ini jika belum ada
+        'reservasi_id',
         'menu_id',
-        'user_id', // Bisa user pelanggan atau pelayan yang input
+        'user_id',
         'quantity',
-        'price_at_order', // Harga menu saat order
-        'total_price',    // Total harga untuk item ini (quantity * price_at_order)
-        'notes',          // Catatan untuk item
-        'status',         // Status pesanan (mis., pending, confirmed, preparing, ready, served, paid)
+        'price_at_order',
+        'total_price',
+        'notes',
+        'status',
     ];
 
     /**
-     * Relasi ke model Menu.
+     * Event yang akan dijalankan setelah order berhasil dibuat.
+     * Digunakan untuk menyimpan data ke tabel transactions secara otomatis.
      */
+    protected static function booted()
+    {
+        static::created(function ($order) {
+            // Pastikan relasi menu tersedia
+            $menu = $order->menu()->first();
+
+            Transaction::create([
+                'reservasi_id' => $order->reservasi_id,
+                'menu_id'      => $order->menu_id,
+                'item_name'    => $menu ? $menu->name : 'Unknown',
+                'quantity'     => $order->quantity,
+                'total_price'  => $order->total_price,
+                'status'       => 'belum dibayar',
+            ]);
+        });
+    }
+
+    // Relasi ke Menu
     public function menu()
     {
         return $this->belongsTo(Menu::class, 'menu_id', 'id');
     }
 
-    /**
-     * Relasi ke model User.
-     * Ini bisa merujuk ke pelanggan yang memesan atau pelayan yang menginput.
-     * Anda mungkin perlu menamai relasi ini lebih spesifik jika ada keduanya.
-     */
+    // Relasi ke User (pelanggan atau pelayan)
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    /**
-     * Relasi ke model Reservasi.
-     */
+    // Relasi ke Reservasi
     public function reservasi()
     {
         return $this->belongsTo(Reservasi::class);
