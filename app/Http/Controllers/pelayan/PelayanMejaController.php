@@ -23,7 +23,23 @@ class PelayanMejaController extends Controller
         return view('pelayan.meja', compact('meja', 'search'));
     }
 
-    public function toggleStatus($id)
+    public function setTersedia($id)
+    {
+        $meja = Meja::findOrFail($id);
+        
+        // Kalau statusnya terisi, ubah ke tersedia (kosongkan meja)
+        if ($meja->status === 'terisi') {
+            $meja->status = 'tersedia';
+            $meja->save();
+
+            return redirect()->route('pelayan.meja')->with('success', 'Status meja berhasil diubah menjadi tersedia.');
+        }
+
+        return redirect()->route('pelayan.meja')->with('error', 'Status meja tidak bisa diubah.');
+    }
+
+
+    public function toggle($id)
     {
         $meja = Meja::findOrFail($id);
         $meja->status = $meja->status === 'nonaktif' ? 'tersedia' : 'nonaktif';

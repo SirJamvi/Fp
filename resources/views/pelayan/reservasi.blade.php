@@ -116,6 +116,19 @@
                             <i class="bi bi-receipt"></i>
                         </a>
                     </td>
+
+                    <td>
+                    <a href="{{ route('pelayan.order.summary', $item->id) }}" class="btn btn-info btn-sm me-1" title="Lihat Ringkasan">
+                        <i class="bi bi-receipt"></i>
+                    </a>
+
+                    @if($item->status !== 'paid')
+                        <a href="{{ route('pelayan.reservasi.bayarSisa', $item->id) }}" class="btn btn-warning btn-sm" title="Bayar Sisa">
+                            <i class="bi bi-cash-coin"></i> Bayar Sisa
+                        </a>
+                    @endif
+                </td>
+
                 </tr>
             @empty
                 <tr>

@@ -562,6 +562,183 @@ class PelayanController extends Controller
         ]);
     }
 
+   public function bayarSisa($id)
+{
+    $reservasi = Reservasi::with('orders')->findOrFail($id);
+
+    if ($reservasi->status === 'paid') {
+        return redirect()->route('pelayan.reservasi')->with('info', 'Reservasi sudah dibayar lunas.');
+    }
+
+    $totalTagihan = $reservasi->orders->sum('total_price');
+    $totalDibayar = $totalTagihan - ($reservasi->sisa_tagihan_reservasi ?? $totalTagihan);
+    $sisa = $reservasi->sisa_tagihan_reservasi ?? $totalTagihan;
+
+    return view('pelayan.bayar-sisa', compact('reservasi', 'totalTagihan', 'totalDibayar', 'sisa'));
+}
+
+public function bayarSisaPost(Request $request, $id)
+{
+    $reservasi = Reservasi::with('orders')->findOrFail($id);
+
+    $request->validate([
+        'jumlah_dibayar' => 'required|numeric|min:1', // Minimal Rp 1
+        'metode' => 'required|string|in:tunai,qris',
+    ]);
+
+    $totalTagihan = $reservasi->orders->sum('total_price');
+    $sisa = $reservasi->sisa_tagihan_reservasi ?? $totalTagihan;
+
+    // Validasi: pastikan pembayaran tidak melebihi sisa tagihan
+    if ($request->jumlah_dibayar > $sisa) {
+        return back()->with('error', 'Jumlah dibayar melebihi sisa tagihan.');
+    }
+
+    // Jika metode pembayaran tunai
+    if ($request->metode === 'tunai') {
+        DB::beginTransaction();
+        try {
+            // Kurangi sisa tagihan
+            $reservasi->sisa_tagihan_reservasi = $sisa - $request->jumlah_dibayar;
+            $reservasi->payment_method = $request->metode;
+
+            if ($reservasi->sisa_tagihan_reservasi <= 0) {
+                $reservasi->status = 'paid';
+                $reservasi->sisa_tagihan_reservasi = 0;
+            }
+
+            $reservasi->save();
+            DB::commit();
+
+            return redirect()->route('pelayan.reservasi')->with('success', 'Pembayaran sisa berhasil disimpan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
+        }
+    }
+    // Jika metode pembayaran QRIS
+    elseif ($request->metode === 'qris') {
+        DB::beginTransaction();
+        try {
+            // Konversi jumlah dibayar ke integer (dalam rupiah)
+            $grossAmount = (int) round($request->jumlah_dibayar);
+            
+            // Validasi minimal pembayaran untuk Midtrans
+            if ($grossAmount < 1) {
+                throw new \Exception('Minimal pembayaran QRIS adalah Rp 1');
+            }
+
+            // Set Midtrans configuration
+            Config::$serverKey = config('services.midtrans.server_key');
+            Config::$isProduction = config('services.midtrans.is_production', false);
+            Config::$isSanitized = true;
+            Config::$is3ds = true;
+
+            // Prepare transaction details
+            $transaction_details = [
+                'order_id' => $reservasi->kode_reservasi . '-PART-' . time(),
+                'gross_amount' => $grossAmount,
+            ];
+
+            // Prepare item details (optional for partial payment)
+            $item_details = [
+                [
+                    'id' => 'partial-payment',
+                    'price' => $grossAmount,
+                    'quantity' => 1,
+                    'name' => 'Pembayaran Sebagian Reservasi #' . $reservasi->kode_reservasi
+                ]
+            ];
+
+            // Prepare customer details
+           $customer_details = [
+                'first_name' => $reservasi->nama_pelanggan ?? 'Pelanggan',
+                'last_name' => '',
+                'email' => $reservasi->pengguna->email ?? 'customer@restaurant.com', // Default email
+                'phone' => $reservasi->pengguna->phone ?? '081234567890' // Default phone
+            ];
+            // Assemble the payload
+            $params = [
+                'transaction_details' => $transaction_details,
+                'item_details' => $item_details,
+                'customer_details' => $customer_details,
+                'payment_type' => 'qris',
+                'callbacks' => [
+                    'finish' => route('pelayan.reservasi.bayarSisa.callback', $reservasi->id),
+                ],
+                'expiry' => [
+                    'unit' => 'hour',
+                    'duration' => 24
+                ]
+            ];
+
+            // Get Snap Token from Midtrans
+            $snapToken = Snap::getSnapToken($params);
+
+            // Save payment data
+            $reservasi->payment_method = 'qris';
+            $reservasi->payment_token = $snapToken;
+            $reservasi->payment_amount = $grossAmount;
+            $reservasi->payment_status = 'pending';
+            $reservasi->save();
+
+            DB::commit();
+
+            // Redirect to payment page
+            return redirect()->route('pelayan.reservasi.bayarSisa.qris', $reservasi->id);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Midtrans QRIS payment failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses pembayaran QRIS: ' . $e->getMessage());
+        }
+    }
+}
+
+public function showQrisPayment($id)
+{
+    $reservasi = Reservasi::findOrFail($id);
+    
+    return view('pelayan.qris-payment', [
+        'snapToken' => $reservasi->payment_token,
+        'reservasi' => $reservasi,
+        'jumlah_dibayar' => $reservasi->payment_amount
+    ]);
+}
+
+public function handleQrisCallback(Request $request, $id)
+{
+    $reservasi = Reservasi::findOrFail($id);
+    
+    // Verifikasi signature (penting untuk keamanan)
+    // Implementasikan sesuai dokumentasi Midtrans
+    
+    if ($request->transaction_status === 'settlement') {
+        DB::beginTransaction();
+        try {
+            $reservasi->sisa_tagihan_reservasi -= $reservasi->payment_amount;
+            
+            if ($reservasi->sisa_tagihan_reservasi <= 0) {
+                $reservasi->status = 'paid';
+                $reservasi->sisa_tagihan_reservasi = 0;
+            }
+            
+            $reservasi->payment_status = 'paid';
+            $reservasi->save();
+            
+            DB::commit();
+            
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+    
+    return response()->json(['status' => $request->transaction_status]);
+}
+
+
  public function prosesScanQr($kodeReservasi)
 {
     $kodeReservasi = trim($kodeReservasi);
