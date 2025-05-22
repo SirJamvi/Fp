@@ -24,13 +24,13 @@ class Order extends Model
     ];
 
     /**
-     * Event yang akan dijalankan setelah order berhasil dibuat.
-     * Digunakan untuk menyimpan data ke tabel transactions secara otomatis.
+     * Event that runs after an order is successfully created.
+     * Used to automatically save data to the transactions table.
      */
     protected static function booted()
     {
         static::created(function ($order) {
-            // Pastikan relasi menu tersedia
+            // Make sure the menu relationship is available
             $menu = $order->menu()->first();
 
             Transaction::create([
@@ -44,19 +44,19 @@ class Order extends Model
         });
     }
 
-    // Relasi ke Menu
+    // Relationship to Menu
     public function menu()
     {
         return $this->belongsTo(Menu::class, 'menu_id', 'id');
     }
 
-    // Relasi ke User (pelanggan atau pelayan)
+    // Relationship to User (customer or waiter)
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    // Relasi ke Reservasi
+    // Relationship to Reservasi
     public function reservasi()
     {
         return $this->belongsTo(Reservasi::class);

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\User\UserController;
-use App\Models\Menu;
+use App\Models\Menu; // Import model Menu
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AdminController;
@@ -18,7 +18,7 @@ use App\Http\Controllers\Pelayan\PelayanController;
 use App\Http\Controllers\Pelayan\PelayanMejaController;
 
 // Koki Controller
-use App\Http\Controllers\Koki\KokiController;
+use App\Http\Controllers\Koki\KokiController; // PASTIKAN INI ADA
 
 /*
 |--------------------------------------------------------------------------
@@ -35,9 +35,9 @@ Route::get('/', function () {
 // ✅ Authentication
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout'); // Rute logout
 
-// ✅ Transaksi
+// ✅ Transaksi (Periksa apakah ini masih relevan atau diganti oleh prosesPayment)
 Route::get('/bayar', [TransaksiController::class, 'bayar']);
 
 // ✅ Public User
@@ -47,6 +47,7 @@ Route::get('/user/bukti-pembayaran/{kodeReservasi}', [UserController::class, 'bu
 // ✅ Debug Tools (hapus di production)
 Route::get('/debug/scanqr', [PelayanController::class, 'scanQr']);
 Route::get('/debug/scanqr/proses/{kode}', [PelayanController::class, 'prosesScanQr']);
+
 
 // ✅ Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
@@ -66,6 +67,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])->name('laporan');
     Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])->name('info-cust');
 });
+
 
 // ✅ Pelayan Routes
 Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
@@ -87,9 +89,19 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::get('/scanqr/proses/{kodeReservasi}', [PelayanController::class, 'prosesScanQr'])->name('scanqr.proses');
 });
 
+
 // ✅ Koki Routes
 Route::prefix('koki')->name('koki.')->middleware(['auth', 'koki'])->group(function () {
     Route::get('/dashboard', [KokiController::class, 'index'])->name('dashboard');
-    Route::get('/daftar-pesanan', [KokiController::class, 'daftarPesanan'])->name('daftar-pesanan');
-    Route::get('/stok-bahan', [KokiController::class, 'stokBahan'])->name('stok-bahan');
+    
+    // API untuk mengambil pesanan
+    Route::get('/orders/get', [KokiController::class, 'getOrders'])->name('orders.get');
+    
+    // API untuk memperbarui status pesanan
+    // PERBAIKAN: Ubah parameter dari {order} menjadi {reservasi}
+    Route::post('/orders/{reservasi}/update-status', [KokiController::class, 'updateOrderStatus'])->name('orders.updateStatus');
+
+    // Rute lain yang sudah ada di KokiController (jika ada implementasinya)
+    // Route::get('/daftar-pesanan', [KokiController::class, 'daftar-pesanan'])->name('daftar-pesanan');
+    // Route::get('/stok-bahan', [KokiController::class, 'stok-bahan'])->name('stok-bahan');
 });

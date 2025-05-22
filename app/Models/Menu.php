@@ -2,19 +2,15 @@
 
 namespace App\Models;
 
-use App\Models\Order;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Menu extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    protected $table = 'menus';
+
     protected $fillable = [
         'name',
         'description',
@@ -25,22 +21,12 @@ class Menu extends Model
         'preparation_time',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'price' => 'decimal:2',
         'is_available' => 'boolean',
         'preparation_time' => 'integer',
     ];
 
-    /**
-     * Get the category options.
-     *
-     * @return array
-     */
     public static function getCategoryOptions(): array
     {
         return [
@@ -52,14 +38,16 @@ class Menu extends Model
         ];
     }
 
-    public function orders()
+    /**
+     * Get the full URL for the menu image
+     */
+    public function getImageUrlAttribute()
     {
-        return $this->hasMany(Order::class, 'menu_id', 'id');
+        if ($this->image) {
+            // Pastikan menggunakan asset() untuk URL publik
+            return asset('storage/' . $this->image);
+        }
+        // Gambar default jika tidak ada
+        return asset('assets/img/default-food.png');
     }
-
-    public function transactions()
-    {
-    return $this->hasMany(Transaksi::class, 'menu_id', 'id');
-    }
-
 }
