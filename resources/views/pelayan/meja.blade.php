@@ -30,7 +30,8 @@
                         <th>No. Table</th>
                         <th>Area</th>
                         <th>Capacity</th>
-                        <th>Status</th>
+                        <th>Status Meja</th>
+                        <th>Keterangan</th> <!-- Kolom keterangan baru -->
                     </tr>
                 </thead>
                 <tbody>
@@ -49,10 +50,28 @@
                                     </label>
                                 </form>
                             </td>
+                            <td>
+                                @switch($item->status)
+                                    @case('tersedia')
+                                        <span class="badge bg-success">Siap digunakan</span>
+                                        @break
+                                    @case('terisi')
+                                        <span class="badge bg-warning text-dark">Sedang digunakan</span>
+                                        @break
+                                    @case('dipesan')
+                                        <span class="badge bg-primary">Sudah dipesan</span>
+                                        @break
+                                    @case('nonaktif')
+                                        <span class="badge bg-secondary">Tidak aktif</span>
+                                        @break
+                                    @default
+                                        <span class="badge bg-light text-dark">Tidak diketahui</span>
+                                @endswitch
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center">Tidak ada data meja.</td>
+                            <td colspan="6" class="text-center">Tidak ada data meja.</td>
                         </tr>
                     @endforelse
                 </tbody>
