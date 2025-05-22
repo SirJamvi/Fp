@@ -28,7 +28,7 @@
                         <th>Area</th>
                         <th>Capacity</th>
                         <th>Status Meja</th>
-                        <th>Keterangan Meja</th>
+                        <th>Keterangan Meja</th> {{-- Menggunakan "Keterangan Meja" karena lebih deskriptif --}}
                     </tr>
                 </thead>
                 <tbody>
@@ -45,7 +45,6 @@
                                         <input type="checkbox" onchange="this.form.submit()" {{ $item->status !== 'nonaktif' ? 'checked' : '' }}>
                                         <span class="slider round"></span>
                                     </label>
-                                    
                                 </form>
                             </td>
                             <td>

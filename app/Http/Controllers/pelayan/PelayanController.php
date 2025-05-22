@@ -156,7 +156,7 @@ class PelayanController extends Controller
             'nama_pelanggan' => $request->nama_pelanggan ?? 'Walk-in Customer',
             'jumlah_tamu' => $jumlahTamu,
             'waktu_kedatangan' => now(),
-            'status' => 'active_order',
+            'status' => 'active_order', // Status reservasi
             'source' => 'dine_in',
             'kehadiran_status' => 'hadir',
             'total_bill' => $finalTotalBill,
@@ -170,12 +170,12 @@ class PelayanController extends Controller
             Order::create([
                 'reservasi_id' => $reservasi->id,
                 'menu_id' => $itemData['menu_id'],
-                'user_id' => $pelayan->id,
+                'user_id' => $pelayan->id, // Pelayan who added the item
                 'quantity' => $itemData['quantity'],
                 'price_at_order' => $itemData['price_at_order'],
                 'total_price' => $itemData['total_price'],
                 'notes' => $itemData['notes'],
-                'status' => 'pending',
+                'status' => 'pending', // Status awal item order untuk koki
             ]);
         }
 
@@ -254,20 +254,16 @@ class PelayanController extends Controller
                 $reservasi->payment_method = 'cash';
                 $reservasi->amount_paid = $amountPaid;
                 $reservasi->change_given = $changeGiven;
-                $reservasi->status = 'paid'; // Change status to paid
+                $reservasi->status = 'paid'; // Change reservation status to paid
                 $reservasi->waktu_selesai = now(); // Record completion time (if status is paid)
                 $reservasi->save();
 
-                // Update status of all related order items to 'served' or 'completed'
-                $reservasi->orders()->update(['status' => 'served']);
+                // *** HAPUS BARIS INI! ***
+                // *** Ini yang menyebabkan pesanan langsung hilang dari dashboard koki. ***
+                // $reservasi->orders()->update(['status' => 'served']);
 
-                // *** REMOVED: Do NOT set table status to 'tersedia' immediately after payment ***
-                // The table status should remain 'terisi' until manually changed later.
-                // $meja = $reservasi->meja;
-                // if ($meja) {
-                //     $meja->status = 'tersedia'; // Or 'cleaning'
-                //     $meja->save();
-                // }
+                // Status item order tetap 'pending' atau 'preparing'
+                // Koki yang akan mengubahnya menjadi 'completed' atau 'served' setelah selesai memasak.
 
 
             } elseif ($request->payment_method === 'qris') {
@@ -371,6 +367,9 @@ class PelayanController extends Controller
                 $reservasi->payment_method = 'qris';
                 $reservasi->status = 'pending_payment'; // Set status to pending payment
                 $reservasi->save();
+
+                // Status item order tetap 'pending' atau 'preparing'
+                // Koki yang akan mengubahnya menjadi 'completed' atau 'served' setelah selesai memasak.
 
                 // --- END MIDTRANS INTEGRATION FOR QRIS ---
             }
