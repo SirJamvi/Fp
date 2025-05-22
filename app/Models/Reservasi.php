@@ -25,6 +25,7 @@ class Reservasi extends Model
     'status',
     'catatan_khusus',
     'total_bill',
+    'payment_token',
     'payment_method',
     'amount_paid',
     'change_given',
