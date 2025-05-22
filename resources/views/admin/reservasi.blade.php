@@ -31,7 +31,7 @@
 
     <div class="flex justify-between mb-4">
       <form method="GET" class="flex gap-2 w-full">
-        <input type="text" name="search" placeholder="Search by name or code"
+        <input type="text" name="search" placeholder="Search by name or code" 
                value="{{ request('search') }}"
                class="border rounded px-3 py-2 w-1/3" />
 
@@ -43,6 +43,18 @@
         <button type="submit" class="border px-3 py-2 rounded bg-blue-500 text-white">Search</button>
       </form>
     </div>
+
+      <div class="flex gap-2 mt-2">
+  <a href="{{ route('admin.reservasi.export.excel', request()->all()) }}"
+     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Export Excel</a>
+
+  <a href="{{ route('admin.reservasi.export.pdf', request()->all()) }}"
+     class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Export PDF</a>
+
+  <a href="{{ route('admin.reservasi.export.word', request()->all()) }}"
+     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Export Word</a>
+</div>
+
 
     @if($reservasis->count() > 0)
       <div class="overflow-auto">
