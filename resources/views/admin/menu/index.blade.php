@@ -21,9 +21,9 @@
                         <th class="px-4 py-2">Image</th>
                         <th class="px-4 py-2">Name</th>
                         <th class="px-4 py-2">Category</th>
-                        <th class="px-4 py-2">Original Price</th> {{-- Ubah label --}}
-                        <th class="px-4 py-2">Discount (%)</th>     {{-- Tambah kolom diskon --}}
-                        <th class="px-4 py-2">Final Price</th>      {{-- Tambah kolom harga final --}}
+                        <th class="px-4 py-2">Original Price</th>
+                        <th class="px-4 py-2">Discount (%)</th>
+                        <th class="px-4 py-2">Final Price</th>
                         <th class="px-4 py-2">Status</th>
                         <th class="px-4 py-2">Prep Time</th>
                         <th class="px-4 py-2">Actions</th>
@@ -35,7 +35,7 @@
                             {{-- Image --}}
                             <td class="px-4 py-2">
                                 @if($menu->image)
-                                    <img src="{{ asset('storage/' . $menu->image) }}" class="h-12 w-12 rounded" alt="{{ $menu->name }}">
+                                    <img src="{{ asset('storage/' . $menu->image) }}" class="h-12 w-12 rounded object-cover" alt="{{ $menu->name }}">
                                 @else
                                     <div class="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
                                         <i class="fas fa-utensils text-gray-400"></i>
@@ -67,7 +67,7 @@
 
                             {{-- Discount Percentage --}}
                             <td class="px-4 py-2">
-                                @if($menu->discount_percentage > 0)
+                                @if($menu->discount_percentage && $menu->discount_percentage > 0)
                                     <span class="text-purple-600 font-semibold">{{ $menu->discount_percentage }}%</span>
                                 @else
                                     —
@@ -76,10 +76,12 @@
 
                             {{-- Final Price --}}
                             <td class="px-4 py-2">
-                                @if($menu->discount_percentage > 0)
+                                {{-- Cek apakah ada discounted_price dan apakah lebih kecil dari price asli --}}
+                                @if($menu->discounted_price && $menu->discounted_price < $menu->price)
                                     <span class="text-red-500 line-through mr-1">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
-                                    <span class="font-bold text-green-700">Rp {{ number_format($menu->final_price, 0, ',', '.') }}</span>
+                                    <span class="font-bold text-green-700">Rp {{ number_format($menu->discounted_price, 0, ',', '.') }}</span>
                                 @else
+                                    {{-- Jika tidak ada diskon atau discounted_price tidak valid, tampilkan harga asli --}}
                                     Rp {{ number_format($menu->price, 0, ',', '.') }}
                                 @endif
                             </td>
