@@ -4,7 +4,31 @@
 
 @push('styles')
 {{-- Custom styles for the dashboard --}}
-
+<style>
+    /* Styling untuk harga diskon */
+    .original-price {
+        text-decoration: line-through;
+        color: #888;
+        font-size: 0.8em;
+        margin-right: 5px;
+    }
+    .discounted-price {
+        color: #dc3545; /* Merah untuk harga diskon */
+        font-weight: bold;
+    }
+    .price-display {
+        display: flex;
+        align-items: baseline;
+        justify-content: flex-end; /* Memastikan harga rata kanan */
+        font-size: 1.1em;
+        margin-bottom: 0.5rem;
+    }
+    .menu-item-card .card-body .mt-auto {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end; /* Rata kanan pada elemen dalam mt-auto */
+    }
+</style>
 @endpush
 
 @section('content')
@@ -110,17 +134,24 @@
                                 @forelse($menusByCategory->flatten() as $menu)
                                 <div class="col-sm-6 col-md-4 col-lg-3 menu-item-col" data-category="{{ Str::slug($menu->category) }}" data-name="{{ strtolower($menu->name) }}">
                                     <div class="card menu-item-card h-100 d-flex flex-column">
-                                        <img src="{{ $menu->image ? asset('storage/' . $menu->image) : asset('assets/img/default-food.png') }}" class="card-img-top" alt="{{ $menu->name }}">
+                                        <img src="{{ $menu->image_url }}" class="card-img-top" alt="{{ $menu->name }}">
                                         <div class="card-body d-flex flex-column">
                                             <h6 class="card-title mb-1">{{ $menu->name }}</h6>
                                             <p class="card-text text-muted small flex-grow-1">{{ Str::limit($menu->description, 30) }}</p>
                                             <div class="mt-auto">
-                                                <p class="price mb-1">Rp {{ number_format($menu->price, 0, ',', '.') }}</p>
+                                                <div class="price-display">
+                                                    @if ($menu->discount_percentage > 0)
+                                                        <span class="original-price">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
+                                                        <span class="discounted-price">Rp {{ number_format($menu->final_price, 0, ',', '.') }}</span>
+                                                    @else
+                                                        <p class="price mb-0">Rp {{ number_format($menu->price, 0, ',', '.') }}</p>
+                                                    @endif
+                                                </div>
                                                 <button type="button" class="btn btn-primary btn-sm add-to-cart-btn w-100"
                                                         data-id="{{ $menu->id }}"
                                                         data-name="{{ $menu->name }}"
-                                                        data-price="{{ $menu->price }}"
-                                                        data-image="{{ $menu->image ? asset('storage/' . $menu->image) : asset('assets/img/default-food.png') }}">
+                                                        data-price="{{ $menu->final_price }}" {{-- Menggunakan final_price --}}
+                                                        data-image="{{ $menu->image_url }}">
                                                     <i class="bi bi-plus-lg me-1"></i> Tambah
                                                 </button>
                                             </div>
@@ -142,17 +173,24 @@
                                 @forelse($menus as $menu)
                                 <div class="col-sm-6 col-md-4 col-lg-3 menu-item-col" data-category="{{ Str::slug($category) }}" data-name="{{ strtolower($menu->name) }}">
                                     <div class="card menu-item-card h-100 d-flex flex-column">
-                                        <img src="{{ $menu->image ? asset('storage/' . $menu->image) : asset('assets/img/default-food.png') }}" class="card-img-top" alt="{{ $menu->name }}">
+                                        <img src="{{ $menu->image_url }}" class="card-img-top" alt="{{ $menu->name }}">
                                         <div class="card-body d-flex flex-column">
                                             <h6 class="card-title mb-1">{{ $menu->name }}</h6>
                                             <p class="card-text text-muted small flex-grow-1">{{ Str::limit($menu->description, 30) }}</p>
                                             <div class="mt-auto">
-                                                <p class="price mb-1">Rp {{ number_format($menu->price, 0, ',', '.') }}</p>
+                                                <div class="price-display">
+                                                    @if ($menu->discount_percentage > 0)
+                                                        <span class="original-price">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
+                                                        <span class="discounted-price">Rp {{ number_format($menu->final_price, 0, ',', '.') }}</span>
+                                                    @else
+                                                        <p class="price mb-0">Rp {{ number_format($menu->price, 0, ',', '.') }}</p>
+                                                    @endif
+                                                </div>
                                                 <button type="button" class="btn btn-primary btn-sm add-to-cart-btn w-100"
                                                         data-id="{{ $menu->id }}"
                                                         data-name="{{ $menu->name }}"
-                                                        data-price="{{ $menu->price }}"
-                                                        data-image="{{ $menu->image ? asset('storage/' . $menu->image) : asset('assets/img/default-food.png') }}">
+                                                        data-price="{{ $menu->final_price }}" {{-- Menggunakan final_price --}}
+                                                        data-image="{{ $menu->image_url }}">
                                                     <i class="bi bi-plus-lg me-1"></i> Tambah
                                                 </button>
                                             </div>
@@ -187,7 +225,7 @@
                         <span id="totalItems">0</span>
                     </div>
                     <div class="grand-total">
-                        <span>Total Harga (Estimasi):</span> {{-- Added "Estimasi" --}}
+                        <span>Total Harga (Estimasi):</span>
                         <span id="grandTotal">Rp 0</span>
                     </div>
                 </div>
@@ -218,15 +256,14 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="paymentModalLabel">Pilih Metode Pembayaran</h5>
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                     {{-- Display order summary info in modal header --}}
+                    {{-- Display order summary info in modal header --}}
                     <div class="mb-3 p-2 border rounded">
-                         <p class="mb-1">Kode Order: <strong id="modalKodeOrder">N/A</strong></p>
-                         {{-- REMOVED hardcoded "Rp " here. JavaScript will add it via formatRupiah --}}
-                         <h5 class="mb-0">Total Tagihan: <strong><span id="modalTotalBill">Rp 0</span></strong></h5> {{-- Removed "Rp " --}}
-                     </div>
+                        <p class="mb-1">Kode Order: <strong id="modalKodeOrder">N/A</strong></p>
+                        <h5 class="mb-0">Total Tagihan: <strong><span id="modalTotalBill">Rp 0</span></strong></h5>
+                    </div>
 
                     {{-- Payment Options Section --}}
                     <div id="paymentOptions">
@@ -234,7 +271,7 @@
                             <i class="bi bi-wallet2 me-2"></i> Tunai (Cash)
                         </button>
                         <button type="button" class="btn btn-info btn-block btn-lg" id="btnQris">
-                             <i class="bi bi-qr-code me-2"></i> Non-Tunai (QRIS/Midtrans)
+                            <i class="bi bi-qr-code me-2"></i> Non-Tunai (QRIS/Midtrans)
                         </button>
                     </div>
 
@@ -249,20 +286,20 @@
                             <p id="kembalianDisplay" class="form-control-static fs-4 fw-bold text-success">Rp 0</p>
                         </div>
                         <button type="button" class="btn btn-primary btn-block btn-lg mt-3" id="btnBayarCash" disabled>
-                             <i class="bi bi-cash me-2"></i> Bayar Tunai
+                            <i class="bi bi-cash me-2"></i> Bayar Tunai
                         </button>
-                         <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptions">Kembali</button>
+                        <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptions">Kembali</button>
                     </div>
 
                     {{-- QRIS Payment Info Section --}}
-                     <div id="qrisPaymentInfo" style="display: none;">
-                         <p class="text-center py-3"><i class="bi bi-info-circle me-2"></i> Anda memilih pembayaran Non-Tunai.</p>
-                         <p class="text-center text-muted small">Silakan lanjutkan proses di terminal pembayaran atau scan QR code (jika tersedia). Klik konfirmasi setelah pembayaran berhasil dilakukan.</p>
-                         <button type="button" class="btn btn-primary btn-block btn-lg mt-3" id="btnConfirmQris">
-                             <i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai
+                    <div id="qrisPaymentInfo" style="display: none;">
+                        <p class="text-center py-3"><i class="bi bi-info-circle me-2"></i> Anda memilih pembayaran Non-Tunai.</p>
+                        <p class="text-center text-muted small">Silakan lanjutkan proses di terminal pembayaran atau scan QR code (jika tersedia). Klik konfirmasi setelah pembayaran berhasil dilakukan.</p>
+                        <button type="button" class="btn btn-primary btn-block btn-lg mt-3" id="btnConfirmQris">
+                            <i class="bi bi-check-circle me-2"></i> Konfirmasi Pembayaran Non-Tunai
                         </button>
                         <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptionsQris">Kembali</button>
-                     </div>
+                    </div>
 
                     {{-- Loading Indicator --}}
                     <div id="loadingIndicator" class="text-center py-3" style="display: none;">
@@ -272,19 +309,19 @@
                         <p class="mt-2">Memproses...</p>
                     </div>
 
-                     {{-- Payment Status Messages --}}
-                     <div id="paymentSuccessMessage" class="alert alert-success mt-3" style="display: none;">
-                         Pembayaran Berhasil!
-                     </div>
-                     <div id="paymentErrorMessage" class="alert alert-danger mt-3" style="display: none;">
-                         Gagal memproses pembayaran.
-                     </div>
+                    {{-- Payment Status Messages --}}
+                    <div id="paymentSuccessMessage" class="alert alert-success mt-3" style="display: none;">
+                        Pembayaran Berhasil!
+                    </div>
+                    <div id="paymentErrorMessage" class="alert alert-danger mt-3" style="display: none;">
+                        Gagal memproses pembayaran.
+                    </div>
 
-                     {{-- Payment Success Actions (Hidden initially) --}}
-                     <div id="paymentSuccessActions" style="display: none;">
-                         <button type="button" class="btn btn-secondary" id="btnBackToDashboard">Kembali ke Dashboard</button>
-                         <button type="button" class="btn btn-primary" id="btnViewSummary">Lihat Ringkasan Pesanan</button>
-                     </div>
+                    {{-- Payment Success Actions (Hidden initially) --}}
+                    <div id="paymentSuccessActions" style="display: none;">
+                        <button type="button" class="btn btn-secondary" id="btnBackToDashboard">Kembali ke Dashboard</button>
+                        <button type="button" class="btn btn-primary" id="btnViewSummary">Lihat Ringkasan Pesanan</button>
+                    </div>
 
                 </div>
             </div>
@@ -298,126 +335,3 @@
 
 </div>
 @endsection
-
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const cart = [];
-    const cartItemsContainer = document.getElementById('cartItems');
-    const hiddenInputsContainer = document.getElementById('hiddenInputs');
-    const totalItemsSpan = document.getElementById('totalItems');
-    const grandTotalSpan = document.getElementById('grandTotal');
-    const submitOrderBtn = document.getElementById('submitOrderBtn');
-    const emptyCartMessage = document.getElementById('emptyCartMessage');
-
-    function formatRupiah(number) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(number);
-    }
-
-    function updateCartView() {
-        cartItemsContainer.innerHTML = '';
-        hiddenInputsContainer.innerHTML = '';
-
-        if (cart.length === 0) {
-            emptyCartMessage.style.display = 'block';
-            submitOrderBtn.disabled = true;
-            totalItemsSpan.textContent = '0';
-            grandTotalSpan.textContent = 'Rp 0';
-            return;
-        }
-
-        emptyCartMessage.style.display = 'none';
-        submitOrderBtn.disabled = false;
-
-        let totalItems = 0;
-        let grandTotal = 0;
-
-        cart.forEach((item, index) => {
-            // Display Cart Items
-            const itemRow = document.createElement('div');
-            itemRow.className = 'd-flex justify-content-between align-items-center mb-2';
-            itemRow.innerHTML = `
-                <div>
-                    <strong>${item.name}</strong><br>
-                    <small>Qty: ${item.quantity} x ${formatRupiah(item.price)}</small>
-                </div>
-                <button type="button" class="btn btn-sm btn-danger remove-item" data-id="${item.id}">&times;</button>
-            `;
-            cartItemsContainer.appendChild(itemRow);
-
-            // Create Hidden Inputs
-            hiddenInputsContainer.innerHTML += `
-                <input type="hidden" name="items[${index}][menu_id]" value="${item.id}">
-                <input type="hidden" name="items[${index}][quantity]" value="${item.quantity}">
-            `;
-
-            totalItems += item.quantity;
-            grandTotal += item.quantity * item.price;
-        });
-
-        totalItemsSpan.textContent = totalItems;
-        grandTotalSpan.textContent = formatRupiah(grandTotal);
-    }
-
-    function addToCart(item) {
-        const existing = cart.find(i => i.id === item.id);
-        if (existing) {
-            existing.quantity += 1;
-        } else {
-            cart.push({ ...item, quantity: 1 });
-        }
-        updateCartView();
-    }
-
-    function removeFromCart(menuId) {
-        const index = cart.findIndex(i => i.id === menuId);
-        if (index !== -1) {
-            cart.splice(index, 1);
-        }
-        updateCartView();
-    }
-
-    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const item = {
-                id: parseInt(this.dataset.id),
-                name: this.dataset.name,
-                price: parseInt(this.dataset.price),
-                image: this.dataset.image
-            };
-            addToCart(item);
-        });
-    });
-
-    cartItemsContainer.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-item')) {
-            const id = parseInt(e.target.dataset.id);
-            removeFromCart(id);
-        }
-    });
-
-});
-</script>
-@endpush
-
-
-
-
-
-@push('scripts')
-{{--
-    |--------------------------------------------------------------------------
-    | PENTING: Hapus pemuatan skrip Midtrans Snap dari sini!
-    |--------------------------------------------------------------------------
-    | Skrip Midtrans Snap seharusnya hanya dimuat sekali di file layout utama.
-    | Memuatnya di sini menyebabkan konflik dan error.
-    | Pemuatan sudah ada di layout/app.blade.php.
-    --}}
-{{-- Hapus baris berikut:
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
---}}
-
-{{-- The main app.js file loaded by @vite will import other refactored JS files --}}
-{{-- Make sure your layout file includes @vite(['resources/js/app.js']) --}}
-@endpush

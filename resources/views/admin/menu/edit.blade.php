@@ -42,7 +42,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="price" class="block text-sm font-medium text-gray-700">Price <span class="text-red-500">*</span></label>
+                    <label for="price" class="block text-sm font-medium text-gray-700">Original Price <span class="text-red-500">*</span></label>
                     <div class="flex items-center mt-1">
                         <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">Rp</span>
                         <input type="number" id="price" name="price" step="0.01" min="0" required
@@ -54,6 +54,31 @@
                     @enderror
                 </div>
 
+                <div>
+                    <label for="discount_percentage" class="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
+                    <div class="flex items-center mt-1">
+                        <input type="number" id="discount_percentage" name="discount_percentage" step="1" min="0" max="100"
+                            class="block w-full rounded-l-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 @error('discount_percentage') border-red-500 @enderror"
+                            value="{{ old('discount_percentage', $menu->discount_percentage) }}">
+                        <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">%</span>
+                    </div>
+                    @error('discount_percentage')
+                        <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="discounted_price_display" class="block text-sm font-medium text-gray-700">Discounted Price (Rp)</label>
+                    <div class="flex items-center mt-1">
+                        <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">Rp</span>
+                        <input type="text" id="discounted_price_display" readonly
+                            class="block w-full rounded-r-md border-gray-300 bg-gray-100 shadow-sm"
+                            value="{{ old('discounted_price', $menu->discounted_price ?? $menu->price) }}"> {{-- Init value with current discounted price or original price --}}
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">This price is calculated automatically.</p>
+                </div>
                 <div>
                     <label for="preparation_time" class="block text-sm font-medium text-gray-700">Preparation Time (minutes)</label>
                     <input type="number" id="preparation_time" name="preparation_time" min="1"
@@ -118,4 +143,38 @@
             </div>
         </form>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () { // Tambahkan ini
+            const priceInput = document.getElementById('price');
+            const discountPercentageInput = document.getElementById('discount_percentage');
+            const discountedPriceDisplay = document.getElementById('discounted_price_display');
+
+            function calculateDiscountedPrice() {
+                let price = parseFloat(priceInput.value) || 0;
+                let discountPercentage = parseFloat(discountPercentageInput.value) || 0;
+
+                // Clamp discount percentage between 0 and 100
+                if (discountPercentage < 0) {
+                    discountPercentage = 0;
+                    discountPercentageInput.value = 0;
+                }
+                if (discountPercentage > 100) {
+                    discountPercentage = 100;
+                    discountPercentageInput.value = 100;
+                }
+                
+                let discountedPrice = price * (1 - (discountPercentage / 100));
+                discountedPriceDisplay.value = discountedPrice.toFixed(2);
+            }
+
+            priceInput.addEventListener('input', calculateDiscountedPrice);
+            discountPercentageInput.addEventListener('input', calculateDiscountedPrice);
+
+            // Initial calculation when the page loads
+            calculateDiscountedPrice();
+        });
+    </script>
+    @endpush
 </x-layout>
