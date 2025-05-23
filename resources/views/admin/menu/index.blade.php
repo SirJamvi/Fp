@@ -21,7 +21,9 @@
                         <th class="px-4 py-2">Image</th>
                         <th class="px-4 py-2">Name</th>
                         <th class="px-4 py-2">Category</th>
-                        <th class="px-4 py-2">Price</th>
+                        <th class="px-4 py-2">Original Price</th> {{-- Ubah label --}}
+                        <th class="px-4 py-2">Discount (%)</th>     {{-- Tambah kolom diskon --}}
+                        <th class="px-4 py-2">Final Price</th>      {{-- Tambah kolom harga final --}}
                         <th class="px-4 py-2">Status</th>
                         <th class="px-4 py-2">Prep Time</th>
                         <th class="px-4 py-2">Actions</th>
@@ -58,9 +60,28 @@
                                 </span>
                             </td>
 
-                            {{-- Price --}}
+                            {{-- Original Price --}}
                             <td class="px-4 py-2">
                                 Rp {{ number_format($menu->price, 0, ',', '.') }}
+                            </td>
+
+                            {{-- Discount Percentage --}}
+                            <td class="px-4 py-2">
+                                @if($menu->discount_percentage > 0)
+                                    <span class="text-purple-600 font-semibold">{{ $menu->discount_percentage }}%</span>
+                                @else
+                                    —
+                                @endif
+                            </td>
+
+                            {{-- Final Price --}}
+                            <td class="px-4 py-2">
+                                @if($menu->discount_percentage > 0)
+                                    <span class="text-red-500 line-through mr-1">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
+                                    <span class="font-bold text-green-700">Rp {{ number_format($menu->final_price, 0, ',', '.') }}</span>
+                                @else
+                                    Rp {{ number_format($menu->price, 0, ',', '.') }}
+                                @endif
                             </td>
 
                             {{-- Status --}}

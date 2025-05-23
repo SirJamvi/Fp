@@ -37,6 +37,7 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100', // <<< Tambahkan validasi diskon
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'category' => ['required', Rule::in(array_keys(Menu::getCategoryOptions()))],
             'is_available' => 'boolean',
@@ -48,6 +49,15 @@ class MenuController extends Controller
             $imagePath = $request->file('image')->store('menu_images', 'public');
             $validated['image'] = $imagePath;
         }
+
+        // Calculate discounted_price if discount_percentage is provided
+        if (isset($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
+            $validated['discounted_price'] = $validated['price'] * (1 - ($validated['discount_percentage'] / 100));
+        } else {
+            $validated['discounted_price'] = null; // Set to null if no discount
+            $validated['discount_percentage'] = null; // Set to null if no discount
+        }
+
 
         // Set availability
         $validated['is_available'] = $request->has('is_available');
@@ -76,6 +86,7 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100', // <<< Tambahkan validasi diskon
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'category' => ['required', Rule::in(array_keys(Menu::getCategoryOptions()))],
             'is_available' => 'boolean',
@@ -90,6 +101,14 @@ class MenuController extends Controller
             }
             $imagePath = $request->file('image')->store('menu_images', 'public');
             $validated['image'] = $imagePath;
+        }
+
+        // Calculate discounted_price if discount_percentage is provided
+        if (isset($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
+            $validated['discounted_price'] = $validated['price'] * (1 - ($validated['discount_percentage'] / 100));
+        } else {
+            $validated['discounted_price'] = null; // Set to null if no discount
+            $validated['discount_percentage'] = null; // Set to null if no discount
         }
 
         // Set availability
