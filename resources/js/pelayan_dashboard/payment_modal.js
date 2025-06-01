@@ -1,4 +1,7 @@
-import { processPaymentAjax } from './form_submit'; 
+// resources/js/pelayan_dashboard/payment_modal.js
+
+import { processPaymentAjax } from './form_submit';
+import { showCustomAlert } from '../utils'; // Import custom alert utility
 
 let paymentModalEl;
 let paymentOptionsDiv;
@@ -52,6 +55,7 @@ export function showPaymentModal(reservasiId, totalBill, kodeOrder) {
     console.log(`Showing payment modal for Reservasi ID: ${reservasiId}, Total Bill: ${totalBill}, Kode Order: ${kodeOrder}`);
     if (!paymentModalEl) {
         console.error('Payment modal element not found. Cannot show modal.');
+        showCustomAlert('Elemen modal pembayaran tidak ditemukan.', 'danger');
         return;
     }
 
@@ -141,7 +145,7 @@ function attachModalEventListeners() {
         });
     } else { console.warn('QRIS button not found.'); }
 
-    // ✅ Diperbaiki bagian perhitungan dan tampilan kembalian
+    // Diperbaiki bagian perhitungan dan tampilan kembalian
     if (uangDiterimaInput && kembalianDisplay && btnBayarCash && paymentModalEl) {
         uangDiterimaInput.addEventListener('input', function () {
             const uangDiterima = parseFloat(uangDiterimaInput.value) || 0;
@@ -164,25 +168,8 @@ function attachModalEventListeners() {
         });
     } else { console.warn('Cash payment input/display elements not found.'); }
 
-    if (btnBayarCash && uangDiterimaInput && paymentModalEl) {
-        btnBayarCash.addEventListener('click', function () {
-            const uangDiterima = parseFloat(uangDiterimaInput.value) || 0;
-            const totalTagihan = parseFloat(paymentModalEl.dataset.totalBill) || 0;
-
-            if (uangDiterima < totalTagihan) {
-                alert('Uang yang diterima kurang dari total tagihan.');
-                return;
-            }
-
-            processPaymentAjax('cash', uangDiterima);
-        });
-    } else { console.warn('Pay Cash button or related elements not found.'); }
-
-    if (btnConfirmQris) {
-        btnConfirmQris.addEventListener('click', function () {
-            processPaymentAjax('qris');
-        });
-    } else { console.warn('Confirm QRIS button not found.'); }
+    // Tombol Bayar Tunai dan Konfirmasi QRIS listeners dipindahkan ke form_submit.js
+    // untuk konsistensi karena mereka memanggil processPaymentAjax
 
     if (btnBackToOptions && paymentOptionsDiv && cashPaymentFormDiv) {
         btnBackToOptions.addEventListener('click', function () {

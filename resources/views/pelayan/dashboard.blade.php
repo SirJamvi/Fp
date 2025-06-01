@@ -62,24 +62,23 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-md-4 mb-2 mb-md-0">
-                            <label for="meja_id" class="form-label fw-bold">Pilih Meja:</label>
-                            <select name="meja_id" id="meja_id" class="form-select form-select-lg @error('meja_id') is-invalid @enderror" required>
-                                <option value="" disabled selected>-- Pilih Nomor Meja --</option>
-                                @foreach($mejas as $meja)
-                                <option value="{{ $meja->id }}" 
-                                        data-kapasitas="{{ $meja->kapasitas }}" 
-                                        data-area="{{ $meja->area }}" 
-                                        data-status="{{ $meja->status }}" 
-                                        {{ old('meja_id') == $meja->id ? 'selected' : '' }}>
-                                    {{ $meja->nomor_meja }} (Area: {{ $meja->area }}, Kapasitas: {{ $meja->kapasitas }}) - Status: {{ ucfirst($meja->status) }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('meja_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    <div class="mb-3">
+                    <label for="area" class="form-label">Pilih Area</label>
+                    <select id="area" class="form-select" name="area">
+                        <option value="">-- Pilih Area --</option>
+                        @foreach($areas as $area)
+                            <option value="{{ $area }}">{{ $area }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="meja" class="form-label">Pilih Meja</label>
+                    <select id="meja" class="form-select" name="meja_id" disabled>
+                        <option value="">-- Pilih Meja --</option>
+                        {{-- Meja akan dimuat via AJAX --}}
+                    </select>
+                </div>
 
                         <div class="col-md-4 mb-2 mb-md-0">
                             <label for="jumlah_tamu" class="form-label fw-bold">Jumlah Tamu:</label>
@@ -111,7 +110,7 @@
                     </div>
 
                     {{-- Category Navigation --}}
-                    @if($categories->isNotEmpty())
+                    @if(!empty($categories))
                     <ul class="nav nav-tabs mb-3" id="categoryTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-content" type="button" role="tab" aria-controls="all-content" aria-selected="true">Semua</button>
@@ -151,7 +150,7 @@
                                                         data-id="{{ $menu->id }}"
                                                         data-name="{{ $menu->name }}"
                                                         data-price="{{ $menu->final_price }}" {{-- Menggunakan final_price --}}
-                                                        data-image="{{ $menu->image_url }}">
+                                                        data-image="{{ $menu->image_url }}"> {{-- Pastikan ini ada --}}
                                                     <i class="bi bi-plus-lg me-1"></i> Tambah
                                                 </button>
                                             </div>
@@ -190,7 +189,7 @@
                                                         data-id="{{ $menu->id }}"
                                                         data-name="{{ $menu->name }}"
                                                         data-price="{{ $menu->final_price }}" {{-- Menggunakan final_price --}}
-                                                        data-image="{{ $menu->image_url }}">
+                                                        data-image="{{ $menu->image_url }}"> {{-- Pastikan ini ada --}}
                                                     <i class="bi bi-plus-lg me-1"></i> Tambah
                                                 </button>
                                             </div>
@@ -205,7 +204,6 @@
                             </div>
                         </div>
                         @endforeach
-
                     </div>
                 </div>
             </div>
@@ -230,16 +228,12 @@
                     </div>
                 </div>
                 {{-- Submit Order Button --}}
-                <button type="submit" class="btn btn-success btn-block-custom w-100 mt-3" id="submitOrderBtn" disabled>
-                    <i class="bi bi-check-circle-fill me-2"></i> Proses Pesanan
-                </button>
+                <button type="submit" id="submitOrderBtn" class="btn btn-secondary w-100" disabled>Proses Pesanan</button>
             </div>
             {{-- Hidden inputs for cart items sent to backend --}}
             <div id="hiddenInputs">
                 {{-- Hidden inputs for cart items will be generated here by JavaScript --}}
             </div>
-
-
         </div>
     </div>
 </form>
@@ -248,9 +242,7 @@
     <input type="hidden" id="processPaymentRoute" value="{{ route('pelayan.order.pay', ['reservasi_id' => ':reservasiId']) }}">
     <input type="hidden" id="orderSummaryRoute" value="{{ route('pelayan.order.summary', ['reservasi_id' => ':reservasiId']) }}">
 
-
     {{-- Payment Modal --}}
-    {{-- Add data-reservasi-id attribute to store the reservation ID after creation --}}
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-reservasi-id="">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -259,13 +251,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    {{-- Display order summary info in modal header --}}
                     <div class="mb-3 p-2 border rounded">
                         <p class="mb-1">Kode Order: <strong id="modalKodeOrder">N/A</strong></p>
                         <h5 class="mb-0">Total Tagihan: <strong><span id="modalTotalBill">Rp 0</span></strong></h5>
                     </div>
 
-                    {{-- Payment Options Section --}}
                     <div id="paymentOptions">
                         <button type="button" class="btn btn-success btn-block btn-lg mb-3" id="btnCash">
                             <i class="bi bi-wallet2 me-2"></i> Tunai (Cash)
@@ -275,7 +265,6 @@
                         </button>
                     </div>
 
-                    {{-- Cash Payment Form Section --}}
                     <div id="cashPaymentForm" style="display: none;">
                         <div class="form-group mb-3">
                             <label for="uangDiterima" class="form-label">Masukan Uang Di terima:</label>
@@ -291,7 +280,6 @@
                         <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptions">Kembali</button>
                     </div>
 
-                    {{-- QRIS Payment Info Section --}}
                     <div id="qrisPaymentInfo" style="display: none;">
                         <p class="text-center py-3"><i class="bi bi-info-circle me-2"></i> Anda memilih pembayaran Non-Tunai.</p>
                         <p class="text-center text-muted small">Silakan lanjutkan proses di terminal pembayaran atau scan QR code (jika tersedia). Klik konfirmasi setelah pembayaran berhasil dilakukan.</p>
@@ -301,7 +289,6 @@
                         <button type="button" class="btn btn-secondary btn-block mt-2" id="btnBackToOptionsQris">Kembali</button>
                     </div>
 
-                    {{-- Loading Indicator --}}
                     <div id="loadingIndicator" class="text-center py-3" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -309,7 +296,6 @@
                         <p class="mt-2">Memproses...</p>
                     </div>
 
-                    {{-- Payment Status Messages --}}
                     <div id="paymentSuccessMessage" class="alert alert-success mt-3" style="display: none;">
                         Pembayaran Berhasil!
                     </div>
@@ -317,21 +303,119 @@
                         Gagal memproses pembayaran.
                     </div>
 
-                    {{-- Payment Success Actions (Hidden initially) --}}
                     <div id="paymentSuccessActions" style="display: none;">
                         <button type="button" class="btn btn-secondary" id="btnBackToDashboard">Kembali ke Dashboard</button>
                         <button type="button" class="btn btn-primary" id="btnViewSummary">Lihat Ringkasan Pesanan</button>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
+</div>
+@endsection
 
 @push('scripts')
-<script src="{{ asset('js/order-payment.js') }}"></script>
+{{-- Hapus script ini, karena sudah dihandle oleh main.js --}}
+{{-- <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi elemen dengan ID yang benar
+    const elements = {
+        orderForm: document.getElementById('orderForm'),
+        submitOrderBtn: document.getElementById('submitOrderBtn'),
+        mejaSelect: document.getElementById('meja'),
+        jumlahTamuInput: document.getElementById('jumlah_tamu'),
+        loadingIndicator: document.getElementById('loadingIndicator'),
+        paymentSuccessMessage: document.getElementById('paymentSuccessMessage'),
+        paymentErrorMessage: document.getElementById('paymentErrorMessage'),
+        btnBayarCash: document.getElementById('btnBayarCash'),
+        btnConfirmQris: document.getElementById('btnConfirmQris'),
+        btnBackToOptions: document.getElementById('btnBackToOptions'),
+        btnBackToOptionsQris: document.getElementById('btnBackToOptionsQris'),
+        uangDiterimaInput: document.getElementById('uangDiterima'),
+        processPaymentRouteInput: document.getElementById('processPaymentRoute'),
+        orderSummaryRouteInput: document.getElementById('orderSummaryRoute'),
+        paymentModalEl: document.getElementById('paymentModal'),
+        areaSelect: document.getElementById('area')
+
+        
+    };
+
+    // Fungsi untuk menangani perubahan area
+    function handleAreaChange(selectedArea) {
+        const mejaSelect = elements.mejaSelect;
+        mejaSelect.innerHTML = '<option value="">-- Pilih Meja --</option>';
+        mejaSelect.disabled = true;
+
+        if (selectedArea) {
+            fetch(`/pelayan/get-meja-by-area/${encodeURIComponent(selectedArea)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.mejas.length > 0) {
+                        data.mejas.forEach(meja => {
+                            const option = document.createElement('option');
+                            option.value = meja.id;
+                            option.textContent = `Meja ${meja.nomor_meja} (Kapasitas: ${meja.kapasitas})`;
+                            option.dataset.capacity = meja.kapasitas;
+                            mejaSelect.appendChild(option);
+                        });
+                        mejaSelect.disabled = false;
+                    } else {
+                        mejaSelect.innerHTML = '<option value="">-- Tidak ada meja tersedia --</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching meja:', error);
+                    mejaSelect.innerHTML = '<option value="">-- Gagal memuat meja --</option>';
+                });
+        }
+    }
+
+    // Event listener untuk perubahan area
+    if (elements.areaSelect) {
+        elements.areaSelect.addEventListener('change', function() {
+            handleAreaChange(this.value);
+        });
+    }
+
+    // Fungsi untuk mengecek status tombol submit
+    function checkSubmitButtonStatus() {
+        if (!elements.submitOrderBtn || !elements.mejaSelect || !elements.jumlahTamuInput) return;
+
+        // Asumsi ada fungsi getCartItems() yang mengembalikan isi keranjang
+        const isCartEmpty = true; // Ganti dengan logika yang sesuai
+        const isTableSelected = elements.mejaSelect.value !== "";
+        const tamuValid = parseInt(elements.jumlahTamuInput.value, 10) >= 1;
+
+        elements.submitOrderBtn.disabled = isCartEmpty || !isTableSelected || !tamuValid;
+    }
+
+    // Event listener untuk perubahan meja dan jumlah tamu
+    if (elements.mejaSelect) {
+        elements.mejaSelect.addEventListener('change', checkSubmitButtonStatus);
+    }
+    if (elements.jumlahTamuInput) {
+        elements.jumlahTamuInput.addEventListener('input', checkSubmitButtonStatus);
+    }
+});
+</script> --}}
+@endpush
+ 
+
+@push('scripts')
+{{-- Pastikan hanya main.js yang di-load, dan main.js akan mengimpor modul lainnya --}}
+<script src="{{ asset('js/pelayan_dashboard/main.js') }}" type="module"></script>
+{{-- <script src="{{ asset('js/payment_modal.js') }}"></script> --}}
+{{-- <script src="{{ asset('js/pelayan_dashboard/form_submit.js') }}"></script> --}}
+
+  <script
+    src="https://app.sandbox.midtrans.com/snap/snap.js"
+    data-client-key="{{ config('services.midtrans.client_key') }}">
+  </script>
+  
+<script src="{{ asset('js/pelayan_dashboard/main.js') }}" type="module"></script>
 @endpush
 
 
-</div>
-@endsection

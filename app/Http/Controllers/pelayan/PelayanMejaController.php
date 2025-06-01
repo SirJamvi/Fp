@@ -38,6 +38,16 @@ class PelayanMejaController extends Controller
         return redirect()->route('pelayan.meja')->with('error', 'Status meja tidak bisa diubah.');
     }
 
+    public function getMejaByArea(Request $request)
+{
+    $area = $request->query('area'); // Ubah dari input() ke query()
+    $mejas = Meja::where('area', $area)
+               ->where('status', 'tersedia')
+               ->get(['id', 'nomor_meja', 'kapasitas']);
+
+    return response()->json($mejas);
+}
+
 
     public function toggle($id)
     {

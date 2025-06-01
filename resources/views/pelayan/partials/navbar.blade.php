@@ -3,14 +3,21 @@
         class="flex items-center p-3 rounded-lg 
         {{ request()->routeIs('pelayan.dashboard') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
         <i class="fas fa-home mr-3"></i>
-        order
+        Order
     </a>
     
     <a href="{{ route('pelayan.reservasi') }}" 
         class="flex items-center p-3 rounded-lg 
         {{ request()->routeIs('pelayan.reservasi') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
         <i class="fas fa-clipboard-list mr-3"></i>
-        Reservasi Manager
+        Reservasi
+    </a>
+
+     <a href="{{ route('pelayan.dinein') }}" 
+        class="flex items-center p-3 rounded-lg 
+        {{ request()->routeIs('pelayan.dinein') ? 'bg-teal-600' : 'hover:bg-teal-600' }}">
+        <i class="fas fa-clipboard-list mr-3"></i>
+        Dine-in 
     </a>
     
 
