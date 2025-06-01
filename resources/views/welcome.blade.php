@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Reservasi Restoran Digital</title>
 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
 </head>
+
 <body>
 
     <nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm fixed-top">
@@ -21,7 +24,8 @@
                 <img src="{{ asset('images/Logo Resto Online.png') }}" alt="Logo" class="me-2" style="height: 40px;">
                 RestoOnline
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -38,7 +42,8 @@
         </div>
     </nav>
 
-    <section id="home" class="hero position-relative text-white d-flex align-items-center overflow-hidden" style="min-height: 100vh;">
+    <section id="home" class="hero position-relative text-white d-flex align-items-center overflow-hidden"
+        style="min-height: 100vh;">
         <div class="position-absolute top-0 start-0 w-100 h-100 overlay-dark"></div>
 
         <div class="container text-center position-relative z-2">
@@ -55,93 +60,91 @@
     </section>
 
 
+    <!-- MENU SECTION -->
     <section id="menu" class="menu-main py-5" data-aos="fade-up">
         <div class="menu-box-shadow">
             <div class="container">
 
+                <!-- Title -->
                 <div class="text-center mb-4">
                     <h2 class="block-title text-change active">Menu</h2>
                     <p class="title-caption text-change active">Explore our delicious selections</p>
                 </div>
 
-                <ul class="nav nav-pills justify-content-center mb-4" id="menuTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="food-tab" data-bs-toggle="pill" data-bs-target="#food" type="button" role="tab" aria-controls="food" aria-selected="true">
-                            <h2>FOOD</h2><p><i class="fas fa-utensils fa-2x"></i></p>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="beverage-tab" data-bs-toggle="pill" data-bs-target="#beverage" type="button" role="tab" aria-controls="beverage" aria-selected="false">
-                            <h2>BEVERAGE</h2><p><i class="fas fa-wine-glass-alt fa-2x"></i></p>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="dessert-tab" data-bs-toggle="pill" data-bs-target="#dessert" type="button" role="tab" aria-controls="dessert" aria-selected="false">
-                             <h2>DESSERTS</h2><p><i class="fas fa-cake-candles fa-2x"></i></p>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="appetizer-tab" data-bs-toggle="pill" data-bs-target="#appetizer" type="button" role="tab" aria-controls="appetizer" aria-selected="false">
-                            <h2>APPETIZER</h2><p><i class="fas fa-leaf fa-2x"></i></p>
-                        </button>
-                    </li>
-                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="other-tab" data-bs-toggle="pill" data-bs-target="#other" type="button" role="tab" aria-controls="other" aria-selected="false">
-                             <h2>OTHER</h2><p><i class="fas fa-bars fa-2x"></i></p>
-                        </button>
-                    </li>
-                </ul>
+                <!-- Navigation Tabs -->
+                <div class="tab-tittle-menu d-flex justify-content-between text-center mb-0">
+                    <div class="tab-title-menu active" data-tab="food">
+                        <h2>FOOD</h2>
+                        <p><i class="fas fa-utensils fa-2x"></i></p>
+                    </div>
+                    <div class="tab-title-menu" data-tab="beverage">
+                        <h2>BEVERAGE</h2>
+                        <p><i class="fas fa-wine-glass-alt fa-2x"></i></p>
+                    </div>
+                    <div class="tab-title-menu" data-tab="dessert">
+                        <h2>DESSERTS</h2>
+                        <p><i class="fas fa-cake-candles fa-2x"></i></p>
+                    </div>
+                    <div class="tab-title-menu" data-tab="appetizer">
+                        <h2>APPETIZER</h2>
+                        <p><i class="fas fa-leaf fa-2x"></i></p>
+                    </div>
+                    <div class="tab-title-menu" data-tab="other">
+                        <h2>OTHER</h2>
+                        <p><i class="fas fa-bars fa-2x"></i></p>
+                    </div>
+                </div>
 
-
-                <div class="tab-content" id="menuTabsContent">
+                <!-- Tab Contents -->
+                <div class="tab-content">
 
                     @foreach(['food', 'beverage', 'dessert', 'appetizer', 'other'] as $category)
-                        <div class="tab-pane fade show {{ $loop->first ? 'active' : '' }}" id="{{ $category }}" role="tabpanel" aria-labelledby="{{ $category }}-tab">
+                        <div class="tab-pane fade show {{ $loop->first ? 'active' : '' }}" id="{{ $category }}">
                             <div class="row">
-                                {{-- Assuming $menus is a collection passed from a Laravel controller --}}
-                                @isset($menus)
-                                    @foreach($menus as $menu)
-                                        @if($menu->category === $category)
-                                            <div class="col-md-6 menu-item-box d-flex align-items-center mb-4" data-aos="fade-up">
-                                                <div class="menu-img-wrapper">
-                                                    <img src="{{ $menu->image ? Storage::url($menu->image) : asset('images/default.jpg') }}" alt="{{ $menu->name }}" class="menu-img">
-                                                </div>
-                                                <div class="menu-details ms-3 flex-grow-1">
-                                                    <h4 class="menu-title">{{ $menu->name }}</h4>
-                                                    <p class="menu-desc">{{ $menu->description }}</p>
-                                                </div>
-                                                <div class="menu-price-circle">
-                                                    <span>
-                                                        @if($menu->price >= 1000)
-                                                            {{ number_format($menu->price / 1000, 1) }}k
-                                                        @else
-                                                            {{ number_format($menu->price, 0, ',', '.') }}
-                                                        @endif
-                                                    </span>
-                                                </div>
+                                @foreach($menus as $menu)
+                                    @if($menu->category === $category)
+                                        <div class="col-md-6 menu-item-box d-flex align-items-center mb-4">
+                                            <div class="menu-img-wrapper">
+                                                <img src="{{ $menu->image ? Storage::url($menu->image) : asset('images/default.jpg') }}"
+                                                    alt="{{ $menu->name }}" class="menu-img">
                                             </div>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    {{-- Placeholder/example content if $menus is not defined --}}
-                                     <div class="col-md-6 menu-item-box d-flex align-items-center mb-4" data-aos="fade-up">
-                                        <div class="menu-img-wrapper">
-                                            <img src="{{ asset('images/default.jpg') }}" alt="Example Food" class="menu-img">
+                                            <div class="menu-details ms-3 flex-grow-1">
+                                                <h4 class="menu-title">{{ $menu->name }}</h4>
+                                                <p class="menu-desc">{{ $menu->description }}</p>
+                                            </div>
+
+                                            <div class="price-container d-flex align-items-end gap-2">
+                                                @if($menu->price > $menu->final_price)
+                                                    <div class="original-price">
+                                                        Rp {{ number_format($menu->price, 0, ',', '.') }}
+                                                    </div>
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <span class="discount-badge mb-1 text-center">
+                                                            -{{ round((($menu->price - $menu->final_price) / $menu->price) * 100) }}%
+                                                        </span>
+                                                        <div class="discounted-price">
+                                                            Rp {{ number_format($menu->final_price, 0, ',', '.') }}
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="discounted-price">
+                                                        Rp {{ number_format($menu->price, 0, ',', '.') }}
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
-                                        <div class="menu-details ms-3 flex-grow-1">
-                                            <h4 class="menu-title">Example Menu Item</h4>
-                                            <p class="menu-desc">Delicious description of the menu item.</p>
-                                        </div>
-                                        <div class="menu-price-circle">
-                                            <span>25k</span>
-                                        </div>
-                                    </div>
-                                @endisset
+                                    @endif
+                                @endforeach
                             </div>
                         </div>
                     @endforeach
 
-                </div> </div> </div> </section>
+
+                </div> <!-- End .tab-content -->
+
+            </div> <!-- End .container -->
+        </div> <!-- End .menu-box-shadow -->
+    </section>
 
 
     <section class="fitur-section py-5">
@@ -169,7 +172,8 @@
                     <div class="feature-card">
                         <div class="feature-icon fitur-text">📱</div>
                         <h5 class="fitur-text">Notifikasi Otomatis</h5>
-                        <p class="fitur-text">Dapatkan update saat reservasi dikonfirmasi atau makanan siap disajikan.</p>
+                        <p class="fitur-text">Dapatkan update saat reservasi dikonfirmasi atau makanan siap disajikan.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -184,16 +188,23 @@
                 <div class="col-lg-6 mb-4 mb-lg-0" data-aos="fade-right">
                     <h2 class="mb-3">Tentang Kami</h2>
                     <h4 class="text-light">Hadirkan Pengalaman Kuliner yang Modern dan Mudah</h4>
-                    <p>RestoOnline lahir dari keinginan untuk mempermudah pengalaman bersantap Anda. Kami menggabungkan cita rasa kuliner terbaik dengan teknologi terkini, menghadirkan platform digital yang memungkinkan pelanggan untuk memesan meja, memilih menu, dan melakukan pemesanan dengan cepat dan praktis.</p>
-                    <p>Dengan desain antarmuka yang ramah pengguna dan sistem reservasi real-time, kami memastikan setiap kunjungan Anda ke restoran menjadi lebih terencana dan menyenangkan — tanpa antrean dan tanpa repot.</p>
-                    <p>Komitmen kami adalah memberikan pelayanan terbaik, inovasi tanpa henti, dan kemudahan dalam setiap langkah Anda menikmati hidangan favorit bersama orang-orang tercinta.</p>
+                    <p>RestoOnline lahir dari keinginan untuk mempermudah pengalaman bersantap Anda. Kami menggabungkan
+                        cita rasa kuliner terbaik dengan teknologi terkini, menghadirkan platform digital yang
+                        memungkinkan pelanggan untuk memesan meja, memilih menu, dan melakukan pemesanan dengan cepat
+                        dan praktis.</p>
+                    <p>Dengan desain antarmuka yang ramah pengguna dan sistem reservasi real-time, kami memastikan
+                        setiap kunjungan Anda ke restoran menjadi lebih terencana dan menyenangkan — tanpa antrean dan
+                        tanpa repot.</p>
+                    <p>Komitmen kami adalah memberikan pelayanan terbaik, inovasi tanpa henti, dan kemudahan dalam
+                        setiap langkah Anda menikmati hidangan favorit bersama orang-orang tercinta.</p>
                 </div>
 
                 <div class="col-lg-6" data-aos="fade-left">
                     <div class="position-relative">
                         <img src="images/about-main.jpg" alt="About Main" class="img-fluid rounded shadow">
                         {{-- Ensure 'images' directory is accessible from public --}}
-                        <img src="images/about-inset.jpg" alt="About Inset" class="img-thumbnail position-absolute about-inset-img">
+                        <img src="images/about-inset.jpg" alt="About Inset"
+                            class="img-thumbnail position-absolute about-inset-img">
                     </div>
                 </div>
 
@@ -209,10 +220,13 @@
 
                 <div class="col-md-6 text-center text-md-start" data-aos="fade-right">
                     <h1 class="display-4 fw-bold">Pesan Makanan Favorit Kini❤️ Semudah Sentuhan Jari.👉📱</h1>
-                    <p class="lead">Download aplikasi RestoOnline dan nikmati kemudahan memesan makanan serta reservasi meja langsung dari smartphone Anda.</p>
+                    <p class="lead">Download aplikasi RestoOnline dan nikmati kemudahan memesan makanan serta reservasi
+                        meja langsung dari smartphone Anda.</p>
                     <div class="d-flex justify-content-center justify-content-md-start gap-2 flex-wrap">
-                        <a href="#" class="btn-download btn-orange">Playstore</a> {{-- Use # as placeholder or actual link --}}
-                        <a href="#" class="btn-download btn-outline-white">Appstore</a> {{-- Use # as placeholder or actual link --}}
+                        <a href="#" class="btn-download btn-orange">Playstore</a> {{-- Use # as placeholder or actual
+                        link --}}
+                        <a href="#" class="btn-download btn-outline-white">Appstore</a> {{-- Use # as placeholder or
+                        actual link --}}
                     </div>
                 </div>
 
@@ -228,8 +242,10 @@
     </section>
 
 
-    <section class="how-it-works py-5 text-white position-relative" style="background-image: url('{{ asset('images/team_bg.jpg') }}'); background-size: cover; background-position: center;">
-        <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(0, 0, 0, 0.6); z-index: 1;"></div>
+    <section class="how-it-works py-5 text-white position-relative"
+        style="background-image: url('{{ asset('images/team_bg.jpg') }}'); background-size: cover; background-position: center;">
+        <div class="position-absolute top-0 start-0 w-100 h-100"
+            style="background-color: rgba(0, 0, 0, 0.6); z-index: 1;"></div>
 
         <div class="container position-relative z-2 py-5">
             <div class="text-center mb-5" data-aos="fade-up">
@@ -240,31 +256,37 @@
             <div class="d-flex flex-column gap-5">
                 <div class="row align-items-center" data-aos="fade-right">
                     <div class="col-md-4 text-center mb-3 mb-md-0">
-                         <img src="{{ asset('images/mockupdaftar.png') }}" alt="Step 1" class="img-fluid" style="max-width: 200px;">
+                        <img src="{{ asset('images/mockupdaftar.png') }}" alt="Step 1" class="img-fluid"
+                            style="max-width: 200px;">
                     </div>
                     <div class="col-md-8 text-center text-md-start">
                         <h4 class="fw-semibold step-title step">Buat Akun</h4>
-                        <p class="mb-0">Daftarkan dirimu dengan mudah menggunakan email, dan mulailah menjelajahi fitur aplikasi kami.</p>
+                        <p class="mb-0">Daftarkan dirimu dengan mudah menggunakan email, dan mulailah menjelajahi fitur
+                            aplikasi kami.</p>
                     </div>
                 </div>
 
                 <div class="row align-items-center flex-md-row-reverse" data-aos="fade-left">
                     <div class="col-md-4 text-center mb-3 mb-md-0">
-                        <img src="{{ asset('images/mockupmenu.png') }}" alt="Step 2" class="img-fluid" style="max-width: 200px;">
+                        <img src="{{ asset('images/mockupmenu.png') }}" alt="Step 2" class="img-fluid"
+                            style="max-width: 200px;">
                     </div>
                     <div class="col-md-8 text-center text-md-start">
                         <h4 class="fw-semibold step-title step">Jelajahi & Pilih Menu</h4>
-                        <p class="mb-0">Lihat berbagai pilihan menu lezat dan tambahkan ke keranjang sesuai selera kamu.</p>
+                        <p class="mb-0">Lihat berbagai pilihan menu lezat dan tambahkan ke keranjang sesuai selera kamu.
+                        </p>
                     </div>
                 </div>
 
                 <div class="row align-items-center" data-aos="fade-right">
                     <div class="col-md-4 text-center mb-3 mb-md-0">
-                        <img src="{{ asset('images/mockupnotifikasi.png') }}" alt="Step 3" class="img-fluid" style="max-width: 200px;">
+                        <img src="{{ asset('images/mockupnotifikasi.png') }}" alt="Step 3" class="img-fluid"
+                            style="max-width: 200px;">
                     </div>
                     <div class="col-md-8 text-center text-md-start">
                         <h4 class="fw-semibold step-title step">Dapatkan Notifikasi</h4>
-                        <p class="mb-0">Tenang saja, kamu akan menerima notifikasi saat pesananmu sedang disiapkan dan dikirim.</p>
+                        <p class="mb-0">Tenang saja, kamu akan menerima notifikasi saat pesananmu sedang disiapkan dan
+                            dikirim.</p>
                     </div>
                 </div>
             </div>
@@ -279,7 +301,9 @@
                     <div class="wow fadeIn" data-wow-duration="1s" data-wow-delay="0.1s">
                         <h2 class="block-title text-center" data-aos="fade-down">Tim Kami</h2>
                         <p class="title-caption text-center" data-aos="fade-up">
-                            Di balik layanan hebat kami, ada tim luar biasa yang bekerja dengan dedikasi tinggi. Kami adalah kombinasi dari para profesional di bidang teknologi, pelayanan, dan kuliner yang berkomitmen menghadirkan pengalaman restoran digital terbaik untuk Anda.
+                            Di balik layanan hebat kami, ada tim luar biasa yang bekerja dengan dedikasi tinggi. Kami
+                            adalah kombinasi dari para profesional di bidang teknologi, pelayanan, dan kuliner yang
+                            berkomitmen menghadirkan pengalaman restoran digital terbaik untuk Anda.
                         </p>
                     </div>
                 </div>
@@ -298,7 +322,11 @@
                             </div>
                             <div class="text-col">
                                 <h3>Jav</h3>
-                                <p>Dengan pengalaman lebih dari 10 tahun di industri kuliner, Jav memimpin tim kami dengan dedikasi dan visi yang kuat. Ia dikenal karena kemampuannya menjaga standar layanan tertinggi dan menciptakan suasana kerja yang profesional dan bersahabat. Di bawah kepemimpinannya, setiap kunjungan pelanggan menjadi pengalaman yang berkesan.</p>
+                                <p>Dengan pengalaman lebih dari 10 tahun di industri kuliner, Jav memimpin tim kami
+                                    dengan dedikasi dan visi yang kuat. Ia dikenal karena kemampuannya menjaga standar
+                                    layanan tertinggi dan menciptakan suasana kerja yang profesional dan bersahabat. Di
+                                    bawah kepemimpinannya, setiap kunjungan pelanggan menjadi pengalaman yang berkesan.
+                                </p>
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -319,7 +347,11 @@
                             </div>
                             <div class="text-col">
                                 <h3>Upi</h3>
-                                <p>Chef Upi adalah otak kreatif di balik setiap hidangan khas restoran kami. Menggabungkan teknik kuliner modern dengan cita rasa lokal, ia menciptakan menu yang tidak hanya memanjakan lidah, tetapi juga meninggalkan kesan mendalam. Keahliannya menjadikan dapur kami sebagai pusat inovasi dan kualitas yang sangat cekatan dan juga baik.</p>
+                                <p>Chef Upi adalah otak kreatif di balik setiap hidangan khas restoran kami.
+                                    Menggabungkan teknik kuliner modern dengan cita rasa lokal, ia menciptakan menu yang
+                                    tidak hanya memanjakan lidah, tetapi juga meninggalkan kesan mendalam. Keahliannya
+                                    menjadikan dapur kami sebagai pusat inovasi dan kualitas yang sangat cekatan dan
+                                    juga baik.</p>
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -340,7 +372,11 @@
                             </div>
                             <div class="text-col">
                                 <h3>Rey</h3>
-                                <p>Rey adalah bartender andalan kami yang menghadirkan pengalaman minum yang tak terlupakan. Dengan keahlian mencampur berbagai jenis minuman dan sentuhan kreatif dalam setiap racikan, Rey selalu tahu cara memanjakan tamu dengan koktail yang sempurna. Energinya yang positif dan keramahan membuat setiap kunjungan ke bar menjadi lebih istimewa.</p>
+                                <p>Rey adalah bartender andalan kami yang menghadirkan pengalaman minum yang tak
+                                    terlupakan. Dengan keahlian mencampur berbagai jenis minuman dan sentuhan kreatif
+                                    dalam setiap racikan, Rey selalu tahu cara memanjakan tamu dengan koktail yang
+                                    sempurna. Energinya yang positif dan keramahan membuat setiap kunjungan ke bar
+                                    menjadi lebih istimewa.</p>
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -361,7 +397,10 @@
                             </div>
                             <div class="text-col">
                                 <h3>Lif</h3>
-                                <p>Lif adalah sosok ramah yang menyambut setiap tamu dengan senyum hangat dan pelayanan penuh perhatian. Sebagai host kami, Lif memastikan pengalaman pertama Anda di restoran dimulai dengan kesan yang menyenangkan, dari sambutan hangat hingga pengaturan tempat duduk yang nyaman. Dengan ketulusan dan kecekatan.</p>
+                                <p>Lif adalah sosok ramah yang menyambut setiap tamu dengan senyum hangat dan pelayanan
+                                    penuh perhatian. Sebagai host kami, Lif memastikan pengalaman pertama Anda di
+                                    restoran dimulai dengan kesan yang menyenangkan, dari sambutan hangat hingga
+                                    pengaturan tempat duduk yang nyaman. Dengan ketulusan dan kecekatan.</p>
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -382,7 +421,11 @@
                             </div>
                             <div class="text-col">
                                 <h3>Bay</h3>
-                                <p>Bay adalah pramusaji yang selalu siap memberikan pelayanan terbaik dengan senyum tulus dan sikap profesional. Dengan perhatian pada detail dan kecepatan dalam melayani, Bay memastikan setiap pesanan Anda datang dengan sempurna dan tepat waktu. Kepuasan tamu adalah prioritas utama bagi Bay, menjadikan setiap kunjungan Anda lebih berkesan.</p>
+                                <p>Bay adalah pramusaji yang selalu siap memberikan pelayanan terbaik dengan senyum
+                                    tulus dan sikap profesional. Dengan perhatian pada detail dan kecepatan dalam
+                                    melayani, Bay memastikan setiap pesanan Anda datang dengan sempurna dan tepat waktu.
+                                    Kepuasan tamu adalah prioritas utama bagi Bay, menjadikan setiap kunjungan Anda
+                                    lebih berkesan.</p>
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -394,15 +437,20 @@
                     <div class="col-md-4 col-sm-6 mb-4"> {{-- Added mb-4 for spacing --}}
                         <div class="sf-team wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s">
                             <div class="thumb">
-                                <h4>Lover</h4> {{-- Role 'Lover' seems unusual for a restaurant team, maybe a placeholder? --}}
+                                <h4>Lover</h4> {{-- Role 'Lover' seems unusual for a restaurant team, maybe a
+                                placeholder? --}}
                                 <a href="#">
-                                     {{-- Ensure 'images' directory is accessible from public --}}
+                                    {{-- Ensure 'images' directory is accessible from public --}}
                                     <img src="images/miko2.jpeg" alt="Miko - Lover" class="img-fluid">
                                 </a>
                             </div>
                             <div class="text-col">
                                 <h3>Miko</h3> {{-- Name 'Miko' --}}
-                                <p>Miko hadir sebagai simbol cinta dan kehangatan di restoran kami. Dengan pesonanya yang menenangkan dan senyuman tulus, Miko mewakili momen-momen spesial bagi pasangan yang datang menikmati hidangan bersama. Ia menjadi pengingat bahwa setiap kunjungan bukan hanya tentang rasa, tapi juga tentang hubungan yang diciptakan di setiap meja.</p> {{-- Description for 'Lover' role --}}
+                                <p>Miko hadir sebagai simbol cinta dan kehangatan di restoran kami. Dengan pesonanya
+                                    yang menenangkan dan senyuman tulus, Miko mewakili momen-momen spesial bagi pasangan
+                                    yang datang menikmati hidangan bersama. Ia menjadi pengingat bahwa setiap kunjungan
+                                    bukan hanya tentang rasa, tapi juga tentang hubungan yang diciptakan di setiap meja.
+                                </p> {{-- Description for 'Lover' role --}}
                                 <ul class="team-social">
                                     <li><a href="#"><i class="fab fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fab fa-twitter"></i></a></li>
@@ -411,16 +459,17 @@
                             </div>
                         </div>
                     </div>
-                    </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
 
     <section id="location" class="py-5">
         <div class="container">
             <div class="row">
-                <div class="col-lg-6 mb-4 mb-lg-0" data-aos="fade-right"> {{-- Added mb for spacing on smaller screens --}}
+                <div class="col-lg-6 mb-4 mb-lg-0" data-aos="fade-right"> {{-- Added mb for spacing on smaller screens
+                    --}}
                     <h2 class="text-center mb-4">Lokasi Kami</h2>
                     <div class="map-container">
                         <div id="map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
@@ -464,26 +513,41 @@
                 <div class="row">
                     {{-- Removed the problematic footer-in-main div and its empty children --}}
 
-                    <div class="col-12 text-center footer-logo mb-4" data-aos="zoom-in"> {{-- Centered and added bottom margin --}}
+                    <div class="col-12 text-center footer-logo mb-4" data-aos="zoom-in"> {{-- Centered and added bottom
+                        margin --}}
                         {{-- Ensure 'images' directory is accessible from public --}}
-                        <img src="images/Logo Resto Online.png" lt="Logo" style="max-width: 120px; height: auto;" /> {{-- Fixed typo: 'lt' should be 'alt' --}}
+                        <img src="images/Logo Resto Online.png" lt="Logo" style="max-width: 120px; height: auto;" />
+                        {{-- Fixed typo: 'lt' should be 'alt' --}}
                     </div>
 
-                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up"> {{-- Adjusted column classes for responsiveness, added mb --}}
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up"> {{-- Adjusted column
+                        classes for responsiveness, added mb --}}
                         <div class="footer-box-a">
                             <h3>Tentang Kami</h3>
-                            <p>RestoOnline hadir untuk memudahkan pemesanan makanan dan reservasi meja secara digital. Cepat, praktis, dan terpercaya.</p>
+                            <p>RestoOnline hadir untuk memudahkan pemesanan makanan dan reservasi meja secara digital.
+                                Cepat, praktis, dan terpercaya.</p>
                             <ul class="socials-box footer-socials pull-left">
-                                <li><a href="#"><div class="social-circle-border"><i class="fab fa-facebook"></i></div></a></li>
-                                <li><a href="#"><div class="social-circle-border"><i class="fab fa-twitter"></i></div></a></li>
-                                <li><a href="#"><div class="social-circle-border"><i class="fab fa-google-plus"></i></div></a></li>
-                                <li><a href="#"><div class="social-circle-border"><i class="fab fa-pinterest"></i></div></a></li>
-                                <li><a href="#"><div class="social-circle-border"><i class="fab fa-linkedin"></i></div></a></li>
+                                <li><a href="#">
+                                        <div class="social-circle-border"><i class="fab fa-facebook"></i></div>
+                                    </a></li>
+                                <li><a href="#">
+                                        <div class="social-circle-border"><i class="fab fa-twitter"></i></div>
+                                    </a></li>
+                                <li><a href="#">
+                                        <div class="social-circle-border"><i class="fab fa-google-plus"></i></div>
+                                    </a></li>
+                                <li><a href="#">
+                                        <div class="social-circle-border"><i class="fab fa-pinterest"></i></div>
+                                    </a></li>
+                                <li><a href="#">
+                                        <div class="social-circle-border"><i class="fab fa-linkedin"></i></div>
+                                    </a></li>
                             </ul>
                         </div>
                     </div>
 
-                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="100"> {{-- Added mb and delay --}}
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="100"> {{--
+                        Added mb and delay --}}
                         <div class="footer-box-b">
                             <h3>Menu Baru</h3>
                             <ul>
@@ -495,31 +559,47 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="200"> {{-- Added mb and delay --}}
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="200"> {{--
+                        Added mb and delay --}}
                         <div class="footer-box-c">
                             <h3>Hubungi Kami</h3>
-                            <p><i class="fa fa-map-signs" aria-hidden="true"></i><span>Jl. Makanan Digital No. 88, Jakarta, Indonesia</span></p>
+                            <p><i class="fa fa-map-signs" aria-hidden="true"></i><span>Jl. Makanan Digital No. 88,
+                                    Jakarta, Indonesia</span></p>
                             <p><i class="fa fa-mobile" aria-hidden="true"></i><span>+62 812 3456 7890</span></p>
-                            <p><i class="fa fa-envelope" aria-hidden="true"></i><span><a href="#">cs@restoonline.id</a></span></p>
+                            <p><i class="fa fa-envelope" aria-hidden="true"></i><span><a
+                                        href="#">cs@restoonline.id</a></span></p>
                         </div>
                     </div>
 
-                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="300"> {{-- Added mb and delay --}}
+                    <div class="col-lg-3 col-md-6 col-sm-6 col-xs-12 mb-4" data-aos="fade-up" data-aos-delay="300"> {{--
+                        Added mb and delay --}}
                         <div class="footer-box-d">
                             <h3>Jam Operasional</h3>
                             <ul>
-                                <li><p>Senin - Kamis</p><span>10:00 - 21:00 WIB</span></li>
-                                <li><p>Jumat - Minggu</p><span>10:00 - 23:00 WIB</span></li>
+                                <li>
+                                    <div class="operasional-wrap">
+                                        <p>Senin - Kamis</p>
+                                        <span>10:00 - 21:00 WIB</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="operasional-wrap">
+                                        <p>Jumat - Minggu</p>
+                                        <span>10:00 - 23:00 WIB</span>
+                                    </div>
+                                </li>
                             </ul>
+
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
-        <div class="footer text-center py-3" style="background-color: #343a40; color: rgba(255, 255, 255, 0.5);"> {{-- Added basic styling for visibility --}}
+        <div class="footer text-center py-3 footer">
             <div class="container">
                 <p>&copy; {{ date('Y') }} RestoOnline. All rights reserved.</p>
-                <p>Email: support@restoonline.com</p> {{-- Added email from original code --}}
+                <p>Email: support@restoonline.com</p>
             </div>
         </div>
     </footer>
@@ -531,7 +611,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
 
 
     <script>
@@ -548,7 +628,7 @@
     </script>
 
     <script>
-        $(document).ready(function(){
+        $(document).ready(function () {
             // Check if the elements exist before initializing Slick
             if ($('.slider-single').length && $('.slider-nav').length) {
                 $('.slider-single').slick({
@@ -564,7 +644,7 @@
                     focusOnSelect: true,
                     centerMode: true,
                     arrows: false,
-                     responsive: [ // Added responsiveness for the nav slider
+                    responsive: [ // Added responsiveness for the nav slider
                         {
                             breakpoint: 768, // md
                             settings: {
@@ -577,7 +657,7 @@
                                 slidesToShow: 2,
                             }
                         },
-                         {
+                        {
                             breakpoint: 400, // xs
                             settings: {
                                 slidesToShow: 1,
@@ -585,7 +665,7 @@
                         }
                     ]
                 });
-             } else {
+            } else {
                 console.warn("Slick Carousel elements not found. Skipping initialization.");
             }
         });
@@ -598,7 +678,7 @@
         // Inisialisasi peta
         // Check if the map element exists before initializing
         if (document.getElementById('map')) {
-             const map = L.map('map').setView(lokasiResto, 16);
+            const map = L.map('map').setView(lokasiResto, 16);
 
             // Tambahkan layer peta
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -626,20 +706,50 @@
 
             // Fungsi petunjuk arah
             function openDirections() {
-                 // Use a more robust way to get current location if 'from' is needed dynamically
+                // Use a more robust way to get current location if 'from' is needed dynamically
                 const url = `https://www.openstreetmap.org/directions?from=&to=${lokasiResto[0]},${lokasiResto[1]}#map=17/${lokasiResto[0]}/${lokasiResto[1]}`;
                 window.open(url, '_blank');
             }
-             // Attach the function to the button's onclick event (optional if already in HTML)
+            // Attach the function to the button's onclick event (optional if already in HTML)
             const directionsButton = document.querySelector('#location .btn-primary');
             if (directionsButton) {
-                 directionsButton.onclick = openDirections;
+                directionsButton.onclick = openDirections;
             }
 
-         } else {
+        } else {
             console.warn("Leaflet map element (#map) not found. Skipping map initialization.");
-         }
+        }
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabTitles = document.querySelectorAll(".tab-title-menu");
+            const tabPanes = document.querySelectorAll(".tab-pane");
+
+            tabTitles.forEach(tab => {
+                tab.addEventListener("click", function () {
+                    const target = this.getAttribute("data-tab");
+
+                    // Remove 'active' class from all tab titles
+                    tabTitles.forEach(t => t.classList.remove("active"));
+                    // Add 'active' to the clicked tab
+                    this.classList.add("active");
+
+                    // Hide all tab panes
+                    tabPanes.forEach(pane => {
+                        pane.classList.remove("active", "show");
+                    });
+
+                    // Show the selected tab content
+                    const targetPane = document.getElementById(target);
+                    if (targetPane) {
+                        targetPane.classList.add("active", "show");
+                    }
+                });
+            });
+        });
+    </script>
+
 
     <script>
         let lastScrollTop = 0;
@@ -647,7 +757,7 @@
 
         // Check if navbar element exists
         if (navbar) {
-             window.addEventListener("scroll", function () {
+            window.addEventListener("scroll", function () {
                 const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
                 if (scrollTop > lastScrollTop && scrollTop > navbar.offsetHeight) { // Add condition to hide only after scrolling past navbar height
@@ -673,4 +783,5 @@
     {{-- AOS JS already included --}}
 
 </body>
+
 </html>
