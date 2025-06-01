@@ -51,8 +51,6 @@
                     : [];
             @endphp
 
-
-
             {{-- Tampilkan jika meja gabungan lebih dari 1 --}}
             @if(is_array($combinedTables) && count($combinedTables) > 1)
             <div class="alert alert-info mb-4">
@@ -148,8 +146,15 @@
                 <a href="{{ route('pelayan.dashboard') }}" class="btn btn-primary btn-lg me-2">
                     <i class="bi bi-plus-circle-fill me-1"></i> Buat Pesanan Baru
                 </a>
-                <a href="{{ route('pelayan.reservasi') }}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-list-ul me-1"></i> Daftar Reservasi
+
+                @php
+                    $from = request('from') ?? 'reservasi'; // default reservasi
+                    $backRoute = $from === 'dinein' ? route('pelayan.dinein') : route('pelayan.reservasi');
+                    $backLabel = $from === 'dinein' ? 'Daftar Dine-In' : 'Daftar Reservasi';
+                @endphp
+
+                <a href="{{ $backRoute }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-list-ul me-1"></i> {{ $backLabel }}
                 </a>
             </div>
         @else

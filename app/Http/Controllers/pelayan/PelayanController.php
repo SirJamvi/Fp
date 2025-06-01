@@ -3,138 +3,455 @@
 namespace App\Http\Controllers\Pelayan;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\AddItemsRequest;
 use App\Services\OrderService;
-use App\Services\PaymentService;
 use App\Services\ReservasiService;
+use App\Services\PaymentService;
+use App\Models\Reservasi;
+use App\Models\Order;
+use App\Models\Meja;
+use App\Models\Menu;
+use App\Models\Area;
+use App\Models\Category;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PelayanController extends Controller
 {
     protected $orderService;
-    protected $paymentService;
     protected $reservasiService;
+    protected $paymentService;
 
-    public function __construct(
-        OrderService $orderService,
-        PaymentService $paymentService,
-        ReservasiService $reservasiService
-    ) {
-        $this->orderService     = $orderService;
-        $this->paymentService   = $paymentService;
-        $this->reservasiService = $reservasiService;
-    }
-
-    /**
-     * Tampilkan halaman dashboard (daftar menu & meja).
-     */
-    public function index()
+    public function __construct(OrderService $orderService, ReservasiService $reservasiService, PaymentService $paymentService)
     {
-        return $this->orderService->showDashboard();
+        $this->orderService = $orderService;
+        $this->reservasiService = $reservasiService;
+        $this->paymentService = $paymentService;
     }
 
-    /**
-     * Simpan pesanan baru (reservasi + order items).
-     */
+     public function index()
+    {
+        try {
+            // Ambil daftar area meja unik
+            $areas = Meja::select('area')->distinct()->pluck('area');
+
+            // Ambil kategori menu dari model (array)
+            $categories = Menu::getCategoryOptions();
+
+            // Ambil semua menu yang tersedia dan kelompokkan berdasarkan kategori
+            $menusByCategory = Menu::where('is_available', true)
+                ->orderBy('category')
+                ->get()
+                ->groupBy('category');
+
+            // Ambil meja yang statusnya tersedia atau terisi
+            $mejas = Meja::whereIn('status', ['tersedia', 'terisi'])
+                ->orderBy('nomor_meja')
+                ->get();
+
+            return view('pelayan.dashboard', compact('areas', 'categories', 'menusByCategory', 'mejas'))
+                ->with('title', 'Dashboard Pelayan');
+        } catch (\Exception $e) {
+            Log::error("Error loading pelayan dashboard: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memuat halaman. Silakan coba lagi.');
+        }
+    }
+
+
     public function storeOrder(StoreOrderRequest $request)
     {
-        return $this->orderService->createOrder($request);
+        $result = $this->orderService->storeOrder($request);
+        if ($result['success']) {
+            return response()->json($result);
+        } else {
+            return response()->json($result, 400);
+        }
+    }
+    
+    
+
+    public function dinein(Request $request)
+    {
+        $dineInReservations = $this->reservasiService->getDineInReservations($request);
+        return view('pelayan.dinein', compact('dineInReservations'));
     }
 
-    /**
-     * Proses pembayaran (tunai atau QRIS) untuk reservasi tertentu.
-     */
+    public function showDetailReservasi($id)
+    {
+        try {
+            $reservasi = Reservasi::with('meja')->findOrFail($id);
+            $orders = Order::with('menu')->where('reservasi_id', $id)->get();
+            $totalHarga = $orders->sum(fn($order) => $order->quantity * $order->menu->price);
+
+            return view('pelayan.detail', [
+                'title' => 'Detail Menu',
+                'reservasi' => $reservasi,
+                'orders' => $orders,
+                'totalHarga' => $totalHarga,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error loading detail reservasi: " . $e->getMessage());
+            return redirect()->route('pelayan.reservasi')->with('error', 'Gagal memuat detail reservasi.');
+        }
+    }
+
     public function processPayment(Request $request, $reservasi_id)
     {
-        return $this->paymentService->process($request, $reservasi_id);
+        $result = $this->paymentService->processPayment($request, $reservasi_id);
+
+        if ($result['success']) {
+            return response()->json($result);
+        } else {
+            return response()->json($result, 400);
+        }
     }
 
-    /**
-     * Tampilkan ringkasan pesanan (order summary).
-     */
-    public function showOrderSummary($reservasi_id)
+    public function bayarSisa(Request $request, $id)
     {
-        return $this->orderService->summary($reservasi_id);
+        $result = $this->paymentService->bayarSisa($id);
+
+        if (!$result['success']) {
+            return redirect($result['redirect'])->with('info', $result['message']);
+        }
+
+        return view('pelayan.bayar-sisa', [
+            'reservasi' => $result['reservasi'],
+            'totalTagihan' => $result['totalTagihan'],
+            'totalDibayar' => $result['totalDibayar'],
+            'sisa' => $result['sisa'],
+        ]);
     }
 
-    /**
-     * Daftar reservasi (list view).
-     */
-    public function reservasi(Request $request)
-    {
-        return $this->reservasiService->list($request);
-    }
-
-    /**
-     * View untuk scan QR Code.
-     */
-    public function scanQr()
-    {
-        return view('pelayan.scanqr', ['title' => 'Scan QR Code']);
-    }
-
-    /**
-     * Tampilkan form bayar sisa (partial payment).
-     */
-    public function bayarSisa($id)
-    {
-        return $this->paymentService->showPartialPayment($id);
-    }
-
-    /**
-     * Proses bayar sisa (partial payment) via tunai atau QRIS.
-     */
     public function bayarSisaPost(Request $request, $id)
     {
-        return $this->paymentService->handlePartialPayment($request, $id);
+        $result = $this->paymentService->bayarSisaPost($request, $id);
+
+        if (!$result['success']) {
+            return back()->with('error', $result['message']);
+        }
+
+        if (isset($result['redirect'])) {
+            return redirect($result['redirect']);
+        }
+
+        return redirect()->route('pelayan.reservasi')->with('success', $result['message']);
     }
 
-    /**
-     * Tampilkan halaman pembayaran QRIS.
-     */
     public function showQrisPayment($id)
     {
-        return $this->paymentService->showQrisPayment($id);
+        $data = $this->paymentService->showQrisPayment($id);
+        return view('pelayan.qris-payment', $data);
     }
 
-    /**
-     * Callback handler Midtrans setelah QRIS selesai.
-     */
-    public function handleQrisCallback(Request $request, $id)
+
+    public function showOrderSummary($reservasi_id)
     {
-        return $this->paymentService->handleQrisCallback($request, $id);
+        try {
+            $from = request()->query('from', 'reservasi');
+
+            $reservasi = Reservasi::with(['meja', 'orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
+
+            $combinedTables = [];
+            if ($reservasi->combined_tables) {
+                $combinedIds = is_string($reservasi->combined_tables)
+                    ? json_decode($reservasi->combined_tables, true)
+                    : $reservasi->combined_tables;
+
+                if (is_array($combinedIds)) {
+                    $combinedTables = Meja::whereIn('id', $combinedIds)
+                        ->orderBy('nomor_meja')
+                        ->get()
+                        ->toArray();
+                }
+            }
+
+            $orderSummary = [
+                'reservasi_id' => $reservasi->id,
+                'kode_reservasi' => $reservasi->kode_reservasi,
+                'nomor_meja' => $reservasi->meja->nomor_meja ?? 'N/A',
+                'combined_tables' => $combinedTables,
+                'area_meja' => $reservasi->meja->area ?? 'N/A',
+                'nama_pelanggan' => $reservasi->nama_pelanggan,
+                'nama_pelayan' => $reservasi->staffYangMembuat->name ?? (auth()->check() ? auth()->user()->name : 'N/A'),
+                'waktu_pesan' => $reservasi->created_at,
+                'items' => [],
+                'total_keseluruhan' => $reservasi->total_bill,
+                'subtotal' => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'),
+                'service_charge' => $reservasi->service_charge ?? 0,
+                'tax' => $reservasi->tax ?? 0,
+                'payment_method' => $reservasi->payment_method ?? 'N/A',
+                'payment_status' => $reservasi->status,
+                'waktu_pembayaran' => $reservasi->waktu_selesai,
+            ];
+
+            foreach ($reservasi->orders as $order) {
+                $orderSummary['items'][] = [
+                    'nama_menu' => $order->menu->name ?? 'N/A',
+                    'quantity' => $order->quantity,
+                    'harga_satuan' => $order->price_at_order,
+                    'subtotal' => $order->total_price,
+                    'catatan' => $order->notes,
+                    'status' => $order->status,
+                ];
+            }
+
+            return view('pelayan.summary', [
+                'title' => 'Ringkasan Pesanan #' . $reservasi->kode_reservasi,
+                'orderSummary' => $orderSummary,
+                'reservasi' => $reservasi,
+                'from' => $from,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error showing order summary: " . $e->getMessage());
+            return redirect()->route('pelayan.dashboard')->with('error', 'Gagal menampilkan ringkasan pesanan.');
+        }
     }
 
-    /**
-     * Proses hasil scan QR (confirm kehadiran).
-     */
-    public function prosesScanQr($kodeReservasi)
-    {
-        return $this->reservasiService->handleScan($kodeReservasi);
-    }
-
-    /**
-     * Tandai reservasi selesai (set meja kembali tersedia).
-     */
-    public function completeReservation($reservasi_id)
-    {
-        return $this->reservasiService->complete($reservasi_id);
-    }
-
-    /**
-     * Batalkan reservasi (set meja kembali tersedia).
-     */
-    public function cancelReservation($reservasi_id)
-    {
-        return $this->reservasiService->cancel($reservasi_id);
-    }
-
-    /**
-     * Tambah item ke order (reservasi sudah aktif).
-     */
     public function addItemsToOrder(AddItemsRequest $request, $reservasi_id)
     {
-        return $this->orderService->addItems($request, $reservasi_id);
+        try {
+            $reservasi = Reservasi::findOrFail($reservasi_id);
+            $result = $this->orderService->addItemsToOrder($request, $reservasi);
+
+            if ($result['success']) {
+                return response()->json($result);
+            } else {
+                return response()->json($result, 400);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error adding items to order: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal menambahkan item ke pesanan.'], 500);
+        }
+    }
+
+   public function reservasi(Request $request)
+{
+    $query = \App\Models\Reservasi::with(['pengguna', 'meja', 'orders', 'staffYangMembuat'])
+        ->whereIn('status', [
+            'confirmed', 'pending_arrival', 'active_order',
+            'paid', 'pending_payment', 'selesai', 'dibatalkan'
+        ])
+        ->where('source', 'online');
+
+    if ($request->filled('search')) {
+        $searchTerm = $request->search;
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('nama_pelanggan', 'like', '%' . $searchTerm . '%')
+              ->orWhere('kode_reservasi', 'like', '%' . $searchTerm . '%')
+              ->orWhere('id', 'like', '%' . $searchTerm . '%')
+              ->orWhereHas('meja', fn($subq) => $subq->where('nomor_meja', 'like', '%' . $searchTerm . '%'))
+              ->orWhereHas('pengguna', fn($subq) => $subq->where('nama', 'like', '%' . $searchTerm . '%'))
+              ->orWhereHas('staffYangMembuat', fn($subq) => $subq->where('nama', 'like', '%' . $searchTerm . '%'));
+        });
+    }
+
+    if ($request->filled('filter')) {
+        switch ($request->filter) {
+            case 'today':
+                $query->whereDate('waktu_kedatangan', \Carbon\Carbon::today());
+                break;
+            case 'upcoming':
+                $query->where('waktu_kedatangan', '>=', \Carbon\Carbon::now());
+                break;
+            case 'past_week':
+                $query->whereBetween('waktu_kedatangan', [\Carbon\Carbon::now()->subWeek(), \Carbon\Carbon::now()]);
+                break;
+            case 'paid':
+                $query->where('status', 'paid');
+                break;
+            case 'active':
+                $query->whereIn('status', ['confirmed', 'pending_arrival', 'active_order', 'pending_payment']);
+                break;
+            case 'selesai':
+                $query->where('status', 'selesai');
+                break;
+            case 'dibatalkan':
+                $query->where('status', 'dibatalkan');
+                break;
+        }
+            } else {
+                $query->where(function ($q) {
+                    $q->whereNotIn('status', ['dibatalkan', 'selesai'])
+                    ->orWhere(function ($sub) {
+                        $sub->where('waktu_kedatangan', '>=', \Carbon\Carbon::today()->startOfDay())
+                            ->orWhereNull('waktu_kedatangan');
+                    });
+                });
+            }
+
+    if ($request->filled('filter') && in_array($request->filter, ['today', 'upcoming'])) {
+        $query->orderBy('waktu_kedatangan', 'asc');
+    } else {
+        $query->orderBy('created_at', 'desc');
+    }
+
+    $reservasi = $query->paginate(10)->withQueryString();
+
+    return view('pelayan.reservasi', [
+        'title' => 'Daftar Reservasi',
+        'reservasi' => $reservasi,
+        'filter' => $request->filter ?? null,
+        'search' => $request->search ?? null,
+    ]);
+}
+
+public function storeReservasi(Request $request)
+{
+    $request->validate([
+        'area' => 'required|string',
+        'meja_id' => 'required|exists:meja,id',  // pastikan tabel benar
+    ]);
+
+    // Cek apakah meja masih tersedia
+    $meja = Meja::where('id', $request->meja_id)
+                ->where('status', 'tersedia')
+                ->first();
+
+    if (!$meja) {
+        return redirect()->back()->withInput()->with('error', 'Meja tidak tersedia.');
+    }
+
+    Reservasi::create([
+        'user_id' => auth()->id(),
+        'meja_id' => $request->meja_id,
+        'area' => $request->area,
+        // field lain jika perlu
+    ]);
+
+    // update status meja menjadi terisi agar tidak double booking
+    $meja->update([
+        'status' => 'terisi',
+        'current_reservasi_id' => auth()->id(),
+    ]);
+
+    return redirect()->route('pelayan.reservasi')->with('success', 'Reservasi berhasil dibuat!');
+}
+     public function getMejaByArea($area)
+{
+    try {
+        $mejas = Meja::where('area', $area)
+                   ->where('status', 'tersedia')
+                   ->get(['id', 'nomor_meja', 'kapasitas', 'area', 'status']);
+
+        return response()->json([
+            'success' => true,
+            'mejas' => $mejas
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error'
+        ], 500);
+    }
+}
+
+
+    public function scanQr(Request $request)
+    {
+        return view('pelayan.scanqr', [
+            'title' => 'Scan QR Code'
+        ]);
+    }
+
+    public function prosesScanQr($kodeReservasi)
+    {
+        $kodeReservasi = trim($kodeReservasi);
+
+        $reservasi = Reservasi::where('kode_reservasi', $kodeReservasi)->first();
+
+        if (!$reservasi) {
+            return redirect()->route('pelayan.scanqr')->with('error', 'Reservasi tidak ditemukan.');
+        }
+
+        if ($reservasi->kehadiran_status === 'hadir') {
+            return redirect()->route('pelayan.reservasi')->with('error', 'Kehadiran sudah dikonfirmasi sebelumnya.');
+        }
+
+        $updateData = [
+            'kehadiran_status' => 'hadir',
+            'waktu_kedatangan' => now(),
+        ];
+
+        if ($reservasi->status === 'dipesan') {
+            $updateData['status'] = 'active_order';
+        }
+
+        $reservasi->update($updateData);
+
+        return redirect()->route('pelayan.reservasi')->with('success', 'Kehadiran untuk reservasi #' . $reservasi->kode_reservasi . ' berhasil dikonfirmasi.');
+    }
+
+    public function completeReservation($reservasi_id)
+    {
+        DB::beginTransaction();
+        try {
+            $reservasi = Reservasi::with('meja')->findOrFail($reservasi_id);
+
+            if ($reservasi->status !== 'paid') {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Reservasi hanya bisa diselesaikan jika statusnya sudah lunas.');
+            }
+
+            $reservasi->status = 'selesai';
+            $reservasi->waktu_selesai = $reservasi->waktu_selesai ?? now();
+            $reservasi->save();
+
+            $combinedTables = $reservasi->combined_tables ?: [$reservasi->meja_id];
+            
+            foreach ($combinedTables as $mejaId) {
+                $meja = Meja::find($mejaId);
+                if ($meja) {
+                    $meja->status = 'tersedia';
+                    $meja->current_reservasi_id = null;
+                    $meja->save();
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Reservasi berhasil diselesaikan dan meja diatur kembali menjadi tersedia.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error completing reservation: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menyelesaikan reservasi. Silakan coba lagi.');
+        }
+    }
+
+    public function cancelReservation($reservasi_id)
+    {
+        DB::beginTransaction();
+        try {
+            $reservasi = Reservasi::with('meja')->findOrFail($reservasi_id);
+
+            if (in_array($reservasi->status, ['paid', 'selesai'])) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Reservasi yang sudah lunas atau selesai tidak bisa dibatalkan.');
+            }
+
+            $reservasi->status = 'dibatalkan';
+            $reservasi->waktu_selesai = now();
+            $reservasi->save();
+
+            $meja = $reservasi->meja;
+            if ($meja && $meja->status === 'terisi' && $meja->current_reservasi_id === $reservasi->id) {
+                $meja->status = 'tersedia';
+                $meja->current_reservasi_id = null;
+                $meja->save();
+            } else if ($meja && $meja->status === 'terisi' && is_null($meja->current_reservasi_id)) {
+                $meja->status = 'tersedia';
+                $meja->save();
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Reservasi berhasil dibatalkan.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error cancelling reservation: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal membatalkan reservasi. Silakan coba lagi.');
+        }
     }
 }

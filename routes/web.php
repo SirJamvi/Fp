@@ -1,23 +1,29 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\TransaksiController;
-use App\Http\Controllers\User\UserController;
 use App\Models\Menu;
 
-// Admin Controllers
+// Auth
+use App\Http\Controllers\Auth\LoginController;
+
+// Public User
+use App\Http\Controllers\User\UserController;
+
+// Transaksi
+use App\Http\Controllers\TransaksiController;
+
+// Admin
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MejaController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Admin\ReservasiController as AdminReservasiController;
 
-// Pelayan Controllers
+// Pelayan
 use App\Http\Controllers\Pelayan\PelayanController;
 use App\Http\Controllers\Pelayan\PelayanMejaController;
 
-// Koki Controller
+// Koki
 use App\Http\Controllers\Koki\KokiController;
 
 // Public welcome page
@@ -113,11 +119,9 @@ Route::prefix('pelayan')
         Route::get('/reservasi', [PelayanController::class, 'reservasi'])
             ->name('reservasi');
 
-        // Tampilkan form detail reservasi (jika diperlukan di view; 
-        // karena di refactor tidak ada method detailReservasi, hapus atau arahkan ke summary)
-        // Jika tidak ada di controller, hapus baris ini atau arahkan ke order.summary:
-        // Route::get('/reservasi/{id}/detail', [PelayanController::class, 'detailReservasi'])
-        //     ->name('reservasi.detail');
+        // Tampilkan form detail reservasi
+        Route::get('/reservasi/{id}/detail', [PelayanController::class, 'showDetailReservasi'])
+            ->name('reservasi.detail');
 
         // Tampilkan form bayar sisa (partial payment)
         Route::get('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisa'])
@@ -156,6 +160,10 @@ Route::prefix('pelayan')
             ->name('meja.toggle');
         Route::post('/meja/{id}/set-tersedia', [PelayanMejaController::class, 'setTersedia'])
             ->name('meja.setTersedia');
+        
+        // Dine-in
+        Route::get('/dinein', [PelayanController::class, 'dinein'])
+            ->name('dinein');
     });
 
 // =======================
