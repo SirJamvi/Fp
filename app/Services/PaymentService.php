@@ -19,122 +19,144 @@ class PaymentService
         Config::$is3ds = true;
     }
 
-    public function processPayment($request, $reservasi_id)
-    {
-        DB::beginTransaction();
+   public function processPayment(Request $request, $reservasi_id)
+{
+    DB::beginTransaction();
 
-        try {
-            $reservasi = Reservasi::with('meja', 'orders.menu')->findOrFail($reservasi_id);
+    try {
+        $reservasi = Reservasi::with('meja', 'orders.menu')->findOrFail($reservasi_id);
+        $totalBill  = $reservasi->total_bill;
+        $changeGiven = 0;
+        $snapToken   = null;
 
-            if ($reservasi->status === 'paid') {
+        // Pastikan status awalnya bukan "paid" ataupun "selesai"
+        if ($reservasi->payment_status === 'paid' || $reservasi->status === 'selesai') {
+            DB::rollBack();
+            return [
+                'success' => false,
+                'message' => 'Pesanan ini sudah lunas.'
+            ];
+        }
+
+        // ─────── Pembayaran Tunai ───────
+        if ($request->payment_method === 'tunai') {
+            // Di JS kita mengirim payload.uang_diterima, bukan amount_paid
+            $uangDiterima = $request->input('uang_diterima');  
+
+            if (is_null($uangDiterima) || $uangDiterima < $totalBill) {
                 DB::rollBack();
-                return ['success' => false, 'message' => 'Pesanan ini sudah lunas.'];
+                return [
+                    'success' => false,
+                    'message' => 'Jumlah uang tunai yang dibayarkan kurang dari total tagihan.'
+                ];
             }
 
-            $totalBill = $reservasi->total_bill;
-            $changeGiven = 0;
-            $snapToken = null;
+            $changeGiven = $uangDiterima - $totalBill;
+            $reservasi->payment_status           = 'paid';
+            $reservasi->payment_method           = 'tunai';
+            $reservasi->amount_paid              = $uangDiterima;    // simpan ke kolom yang sesuai
+            $reservasi->change_given             = $changeGiven;
+            $reservasi->sisa_tagihan_reservasi   = 0;
+            $reservasi->waktu_selesai            = now();
+            $reservasi->status                   = 'selesai';
+            $reservasi->save();
+        }
+        // ──────────────────────────────────
 
-            if ($request->payment_method === 'cash') {
-                if (is_null($request->amount_paid) || $request->amount_paid < $totalBill) {
-                    DB::rollBack();
-                    return ['success' => false, 'message' => 'Jumlah uang tunai yang dibayarkan kurang dari total tagihan.'];
-                }
+        // ─────── Pembayaran QRIS ───────
+        elseif ($request->payment_method === 'qris') {
+            Config::$serverKey    = config('services.midtrans.server_key');
+            Config::$isProduction = config('services.midtrans.is_production', false);
+            Config::$isSanitized  = true;
+            Config::$is3ds        = true;
 
-                $amountPaid = $request->amount_paid;
-                $changeGiven = $amountPaid - $totalBill;
-
-                $reservasi->payment_status = 'paid';
-                $reservasi->payment_method = $request->payment_method;
-                $reservasi->amount_paid = $request->amount_paid;
-                $reservasi->change_given = $changeGiven;
-                $reservasi->sisa_tagihan_reservasi = 0;
-                $reservasi->waktu_selesai = now();
-                $reservasi->status = 'selesai';
-                $reservasi->save();
-            } elseif ($request->payment_method === 'qris') {
-                Config::$serverKey = config('services.midtrans.server_key');
-                Config::$isProduction = config('services.midtrans.is_production', false);
-                Config::$isSanitized = true;
-                Config::$is3ds = true;
-
-                $item_details = [];
-                foreach ($reservasi->orders as $order) {
-                    if ($order->menu) {
-                        $item_details[] = [
-                            'id' => $order->menu->id,
-                            'price' => (int) $order->price_at_order,
-                            'quantity' => (int) $order->quantity,
-                            'name' => $order->menu->name,
-                        ];
-                    }
-                }
-
-                if ($reservasi->service_charge > 0) {
+            $item_details = [];
+            foreach ($reservasi->orders as $order) {
+                if ($order->menu) {
                     $item_details[] = [
-                        'id' => 'service_charge',
-                        'price' => (int) $reservasi->service_charge,
-                        'quantity' => 1,
-                        'name' => 'Biaya Layanan',
+                        'id'       => $order->menu->id,
+                        'price'    => (int) $order->price_at_order,
+                        'quantity' => (int) $order->quantity,
+                        'name'     => $order->menu->name,
                     ];
                 }
-                if ($reservasi->tax > 0) {
-                    $item_details[] = [
-                        'id' => 'tax',
-                        'price' => (int) $reservasi->tax,
-                        'quantity' => 1,
-                        'name' => 'Pajak (PPN)',
-                    ];
-                }
-
-                $transaction_details = [
-                    'order_id' => $reservasi->kode_reservasi . '-' . time(),
-                    'gross_amount' => (int) $totalBill,
+            }
+            if ($reservasi->service_charge > 0) {
+                $item_details[] = [
+                    'id'       => 'service_charge',
+                    'price'    => (int) $reservasi->service_charge,
+                    'quantity' => 1,
+                    'name'     => 'Biaya Layanan',
                 ];
-
-                $params = [
-                    'transaction_details' => $transaction_details,
-                    'item_details' => $item_details,
-                    'customer_details' => [
-                        'first_name' => $reservasi->nama_pelanggan ?? 'Pelanggan',
-                    ],
-                    'callbacks' => [
-                        'finish' => route('pelayan.order.summary', $reservasi->id),
-                    ],
+            }
+            if ($reservasi->tax > 0) {
+                $item_details[] = [
+                    'id'       => 'tax',
+                    'price'    => (int) $reservasi->tax,
+                    'quantity' => 1,
+                    'name'     => 'Pajak (PPN)',
                 ];
-
-                try {
-                    $snapToken = Snap::getSnapToken($params);
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error('Midtrans Snap Token generation failed: ' . $e->getMessage());
-                    return ['success' => false, 'message' => 'Gagal membuat token pembayaran Midtrans: ' . $e->getMessage()];
-                }
-
-                $reservasi->payment_method = 'qris';
-                $reservasi->status = 'pending_payment';
-                $reservasi->save();
             }
 
-            DB::commit();
-
-            $response = [
-                'success' => true,
-                'change' => $changeGiven,
-                'redirect_url' => ($request->payment_method === 'cash') ? route('pelayan.order.summary', $reservasi->id) : null,
+            $transaction_details = [
+                'order_id'     => $reservasi->kode_reservasi . '-' . time(),
+                'gross_amount' => (int) $totalBill,
             ];
 
-            if ($request->payment_method === 'qris' && $snapToken) {
-                $response['snap_token'] = $snapToken;
+            $params = [
+                'transaction_details' => $transaction_details,
+                'item_details'        => $item_details,
+                'customer_details'    => [
+                    'first_name' => $reservasi->nama_pelanggan ?? 'Pelanggan',
+                ],
+                'callbacks' => [
+                    'finish' => route('pelayan.order.summary', $reservasi->id),
+                ],
+            ];
+
+            try {
+                $snapToken = Snap::getSnapToken($params);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Midtrans Snap Token generation failed: ' . $e->getMessage());
+                return [
+                    'success' => false,
+                    'message' => 'Gagal membuat token pembayaran Midtrans: ' . $e->getMessage()
+                ];
             }
 
-            return $response;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error processing payment: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()];
+            $reservasi->payment_method = 'qris';
+            $reservasi->status         = 'selesai';
+            $reservasi->save();
         }
+        // ──────────────────────────────────
+
+        DB::commit();
+
+        $response = [
+            'success'      => true,
+            'change'       => $changeGiven,
+            // Hanya redirect otomatis jika “tunai”
+            'redirect_url' => ($request->payment_method === 'tunai')
+                                ? route('pelayan.order.summary', $reservasi->id)
+                                : null,
+        ];
+
+        if ($request->payment_method === 'qris' && $snapToken) {
+            $response['snap_token'] = $snapToken;
+        }
+
+        return $response;
     }
+    catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error processing payment: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
+        ];
+    }
+}
 
 
     public function bayarSisa($id)

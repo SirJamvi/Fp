@@ -26,14 +26,16 @@ use App\Http\Controllers\Pelayan\PelayanMejaController;
 // Koki
 use App\Http\Controllers\Koki\KokiController;
 
-// Public welcome page
+// =======================
+// Public Routes
+// =======================
 Route::get('/', function () {
     $menus = Menu::where('is_available', true)->get();
     return view('welcome', compact('menus'));
 });
 
 // =======================
-// Authentication
+// Authentication Routes
 // =======================
 Route::get('/login', [LoginController::class, 'showLoginForm'])
     ->name('login');
@@ -43,7 +45,7 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
 
 // =======================
-// Transaksi (opsional, bisa diganti atau dihapus jika memang tidak dipakai lagi)
+// Transaksi Routes (Optional)
 // =======================
 Route::get('/bayar', [TransaksiController::class, 'bayar']);
 
@@ -54,133 +56,90 @@ Route::get('/user/bukti-pembayaran/{kodeReservasi}', [UserController::class, 'bu
     ->name('user.bukti.pembayaran');
 
 // =======================
-// Debug Tools (hapus di production)
+// Debug Tools (Remove in production)
 // =======================
 Route::get('/debug/scanqr', [PelayanController::class, 'scanQr']);
 Route::get('/debug/scanqr/proses/{kode}', [PelayanController::class, 'prosesScanQr']);
 
-// =======================
-// Admin Routes
-// =======================
-Route::prefix('admin')
-    ->name('admin.')
-    ->middleware(['auth', 'admin'])
-    ->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])
-            ->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        Route::resource('menu', MenuController::class);
-        Route::resource('meja', MejaController::class);
-        Route::resource('kelola-akun', PenggunaController::class);
+    // Resource Management
+    Route::resource('menu', MenuController::class);
+    Route::resource('meja', MejaController::class);
+    Route::resource('kelola-akun', PenggunaController::class);
 
-        Route::get('/reservasi', [AdminReservasiController::class, 'index'])
-            ->name('reservasi');
-        Route::get('/reservasi/export/excel', [AdminReservasiController::class, 'exportExcel'])
-            ->name('reservasi.export.excel');
-        Route::get('/reservasi/export/pdf', [AdminReservasiController::class, 'exportPdf'])
-            ->name('reservasi.export.pdf');
-        Route::get('/reservasi/export/word', [AdminReservasiController::class, 'exportWord'])
-            ->name('reservasi.export.word');
+    // Reservasi Management
+    Route::get('/reservasi', [AdminReservasiController::class, 'index'])->name('reservasi');
+    Route::get('/reservasi/export/excel', [AdminReservasiController::class, 'exportExcel'])->name('reservasi.export.excel');
+    Route::get('/reservasi/export/pdf', [AdminReservasiController::class, 'exportPdf'])->name('reservasi.export.pdf');
+    Route::get('/reservasi/export/word', [AdminReservasiController::class, 'exportWord'])->name('reservasi.export.word');
 
-        Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])
-            ->name('laporan');
-        Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])
-            ->name('info-cust');
-    });
+    // Reports & Customer Info
+    Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])->name('laporan');
+    Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])->name('info-cust');
+});
 
-// =======================
-// Pelayan Routes
-// =======================
-Route::prefix('pelayan')
-    ->name('pelayan.')
-    ->middleware(['auth', 'pelayan'])
-    ->group(function () {
-        // Dashboard utama Pelayan: menampilkan daftar menu & meja
-        Route::get('/dashboard', [PelayanController::class, 'index'])
-            ->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Pelayan Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [PelayanController::class, 'index'])->name('dashboard');
 
-        // Simpan order baru (reservasi + detail item)
-        Route::post('/order/store', [PelayanController::class, 'storeOrder'])
-            ->name('order.store');
+    // Dine-in & Reservasi Management
+    Route::get('/dinein', [PelayanController::class, 'dinein'])->name('dinein');
+    Route::get('/reservasi', [PelayanController::class, 'reservasi'])->name('reservasi');
+    Route::get('/reservasi/{id}/detail', [PelayanController::class, 'showDetailReservasi'])->name('reservasi.detail');
 
-        // Proses pembayaran (tunai atau QRIS) untuk reservasi tertentu
-        Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])
-            ->name('order.pay');
+    // Order Management
+    Route::post('/order/store', [PelayanController::class, 'storeOrder'])->name('order.store');
+    Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])->name('order.pay');
+    Route::get('/order/summary/{reservasi_id}', [PelayanController::class, 'showOrderSummary'])->name('order.summary');
+    Route::post('/order/{reservasi_id}/add-items', [PelayanController::class, 'addItemsToOrder'])->name('order.addItems');
 
-        // Tampilkan ringkasan pesanan (order summary)
-        Route::get('/order/{reservasi_id}/summary', [PelayanController::class, 'showOrderSummary'])
-            ->name('order.summary');
+    // Reservation Status Management
+    Route::post('/reservasi/{id}/complete', [PelayanController::class, 'completeReservation'])->name('reservasi.complete');
+    Route::post('/reservasi/{id}/cancel', [PelayanController::class, 'cancelReservation'])->name('reservasi.cancel');
+    Route::delete('/reservasi/{id}/destroy', [PelayanController::class, 'destroy'])->name('reservasi.destroy');
 
-        // Tambah item ke order yang sudah aktif
-        Route::post('/order/{reservasi_id}/add-items', [PelayanController::class, 'addItemsToOrder'])
-            ->name('order.addItems');
+    // Payment Management (Partial Payment)
+    Route::get('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisa'])->name('reservasi.bayarSisa');
+    Route::post('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisaPost'])->name('reservasi.bayarSisa.post');
+    Route::get('/reservasi/{id}/bayar-sisa/qris', [PelayanController::class, 'showQrisPayment'])->name('reservasi.bayarSisa.qris');
+    Route::post('/reservasi/{id}/bayar-sisa/callback', [PelayanController::class, 'handleQrisCallback'])->name('reservasi.bayarSisa.callback');
 
-        // Daftar semua reservasi (dengan filter & pagination)
-        Route::get('/reservasi', [PelayanController::class, 'reservasi'])
-            ->name('reservasi');
+    // Table Management
+    Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
+    Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggle'])->name('meja.toggle');
+    Route::post('/meja/{id}/set-tersedia', [PelayanMejaController::class, 'setTersedia'])->name('meja.setTersedia');
+    Route::get('/get-meja-by-area/{area}', [PelayanController::class, 'getMejaByArea']);
 
-        // Tampilkan form detail reservasi
-        Route::get('/reservasi/{id}/detail', [PelayanController::class, 'showDetailReservasi'])
-            ->name('reservasi.detail');
+    // QR Code Scanner
+    Route::get('/scanqr', [PelayanController::class, 'scanQr'])->name('scanqr');
+    Route::get('/scanqr/proses/{kodeReservasi}', [PelayanController::class, 'prosesScanQr'])->name('scanqr.proses');
+});
 
-        // Tampilkan form bayar sisa (partial payment)
-        Route::get('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisa'])
-            ->name('reservasi.bayarSisa');
+/*
+|--------------------------------------------------------------------------
+| Koki Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('koki')->name('koki.')->middleware(['auth', 'koki'])->group(function () {
+    // Dashboard & Management
+    Route::get('/dashboard', [KokiController::class, 'index'])->name('dashboard');
+    Route::get('/daftar-pesanan', [KokiController::class, 'daftarPesanan'])->name('daftar-pesanan');
+    Route::get('/stok-bahan', [KokiController::class, 'stokBahan'])->name('stok-bahan');
 
-        // Proses form bayar sisa (tunai atau QRIS)
-        Route::post('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisaPost'])
-            ->name('reservasi.bayarSisa.post');
-
-        // Tampilkan halaman pembayaran QRIS untuk partial payment
-        Route::get('/reservasi/{id}/bayar-sisa/qris', [PelayanController::class, 'showQrisPayment'])
-            ->name('reservasi.bayarSisa.qris');
-
-        // Callback Midtrans untuk partial payment
-        Route::post('/reservasi/{id}/bayar-sisa/callback', [PelayanController::class, 'handleQrisCallback'])
-            ->name('reservasi.bayarSisa.callback');
-
-        // Fitur scan QR → konfirmasi kehadiran
-        Route::get('/scanqr', [PelayanController::class, 'scanQr'])
-            ->name('scanqr');
-        Route::get('/scanqr/proses/{kodeReservasi}', [PelayanController::class, 'prosesScanQr'])
-            ->name('scanqr.proses');
-
-        // Tandai reservasi selesai (complete) → meja kembali tersedia
-        Route::post('/reservasi/{reservasi_id}/complete', [PelayanController::class, 'completeReservation'])
-            ->name('reservasi.complete');
-
-        // Batalkan reservasi (cancel)
-        Route::post('/reservasi/{reservasi_id}/cancel', [PelayanController::class, 'cancelReservation'])
-            ->name('reservasi.cancel');
-
-        // (Opsional) Daftar dan toggle status meja via PelayanMejaController
-        Route::get('/meja', [PelayanMejaController::class, 'index'])
-            ->name('meja');
-        Route::post('/meja/{id}/toggle', [PelayanMejaController::class, 'toggle'])
-            ->name('meja.toggle');
-        Route::post('/meja/{id}/set-tersedia', [PelayanMejaController::class, 'setTersedia'])
-            ->name('meja.setTersedia');
-        
-        // Dine-in
-        Route::get('/dinein', [PelayanController::class, 'dinein'])
-            ->name('dinein');
-    });
-
-// =======================
-// Koki Routes
-// =======================
-Route::prefix('koki')
-    ->name('koki.')
-    ->middleware(['auth', 'koki'])
-    ->group(function () {
-        Route::get('/dashboard', [KokiController::class, 'index'])->name('dashboard');
-        Route::get('/daftar-pesanan', [KokiController::class, 'daftarPesanan'])->name('daftar-pesanan');
-        Route::get('/stok-bahan', [KokiController::class, 'stokBahan'])->name('stok-bahan');
-
-        // API untuk mengambil pesanan (JSON)
-        Route::get('/orders/get', [KokiController::class, 'getOrders'])->name('orders.get');
-
-        // API untuk memperbarui status pesanan menggunakan reservasi_id
-        Route::post('/orders/{reservasi}/update-status', [KokiController::class, 'updateOrderStatus'])
-            ->name('orders.updateStatus');
-    });
+    // API Routes for Orders
+    Route::get('/orders/get', [KokiController::class, 'getOrders'])->name('orders.get');
+    Route::post('/orders/{reservasi}/update-status', [KokiController::class, 'updateOrderStatus'])->name('orders.updateStatus');
+});

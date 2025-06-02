@@ -229,7 +229,8 @@ class PelayanController extends Controller
 
    public function reservasi(Request $request)
 {
-    $query = \App\Models\Reservasi::with(['pengguna', 'meja', 'orders', 'staffYangMembuat'])
+    $query = Reservasi::with(['pengguna', 'meja', 'orders', 'staffYangMembuat'])
+        ->whereNull('deleted_at') // Hanya data yang belum dihapus (soft delete)
         ->whereIn('status', [
             'confirmed', 'pending_arrival', 'active_order',
             'paid', 'pending_payment', 'selesai', 'dibatalkan'
@@ -251,13 +252,13 @@ class PelayanController extends Controller
     if ($request->filled('filter')) {
         switch ($request->filter) {
             case 'today':
-                $query->whereDate('waktu_kedatangan', \Carbon\Carbon::today());
+                $query->whereDate('waktu_kedatangan', Carbon::today());
                 break;
             case 'upcoming':
-                $query->where('waktu_kedatangan', '>=', \Carbon\Carbon::now());
+                $query->where('waktu_kedatangan', '>=', Carbon::now());
                 break;
             case 'past_week':
-                $query->whereBetween('waktu_kedatangan', [\Carbon\Carbon::now()->subWeek(), \Carbon\Carbon::now()]);
+                $query->whereBetween('waktu_kedatangan', [Carbon::now()->subWeek(), Carbon::now()]);
                 break;
             case 'paid':
                 $query->where('status', 'paid');
@@ -272,16 +273,17 @@ class PelayanController extends Controller
                 $query->where('status', 'dibatalkan');
                 break;
         }
-            } else {
-                $query->where(function ($q) {
-                    $q->whereNotIn('status', ['dibatalkan', 'selesai'])
-                    ->orWhere(function ($sub) {
-                        $sub->where('waktu_kedatangan', '>=', \Carbon\Carbon::today()->startOfDay())
-                            ->orWhereNull('waktu_kedatangan');
-                    });
-                });
-            }
+    } else {
+        $query->where(function ($q) {
+            $q->whereNotIn('status', ['dibatalkan', 'selesai'])
+              ->orWhere(function ($sub) {
+                  $sub->where('waktu_kedatangan', '>=', Carbon::today()->startOfDay())
+                      ->orWhereNull('waktu_kedatangan');
+              });
+        });
+    }
 
+    // Urutan berdasarkan filter
     if ($request->filled('filter') && in_array($request->filter, ['today', 'upcoming'])) {
         $query->orderBy('waktu_kedatangan', 'asc');
     } else {
@@ -400,7 +402,6 @@ public function storeReservasi(Request $request)
             $reservasi->save();
 
             $combinedTables = $reservasi->combined_tables ?: [$reservasi->meja_id];
-            
             foreach ($combinedTables as $mejaId) {
                 $meja = Meja::find($mejaId);
                 if ($meja) {
@@ -412,7 +413,6 @@ public function storeReservasi(Request $request)
 
             DB::commit();
             return redirect()->back()->with('success', 'Reservasi berhasil diselesaikan dan meja diatur kembali menjadi tersedia.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error completing reservation: ' . $e->getMessage());
@@ -420,38 +420,88 @@ public function storeReservasi(Request $request)
         }
     }
 
-    public function cancelReservation($reservasi_id)
+ public function cancelReservation($reservasi_id)
     {
         DB::beginTransaction();
         try {
+            // Ambil reservasi beserta relasi 'meja' (primary meja)
             $reservasi = Reservasi::with('meja')->findOrFail($reservasi_id);
 
-            if (in_array($reservasi->status, ['paid', 'selesai'])) {
-                DB::rollBack();
-                return redirect()->back()->with('error', 'Reservasi yang sudah lunas atau selesai tidak bisa dibatalkan.');
-            }
-
-            $reservasi->status = 'dibatalkan';
+            // 1) Set status reservasi menjadi 'dibatalkan'
+            $reservasi->status       = 'dibatalkan';
             $reservasi->waktu_selesai = now();
             $reservasi->save();
 
-            $meja = $reservasi->meja;
-            if ($meja && $meja->status === 'terisi' && $meja->current_reservasi_id === $reservasi->id) {
-                $meja->status = 'tersedia';
-                $meja->current_reservasi_id = null;
-                $meja->save();
-            } else if ($meja && $meja->status === 'terisi' && is_null($meja->current_reservasi_id)) {
-                $meja->status = 'tersedia';
-                $meja->save();
+            // 2) Kumpulkan ID‐ID meja yang perlu dilepaskan
+            $allMejaIds = [];
+
+            // - Meja utama (kolom meja_id)
+            if (!empty($reservasi->meja_id)) {
+                $allMejaIds[] = $reservasi->meja_id;
+            }
+
+            // - Meja gabungan: kolom combined_tables disimpan sebagai JSON string (misal "[3,5]")
+            if (!empty($reservasi->combined_tables)) {
+                // Coba decode JSON; jika gagal, abaikan
+                $decoded = @json_decode($reservasi->combined_tables, true);
+                if (is_array($decoded)) {
+                    // Hanya masukkan ID yang valid (integer)
+                    foreach ($decoded as $mId) {
+                        // Pastikan bukan null dan bukan meja utama yang sudah tercantum
+                        if (is_numeric($mId) && !in_array($mId, $allMejaIds)) {
+                            $allMejaIds[] = (int) $mId;
+                        }
+                    }
+                }
+            }
+
+            // 3) Lepaskan setiap meja yang ditemukan
+            foreach ($allMejaIds as $mejaId) {
+                $meja = Meja::find($mejaId);
+                if ($meja) {
+                    // Hanya set ke 'tersedia' kalau current_reservasi_id sama dengan $reservasi_id
+                    if ($meja->current_reservasi_id == $reservasi_id) {
+                        $meja->status               = 'tersedia';
+                        $meja->current_reservasi_id = null;
+                        $meja->save();
+                    }
+                }
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Reservasi berhasil dibatalkan.');
 
-        } catch (\Exception $e) {
+            // Jika request AJAX (expectsJson), kembalikan JSON
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Reservasi dibatalkan dan semua meja kembali tersedia.'
+                ], 200);
+            }
+
+            // Jika bukan AJAX, redirect balik dengan flash message
+            return redirect()->back()->with('success', 'Reservasi berhasil dibatalkan, meja sudah tersedia kembali.');
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error cancelling reservation: ' . $e->getMessage());
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal membatalkan reservasi: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()->with('error', 'Gagal membatalkan reservasi. Silakan coba lagi.');
         }
     }
+
+    public function destroy($id)
+{
+    $reservasi = Reservasi::findOrFail($id);
+    $reservasi->delete(); // Soft delete
+    return redirect()->back()->with('success', 'Reservasi berhasil dihapus.');
+}
+
+
 }
