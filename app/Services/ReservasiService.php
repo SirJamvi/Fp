@@ -10,7 +10,8 @@ class ReservasiService
     public function getDineInReservations($request)
     {
         $query = Reservasi::with(['pengguna', 'meja'])
-            ->where('source', 'dine_in');
+            ->where('source', 'dine_in')
+            ->whereNull('deleted_at');
 
         if ($request->has('search')) {
             $search = $request->search;

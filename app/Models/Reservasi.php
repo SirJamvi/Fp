@@ -5,9 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Pengguna; // Asumsi model user/pelayan Anda bernama Pengguna
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Reservasi extends Model
 {
+
+    use SoftDeletes;
+
     protected $table = 'reservasi';
 
     protected $casts = [

@@ -90,6 +90,12 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::get('/reservasi', [PelayanController::class, 'reservasi'])->name('reservasi');
     Route::get('/reservasi/{id}/detail', [PelayanController::class, 'showDetailReservasi'])->name('reservasi.detail');
 
+    // Konfirmasi & Delete Reservasi
+    Route::post('/reservasi/{id}/complete', [PelayanController::class, 'completeReservation'])->name('reservasi.complete');
+    Route::post('/reservasi/{id}/cancel',   [PelayanController::class, 'cancelReservation'])->name('reservasi.cancel');
+    Route::delete('/reservasi/{id}/destroy', [PelayanController::class, 'destroy'])->name('reservasi.destroy');
+
+
     // Pembayaran Sisa (Tunai & QRIS)
     Route::get('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisa'])->name('reservasi.bayarSisa');
     Route::post('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisaPost'])->name('reservasi.bayarSisa.post');

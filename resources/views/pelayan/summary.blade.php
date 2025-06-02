@@ -29,140 +29,115 @@
 </style>
 @endpush
 
+
 @section('content')
-<div class="container">
-    <div class="summary-container">
-        <div class="summary-header text-center">
-            <h2><i class="bi bi-receipt-cutoff me-2"></i>{{ $title }}</h2>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h4><i class="bi bi-journals me-2"></i>Ringkasan Pesanan #{{ $reservasi->kode_reservasi }}</h4>
         </div>
-
-        @if(isset($orderSummary) && $orderSummary)
-            <div class="info-grid mb-4">
-                <p><strong>ID Order:</strong> <span>#{{ $orderSummary['kode_reservasi'] ?? $orderSummary['reservasi_id'] ?? 'N/A' }}</span></p>
-                <p><strong>No. Meja:</strong> <span>{{ $orderSummary['nomor_meja'] ?? 'N/A' }} ({{ $orderSummary['area_meja'] ?? 'N/A' }})</span></p>
-                <p><strong>Pelanggan:</strong> <span>{{ $orderSummary['nama_pelanggan'] ?? 'N/A' }}</span></p>
-                <p><strong>Pelayan:</strong> <span>{{ $orderSummary['nama_pelayan'] ?? 'N/A' }}</span></p>
-                <p><strong>Waktu Pesan:</strong> <span>{{ isset($orderSummary['waktu_pesan']) ? \Carbon\Carbon::parse($orderSummary['waktu_pesan'])->translatedFormat('l, d M Y H:i') : 'N/A' }}</span></p>
-            </div>
-
-           @php
-                $combinedTables = is_array($orderSummary['combined_tables'] ?? null)
-                    ? $orderSummary['combined_tables']
-                    : [];
-            @endphp
-
-            {{-- Tampilkan jika meja gabungan lebih dari 1 --}}
-            @if(is_array($combinedTables) && count($combinedTables) > 1)
-            <div class="alert alert-info mb-4">
-                <h5><i class="bi bi-table me-2"></i>Meja yang Digabungkan</h5>
-                <ul class="mb-0">
-                    @foreach($combinedTables as $meja)
-                        <li>Meja {{ $meja['nomor_meja'] }} (Kapasitas: {{ $meja['kapasitas'] }})</li>
-                    @endforeach
-                </ul>
-            </div>
-            @endif
-
-            @if(isset($reservasi) && $reservasi->payment_method)
-            <div class="payment-details mb-4">
-                <h5 class="fw-semibold mb-3">Detail Pembayaran:</h5>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Metode Pembayaran:</strong><br>
-                            <span class="badge bg-primary">
-                                {{ strtoupper($reservasi->payment_method) }}
-                            </span>
-                        </p>
-
-                        @if($reservasi->payment_method === 'cash')
-                        <p><strong>Jumlah Uang:</strong><br>
-                            Rp {{ number_format($reservasi->amount_paid, 0, ',', '.') }}
-                        </p>
-                        <p><strong>Kembalian:</strong><br>
-                            Rp {{ number_format($reservasi->change_given, 0, ',', '.') }}
-                        </p>
+        <div class="card-body">
+            {{-- Informasi Umum --}}
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>ID Order:</strong> {{ $reservasi->kode_reservasi }}</p>
+                    <p><strong>Pelanggan:</strong> {{ $reservasi->nama_pelanggan ?? 'N/A' }}</p>
+                    <p><strong>Waktu Pesan:</strong> {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan ?? $reservasi->created_at)->translatedFormat('l, d M Y H:i') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>No. Meja:</strong> 
+                        @if($reservasi->meja)
+                            {{ $reservasi->meja->nomor_meja }} ({{ $reservasi->meja->area }})
+                        @else
+                            N/A
                         @endif
-                    </div>
-
-                    <div class="col-md-6">
-                        <p><strong>Status Pembayaran:</strong><br>
-                            @if($reservasi->status === 'paid')
-                            <span class="badge bg-success">LUNAS</span>
-                            @else
-                            <span class="badge bg-warning text-dark">PENDING</span>
-                            @endif
-                        </p>
-
-                        <p><strong>Waktu Pembayaran:</strong><br>
-                             {{ isset($reservasi->waktu_selesai) ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('d M Y H:i') : 'N/A' }}
-                        </p>
-                    </div>
+                    </p>
+                    <p><strong>Pelayan:</strong> {{ $reservasi->staff?->nama ?? 'N/A' }}</p>
                 </div>
             </div>
-            @endif
 
-            <h5 class="mb-3 fw-semibold">Detail Item Pesanan:</h5>
-            <div class="table-responsive">
-                <table class="table table-hover items-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Menu</th>
-                            <th scope="col" class="text-center">Qty</th>
-                            <th scope="col" class="text-end">Harga Satuan</th>
-                            <th scope="col" class="text-end">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($orderSummary['items'] as $index => $item)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>
-                                {{ $item['nama_menu'] ?? 'N/A' }}
-                                @if(!empty($item['catatan']))
-                                    <div class="item-notes"><em><i class="bi bi-card-text me-1"></i> {{ $item['catatan'] }}</em></div>
-                                @endif
-                            </td>
-                            <td class="text-center">{{ $item['quantity'] ?? 0 }}</td>
-                            <td class="text-end">Rp {{ number_format($item['harga_satuan'] ?? 0, 0, ',', '.') }}</td>
-                            <td class="text-end fw-semibold">Rp {{ number_format($item['subtotal'] ?? 0, 0, ',', '.') }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">Tidak ada item dalam pesanan ini.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4" class="text-end fw-bold fs-5 border-0 pt-3">Total Keseluruhan:</td>
-                            <td class="text-end fw-bold grand-total-value border-0 pt-3">Rp {{ number_format($orderSummary['total_keseluruhan'] ?? 0, 0, ',', '.') }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <hr>
+
+            {{-- Detail Pembayaran --}}
+            <h5>Detail Pembayaran:</h5>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <p><strong>Metode Pembayaran:</strong>
+                        @switch($reservasi->payment_method)
+                            @case('qris')
+                                <span class="badge bg-primary">QRIS</span>
+                                @break
+
+                            @case('tunai')
+                                <span class="badge bg-warning">Tunai</span>
+                                @break
+                        @endswitch
+                    </p>
+                </div>
+
+                <div class="col-md-4">
+                    <p><strong>Status Pembayaran:</strong>
+                        @if($reservasi->status === 'dibatalkan')
+                            <span class="badge bg-danger">Dibatalkan</span>
+                        @elseif($reservasi->payment_status === 'paid' || $reservasi->status === 'selesai')
+                            <span class="badge bg-success">LUNAS</span>
+                        @else
+                            <span class="badge bg-warning text-dark">Belum Lunas</span>
+                        @endif
+                    </p>
+                </div>
+
+                <div class="col-md-4">
+                    <p><strong>Waktu Pembayaran:</strong>
+                        {{-- Anda bisa menyimpan timestamp pembayaran di kolom terpisah, misal 'waktu_selesai' atau 'paid_at' --}}
+                        {{ 
+                            $reservasi->waktu_selesai 
+                                ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('l, d M Y H:i') 
+                                : 'N/A' 
+                        }}
+                    </p>
+                </div>
             </div>
 
-            <div class="mt-5 text-center">
-                <a href="{{ route('pelayan.dashboard') }}" class="btn btn-primary btn-lg me-2">
-                    <i class="bi bi-plus-circle-fill me-1"></i> Buat Pesanan Baru
-                </a>
+            <hr>
 
-                @php
-                    $from = request('from') ?? 'reservasi'; // default reservasi
-                    $backRoute = $from === 'dinein' ? route('pelayan.dinein') : route('pelayan.reservasi');
-                    $backLabel = $from === 'dinein' ? 'Daftar Dine-In' : 'Daftar Reservasi';
-                @endphp
+            {{-- Detail Item Pesanan --}}
+            <h5>Detail Item Pesanan:</h5>
+            <table class="table table-bordered mt-2">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th>Menu</th>
+                        <th class="text-center" style="width: 10%;">Qty</th>
+                        <th class="text-end" style="width: 20%;">Harga Satuan</th>
+                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($reservasi->orders as $index => $order)
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $order->menu->name }}</td>
+                            <td class="text-center">{{ $order->quantity }}</td>
+                            <td class="text-end">Rp {{ number_format($order->price_at_order, 0, ',', '.') }}</td>
+                            <td class="text-end">Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
 
-                <a href="{{ $backRoute }}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-list-ul me-1"></i> {{ $backLabel }}
-                </a>
+            {{-- Total --}}
+            <div class="row mt-3">
+                <div class="col-md-8"></div>
+                <div class="col-md-4 text-end">
+                    <h5><strong>Total Keseluruhan:</strong> Rp {{ number_format($reservasi->total_bill, 0, ',', '.') }}</h5>
+                </div>
             </div>
-        @else
-            <div class="alert alert-warning text-center">Tidak ada detail pesanan untuk ditampilkan.</div>
-            <div class="mt-4 text-center">
-                <a href="{{ route('pelayan.dashboard') }}" class="btn btn-primary btn-lg">Buat Pesanan Baru</a>
-            </div>
-        @endif
+        </div>
+
+        <div class="card-footer text-end">
+            <a href="{{ route('pelayan.dinein') }}" class="btn btn-secondary">Kembali ke Daftar Dine-in</a>
+        </div>
     </div>
 </div>
 @endsection
