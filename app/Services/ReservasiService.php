@@ -17,9 +17,9 @@ class ReservasiService
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('kode_reservasi', 'like', "%$search%")
-                  ->orWhere('nama_pelanggan', 'like', "%$search%")
-                  ->orWhereHas('pengguna', fn($q2) => $q2->where('nama', 'like', "%$search%"))
-                  ->orWhereHas('meja', fn($q3) => $q3->where('nomor_meja', 'like', "%$search%"));
+                    ->orWhere('nama_pelanggan', 'like', "%$search%")
+                    ->orWhereHas('pengguna', fn($q2) => $q2->where('nama', 'like', "%$search%"))
+                    ->orWhereHas('meja', fn($q3) => $q3->where('nomor_meja', 'like', "%$search%"));
             });
         }
 
