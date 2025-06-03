@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 
 // Middleware classes
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -18,27 +21,34 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // API middleware - TIDAK TERMASUK session middleware untuk stateless API
+        // Register global middleware for API (sessions, cookies, Sanctum)
         $middleware->api([
-            EnsureFrontendRequestsAreStateful::class, // Sanctum middleware
-            'throttle:api',
+            // If you ever need sessions for "stateful" SPA, uncomment StartSession:
+            StartSession::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            EnsureFrontendRequestsAreStateful::class, // for Sanctum
+            $middleware->validateCsrfTokens(except: [
+            'api/*'
+        ]);
         ]);
 
-        // Alias middleware
+        // Alias custom middleware so you can use 'customer' and 'auth:sanctum' in routes
         $middleware->alias([
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
+            'auth:sanctum' => EnsureFrontendRequestsAreStateful::class,
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
-        ]);
-
-        // PENTING: Exclude CSRF untuk API routes
-        $middleware->validateCsrfTokens(except: [
-            'api/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // (you can customize exception handlers here)
     })
+    ->withProviders([
+        // (add any extra service providers here)
+    ])
     ->booted(function () {
         RateLimiter::for('api', function (Request $request) {
+            // Use Limit so this line won't error
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     })
