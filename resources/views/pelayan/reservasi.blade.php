@@ -43,6 +43,8 @@
                 <th>Detail Pembayaran</th>
                 <th>Detail Menu</th>
                 <th>Bayar Sisa</th>
+                <th>Aksi</th>
+
             </tr>
         </thead>
         <tbody>
@@ -96,11 +98,18 @@
                         <a href="{{ route('pelayan.reservasi.detail', ['id' => $item->id, 'from' => 'reservasi']) }}" class="btn btn-primary btn-sm">Detail</a>
                     </td>
                     <td class="text-center">
-                        @if($item->status !== 'paid')
+                        @if($item->status !== 'selesai')
                             <a href="{{ route('pelayan.reservasi.bayarSisa', $item->id) }}" class="btn btn-warning btn-sm" title="Bayar Sisa"><i class="bi bi-cash-coin"></i> Bayar Sisa</a>
                         @else
                             <span class="text-muted">-</span>
                         @endif
+                    </td>
+                    <td class="text-center">
+                        <form action="{{ route('pelayan.reservasi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus"><i class="bi bi-trash"></i></button>
+                        </form>
                     </td>
                 </tr>
             @empty

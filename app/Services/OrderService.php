@@ -158,7 +158,7 @@ class OrderService
             $finalTotalBill  = $subtotal + $serviceCharge + $tax;
 
             // 7. Simpan data reservasi
-            $reservasi = Reservasi::create([
+           $reservasi = Reservasi::create([
                 'kode_reservasi'   => $kodeReservasi,
                 'meja_id'          => $mejaUtama->id,
                 'combined_tables'  => json_encode($combinedTables),
@@ -167,7 +167,7 @@ class OrderService
                 'nama_pelanggan'   => $request->nama_pelanggan ?? 'Walk-in Customer',
                 'jumlah_tamu'      => $jumlahTamu,
                 'waktu_kedatangan' => now(),    
-                'status'           => 'selesai',
+                'status'           => 'pending_payment',
                 'source'           => 'dine_in',
                 'kehadiran_status' => 'hadir',
                 'total_bill'       => $finalTotalBill,
