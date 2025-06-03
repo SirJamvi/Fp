@@ -116,7 +116,7 @@ class OrderService
                 // Tambahkan meja tambahan dari bestSubset ke combinedTables
                 foreach ($bestSubset as $mejaId) {
                     $combinedTables[] = $mejaId;
-                    $totalCapacity  += Meja::find($mejaId)->kapasitas;
+                    $totalCapacity   += Meja::find($mejaId)->kapasitas;
                 }
             }
 
@@ -153,12 +153,12 @@ class OrderService
             }
 
             // 6. Hitung total bill (serviceCharge & tax masih 0 sementara)
-            $serviceCharge  = 0;
-            $tax            = 0;
+            $serviceCharge   = 0;
+            $tax             = 0;
             $finalTotalBill  = $subtotal + $serviceCharge + $tax;
 
             // 7. Simpan data reservasi
-            $reservasi = Reservasi::create([
+           $reservasi = Reservasi::create([
                 'kode_reservasi'   => $kodeReservasi,
                 'meja_id'          => $mejaUtama->id,
                 'combined_tables'  => json_encode($combinedTables),
@@ -194,7 +194,7 @@ class OrderService
             foreach ($combinedTables as $mejaId) {
                 $meja = Meja::find($mejaId);
                 if ($meja && $meja->status === 'tersedia') {
-                    $meja->status              = 'terisi';
+                    $meja->status             = 'terisi';
                     $meja->current_reservasi_id = $reservasi->id;
                     $meja->save();
                 }
@@ -204,12 +204,12 @@ class OrderService
 
             // 10. Kembalikan respon sukses
             return [
-                'success'           => true,
-                'message'           => 'Pesanan berhasil dibuat. Lanjutkan ke pembayaran.',
-                'reservasi_id'      => $reservasi->id,
-                'total_bill'        => $reservasi->total_bill,
-                'kode_reservasi'    => $reservasi->kode_reservasi,
-                'combined_tables'   => $combinedTables,
+                'success'         => true,
+                'message'         => 'Pesanan berhasil dibuat. Lanjutkan ke pembayaran.',
+                'reservasi_id'    => $reservasi->id,
+                'total_bill'      => $reservasi->total_bill,
+                'kode_reservasi'  => $reservasi->kode_reservasi,
+                'combined_tables' => $combinedTables,
             ];
         }
         catch (\Exception $e) {

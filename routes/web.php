@@ -9,9 +9,6 @@ use App\Http\Controllers\Auth\LoginController;
 // Public User
 use App\Http\Controllers\User\UserController;
 
-// Transaksi
-use App\Http\Controllers\TransaksiController;
-
 // Admin
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
@@ -37,17 +34,9 @@ Route::get('/', function () {
 // =======================
 // Authentication Routes
 // =======================
-Route::get('/login', [LoginController::class, 'showLoginForm'])
-    ->name('login');
-Route::post('/login', [LoginController::class, 'login'])
-    ->name('login.submit');
-Route::post('/logout', [LoginController::class, 'logout'])
-    ->name('logout');
-
-// =======================
-// Transaksi Routes (Optional)
-// =======================
-Route::get('/bayar', [TransaksiController::class, 'bayar']);
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // =======================
 // Public User Routes

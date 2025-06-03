@@ -14,7 +14,7 @@ class StoreOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            'meja_id' => 'required|exists:meja,id',
+            'meja_id' => 'required|exists:meja,id', // <-- Tetap 'required'
             'nama_pelanggan' => 'nullable|string|max:255',
             'jumlah_tamu' => 'required|integer|min:1',
             'items' => 'required|array|min:1',
