@@ -18,28 +18,33 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // API middleware - TIDAK TERMASUK session middleware untuk stateless API
+        // Register API middleware - REMOVE sessions and cookies for mobile API
         $middleware->api([
-            EnsureFrontendRequestsAreStateful::class, // Sanctum middleware
-            'throttle:api',
+            // Do NOT include session middleware for mobile API
+            // StartSession::class,
+            // EncryptCookies::class,
+            // AddQueuedCookiesToResponse::class,
+            
+            // Only include Sanctum for token-based auth
+            EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        // Alias middleware
+        // Alias custom middleware
         $middleware->alias([
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
         ]);
 
-        // PENTING: Exclude CSRF untuk API routes
-        $middleware->validateCsrfTokens(except: [
-            'api/*',
+        // Configure CORS for API
+        $middleware->web([
+            \Illuminate\Foundation\Http\Middleware\HandleCors::class,
+        ]);
+        
+        $middleware->api([
+            \Illuminate\Foundation\Http\Middleware\HandleCors::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })
-    ->booted(function () {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
     })
     ->create();
