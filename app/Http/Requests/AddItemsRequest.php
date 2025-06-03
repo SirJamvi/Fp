@@ -8,7 +8,7 @@ class AddItemsRequest extends FormRequest
 {
     public function authorize()
     {
-        return true; // Retained from OVERALL: Anyone can make this request
+        return true;
     }
 
     public function rules()
@@ -20,5 +20,4 @@ class AddItemsRequest extends FormRequest
             'items.*.notes' => 'nullable|string|max:1000',
         ];
     }
-    // No custom attributes() or messages() methods here, as they were in 'main'
 }
