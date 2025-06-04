@@ -48,7 +48,6 @@
     </div>
 
         <div class="d-flex gap-2">
-        <a href="#" class="btn btn-primary">Kirim ke Koki</a>
 
         @php
             $from = request('from');

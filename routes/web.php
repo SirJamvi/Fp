@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MejaController;
 use App\Http\Controllers\Admin\PenggunaController;
+use App\Http\Controllers\Admin\InfoCustController;
 use App\Http\Controllers\Admin\ReservasiController as AdminReservasiController;
 
 // Pelayan
@@ -70,9 +71,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/reservasi/export/pdf', [AdminReservasiController::class, 'exportPdf'])->name('reservasi.export.pdf');
     Route::get('/reservasi/export/word', [AdminReservasiController::class, 'exportWord'])->name('reservasi.export.word');
 
-    // Reports & Customer Info
-    Route::view('/laporan', 'admin.laporan', ['title' => 'Laporan'])->name('laporan');
-    Route::view('/info-cust', 'admin.info-cust', ['title' => 'Info Pelanggan'])->name('info-cust');
+    // Info Costumer
+    Route::get('/info-cust', [InfoCustController::class, 'index'])->name('info-cust');
+
+    Route::get('/info-cust/export/excel', [InfoCustController::class, 'exportExcel'])->name('info-cust.export.excel');
+    Route::get('/info-cust/export/pdf', [InfoCustController::class, 'exportPdf'])->name('info-cust.export.pdf');
+    Route::get('/info-cust/export/word', [InfoCustController::class, 'exportWord'])->name('info-cust.export.word');
 });
 
 /*

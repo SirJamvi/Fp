@@ -29,7 +29,6 @@
 </style>
 @endpush
 
-
 @section('content')
 <div class="container mt-4">
     <div class="card shadow-sm">
@@ -79,7 +78,7 @@
                     <p><strong>Status Pembayaran:</strong>
                         @if($reservasi->status === 'dibatalkan')
                             <span class="badge bg-danger">Dibatalkan</span>
-                        @elseif($reservasi->payment_status === 'paid' || $reservasi->status === 'selesai')
+                        @elseif($reservasi->status === 'paid' || $reservasi->status === 'selesai')
                             <span class="badge bg-success">LUNAS</span>
                         @else
                             <span class="badge bg-warning text-dark">Belum Lunas</span>
@@ -89,7 +88,6 @@
 
                 <div class="col-md-4">
                     <p><strong>Waktu Pembayaran:</strong>
-                        {{-- Anda bisa menyimpan timestamp pembayaran di kolom terpisah, misal 'waktu_selesai' atau 'paid_at' --}}
                         {{ 
                             $reservasi->waktu_selesai 
                                 ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('l, d M Y H:i') 
@@ -135,8 +133,21 @@
             </div>
         </div>
 
+        {{-- Bagian “Kembali” yang sudah dimodifikasi --}}
         <div class="card-footer text-end">
-            <a href="{{ route('pelayan.dinein') }}" class="btn btn-secondary">Kembali ke Daftar Dine-in</a>
+            @php
+                $from = request('from', 'reservasi');
+            @endphp
+
+            @if($from === 'dinein')
+                <a href="{{ route('pelayan.dinein') }}" class="btn btn-secondary">
+                    Kembali ke Daftar Dine-in
+                </a>
+            @else
+                <a href="{{ route('pelayan.reservasi') }}" class="btn btn-secondary">
+                    Kembali ke Daftar Reservasi
+                </a>
+            @endif
         </div>
     </div>
 </div>
