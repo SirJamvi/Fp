@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use App\Models\Meja;
 use App\Models\Reservasi;
 use App\Services\PaymentService;
@@ -31,45 +30,15 @@ class ReservationController extends Controller
      */
     public function store(ReservationRequest $request)
     {
-        // Log untuk debugging
-        Log::info('Reservation Request Data:', $request->all());
-
         DB::beginTransaction();
 
         try {
-            // Ambil user yang sedang login (model Pengguna)
+            // Ambil user yang sedang login dari tabel 'pengguna'
             $user = Auth::user();
 
-            // Parse waktu kedatangan dengan lebih hati-hati
-            try {
-                $waktuKedatangan = Carbon::createFromFormat('Y-m-d H:i:s', $request->waktu_kedatangan);
-            } catch (\Exception $e) {
-                // Jika parsing gagal, coba parse dengan format lain
-                try {
-                    $waktuKedatangan = Carbon::parse($request->waktu_kedatangan);
-                } catch (\Exception $e2) {
-                    return response()->json([
-                        'message' => 'Format waktu kedatangan tidak valid.',
-                        'error' => 'Gunakan format YYYY-MM-DD HH:mm:ss'
-                    ], 400);
-                }
-            }
+            $waktuKedatangan = Carbon::parse($request->waktu_kedatangan);
 
-            // Validasi minimal 15 menit dari sekarang
-            $now = Carbon::now();
-            $minTime = $now->copy()->addMinutes(15);
-            
-            if ($waktuKedatangan->lt($minTime)) {
-                return response()->json([
-                    'message' => 'Waktu kedatangan minimal 15 menit dari sekarang.',
-                    'current_time' => $now->format('Y-m-d H:i:s'),
-                    'min_time' => $minTime->format('Y-m-d H:i:s'),
-                    'requested_time' => $waktuKedatangan->format('Y-m-d H:i:s')
-                ], 400);
-            }
-
-            // Cek ketersediaan meja: kapasitas >= jumlah_tamu, status tersedia,
-            // dan tidak ada reservasi lain yang overlap ±2 jam
+            // Cek ketersediaan meja berdasarkan kapasitas, status, dan waktu kedatangan yang tumpang tindih
             $availableMeja = Meja::where('kapasitas', '>=', $request->jumlah_tamu)
                                  ->where('status', 'tersedia')
                                  ->whereNotExists(function ($query) use ($waktuKedatangan) {
@@ -88,9 +57,7 @@ class ReservationController extends Controller
             if (! $availableMeja) {
                 DB::rollBack();
                 return response()->json([
-                    'message' => 'Tidak ada meja yang tersedia untuk jumlah tamu ini pada waktu tersebut.',
-                    'waktu_requested' => $waktuKedatangan->format('Y-m-d H:i:s'),
-                    'jumlah_tamu' => $request->jumlah_tamu
+                    'message' => 'Tidak ada meja yang tersedia untuk jumlah tamu ini pada waktu tersebut.'
                 ], 400);
             }
 
@@ -105,7 +72,7 @@ class ReservationController extends Controller
                 'user_id'                 => $user->id,
                 'meja_id'                 => $availableMeja->id,
                 'nama_pelanggan'          => $user->nama,
-                'waktu_kedatangan'        => $waktuKedatangan->format('Y-m-d H:i:s'),
+                'waktu_kedatangan'        => $waktuKedatangan,
                 'jumlah_tamu'             => $request->jumlah_tamu,
                 'kehadiran_status'        => 'belum_dikonfirmasi',
                 'status'                  => 'pending_payment',
@@ -116,31 +83,18 @@ class ReservationController extends Controller
                 'sisa_tagihan_reservasi'  => 0,
             ]);
 
-            // Update status meja menjadi 'dipesan'
+            // Ubah status meja menjadi 'dipesan'
             $availableMeja->update(['status' => 'dipesan']);
 
             DB::commit();
 
-            Log::info('Reservation created successfully:', [
-                'reservation_id' => $reservasi->id,
-                'code' => $reservasi->kode_reservasi,
-                'waktu_kedatangan' => $reservasi->waktu_kedatangan
-            ]);
-
             return response()->json([
-                'message'   => 'Reservasi berhasil dibuat.',
-                'reservasi' => $reservasi->load('meja'),
+                'message'    => 'Reservasi berhasil dibuat.',
+                'reservasi'  => $reservasi->load('meja'),
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Reservation creation failed:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-            
             return response()->json([
                 'message' => 'Terjadi kesalahan saat membuat reservasi.',
                 'error'   => $e->getMessage(),
@@ -217,7 +171,7 @@ class ReservationController extends Controller
         try {
             $reservasi->update(['status' => 'dibatalkan']);
 
-            // Kembalikan status meja menjadi 'tersedia' jika bukan combined_tables
+            // Kembalikan status meja menjadi 'tersedia' jika tidak ada penggabungan meja
             if ($reservasi->meja && ! $reservasi->combined_tables) {
                 $reservasi->meja->update(['status' => 'tersedia']);
             }
