@@ -14,7 +14,6 @@
                     <a href="{{ route('pelayan.meja') }}" class="btn btn-sm btn-outline-danger ms-2">Reset</a>
                 @endif
             </form>
-            <button class="btn btn-sm btn-outline-secondary">🔽 Filter</button>
         </div>
     </div>
 

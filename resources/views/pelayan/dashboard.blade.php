@@ -240,7 +240,12 @@
     {{-- END OF ORDER FORM --}}
 
     <input type="hidden" id="processPaymentRoute" value="{{ route('pelayan.order.pay', ['reservasi_id' => ':reservasiId']) }}">
-    <input type="hidden" id="orderSummaryRoute" value="{{ route('pelayan.order.summary', ['reservasi_id' => ':reservasiId']) }}">
+    <input 
+    type="hidden" 
+    id="orderSummaryRoute" 
+    value="{{ route('pelayan.order.summary', ['reservasi_id' => ':reservasiId', 'from' => 'dinein']) }}"
+>
+
 
     {{-- Payment Modal --}}
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-reservasi-id="">

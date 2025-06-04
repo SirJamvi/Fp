@@ -92,8 +92,15 @@
                         @endif
                     </td>
                     <td class="text-center">
-                        <a href="{{ route('pelayan.order.summary', $item->id) }}" class="btn btn-info btn-sm" title="Order Summary"><i class="bi bi-receipt"></i></a>
+                        <a 
+                            href="{{ route('pelayan.order.summary', ['reservasi_id' => $item->id, 'from' => 'reservasi']) }}" 
+                            class="btn btn-info btn-sm" 
+                            title="Order Summary"
+                        >
+                            <i class="bi bi-receipt"></i>
+                        </a>
                     </td>
+
                     <td class="text-center">
                         <a href="{{ route('pelayan.reservasi.detail', ['id' => $item->id, 'from' => 'reservasi']) }}" class="btn btn-primary btn-sm">Detail</a>
                     </td>
