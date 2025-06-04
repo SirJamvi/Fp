@@ -7,42 +7,36 @@ use Carbon\Carbon;
 
 class ReservationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Pelanggan yang terautentikasi bisa membuat reservasi
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
-     */
     public function rules(): array
     {
         return [
-            // 'meja_id' => 'required|exists:meja,id', // Tidak lagi required jika sistem mencari meja
+            // Ubah validasi untuk menerima format datetime
             'waktu_kedatangan' => [
                 'required',
-                'date_format:Y-m-d H:i:s',
-                'after_or_equal:' . Carbon::now()->addMinutes(15)->format('Y-m-d H:i:s'), // Minimal 15 menit dari sekarang
+                'date_format:Y-m-d H:i:s', // Sesuaikan dengan format yang dikirim frontend
+                'after_or_equal:' . Carbon::now()->addMinutes(15)->format('Y-m-d H:i:s'),
             ],
-            'jumlah_tamu' => 'required|integer|min:1',
-            'catatan' => 'nullable|string|max:1000',
+            'jumlah_tamu' => 'required|integer|min:1|max:20',
+            'catatan'     => 'nullable|string|max:1000',
         ];
     }
 
-    /**
-     * Get the error messages for the defined validation rules.
-     *
-     * @return array
-     */
     public function messages(): array
     {
         return [
-            'waktu_kedatangan.after_or_equal' => 'Waktu kedatangan minimal 15 menit dari sekarang.',
+            'waktu_kedatangan.required'         => 'Waktu kedatangan harus diisi.',
+            'waktu_kedatangan.date_format'      => 'Format waktu kedatangan tidak valid. Gunakan format YYYY-MM-DD HH:mm:ss.',
+            'waktu_kedatangan.after_or_equal'   => 'Waktu kedatangan minimal 15 menit dari sekarang.',
+            'jumlah_tamu.required'              => 'Jumlah tamu harus diisi.',
+            'jumlah_tamu.integer'               => 'Jumlah tamu harus berupa angka.',
+            'jumlah_tamu.min'                   => 'Jumlah tamu minimal 1 orang.',
+            'jumlah_tamu.max'                   => 'Jumlah tamu maksimal 20 orang.',
+            'catatan.max'                       => 'Catatan maksimal 1000 karakter.',
         ];
     }
 }

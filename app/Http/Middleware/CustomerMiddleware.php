@@ -4,28 +4,20 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerMiddleware
 {
-    /**
-     * Handle an incoming request.
-     */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        // Sanctum sudah mengautentikasi user sebelumnya via middleware 'auth:sanctum'
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Tidak terautentikasi. Token tidak valid atau tidak diberikan.'
-            ], 401);
+        if (!Auth::guard('sanctum')->check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        if ($user->peran !== 'pelanggan') {
-            return response()->json([
-                'message' => 'Akses ditolak. Anda tidak memiliki izin sebagai pelanggan.'
-            ], 403);
+        $user = Auth::guard('sanctum')->user();
+
+        if (!in_array($user->peran ?? $user->role, ['pelanggan', 'customer'])) {
+            return response()->json(['message' => 'Akses ditolak. Anda bukan pelanggan.'], 403);
         }
 
         return $next($request);
