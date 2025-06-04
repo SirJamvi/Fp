@@ -11,8 +11,8 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Middleware\AdminMiddleware;
 // Pastikan Anda juga mengimpor PelayanMiddleware dan KokiMiddleware jika Anda menggunakannya
-use App\Http\Middleware\PelayanMiddleware; // <-- Baris ini diaktifkan
-use App\Http\Middleware\KokiMiddleware;   // <-- Baris ini diaktifkan
+// use App\Http\Middleware\PelayanMiddleware;
+// use App\Http\Middleware\KokiMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,8 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
             'admin'    => AdminMiddleware::class,
             // Aktifkan baris berikut jika Anda memiliki dan ingin menggunakan middleware tersebut
-            'pelayan'  => PelayanMiddleware::class, // <-- Baris ini diaktifkan dan disesuaikan
-            'koki'     => KokiMiddleware::class,    // <-- Baris ini diaktifkan dan disesuaikan
+            // 'pelayan'  => \App\Http\Middleware\PelayanMiddleware::class,
+            // 'koki'     => \App\Http\Middleware\KokiMiddleware::class,
         ]);
 
         // Exclude CSRF untuk API routes
