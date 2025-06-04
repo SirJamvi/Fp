@@ -1,0 +1,93 @@
+[2025-06-03 14:37:11] local.ERROR: Target class [Illuminate\Foundation\Http\Middleware\HandleCors] does not exist. {"exception":"[object] (Illuminate\\Contracts\\Container\\BindingResolutionException(code: 0): Target class [Illuminate\\Foundation\\Http\\Middleware\\HandleCors] does not exist. at C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php:961)
+[stacktrace]
+#0 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(832): Illuminate\\Container\\Container->build('Illuminate\\\\Foun...')
+#1 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1078): Illuminate\\Container\\Container->resolve('Illuminate\\\\Foun...', Array, true)
+#2 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(763): Illuminate\\Foundation\\Application->resolve('Illuminate\\\\Foun...', Array)
+#3 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1058): Illuminate\\Container\\Container->make('Illuminate\\\\Foun...', Array)
+#4 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(258): Illuminate\\Foundation\\Application->make('Illuminate\\\\Foun...')
+#5 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(216): Illuminate\\Foundation\\Http\\Kernel->terminateMiddleware(Object(Illuminate\\Http\\Request), Object(Illuminate\\Http\\JsonResponse))
+#6 C:\\laragon\\www\\rd\\public\\index.php(24): Illuminate\\Foundation\\Http\\Kernel->terminate(Object(Illuminate\\Http\\Request), Object(Illuminate\\Http\\JsonResponse))
+#7 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(23): require_once('C:\\\\laragon\\\\www\\\\...')
+#8 {main}
+
+[previous exception] [object] (ReflectionException(code: -1): Class \"Illuminate\\Foundation\\Http\\Middleware\\HandleCors\" does not exist at C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php:959)
+[stacktrace]
+#0 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(959): ReflectionClass->__construct('Illuminate\\\\Foun...')
+#1 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(832): Illuminate\\Container\\Container->build('Illuminate\\\\Foun...')
+#2 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1078): Illuminate\\Container\\Container->resolve('Illuminate\\\\Foun...', Array, true)
+#3 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(763): Illuminate\\Foundation\\Application->resolve('Illuminate\\\\Foun...', Array)
+#4 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1058): Illuminate\\Container\\Container->make('Illuminate\\\\Foun...', Array)
+#5 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(258): Illuminate\\Foundation\\Application->make('Illuminate\\\\Foun...')
+#6 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(216): Illuminate\\Foundation\\Http\\Kernel->terminateMiddleware(Object(Illuminate\\Http\\Request), Object(Illuminate\\Http\\JsonResponse))
+#7 C:\\laragon\\www\\rd\\public\\index.php(24): Illuminate\\Foundation\\Http\\Kernel->terminate(Object(Illuminate\\Http\\Request), Object(Illuminate\\Http\\JsonResponse))
+#8 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(23): require_once('C:\\\\laragon\\\\www\\\\...')
+#9 {main}
+"} 
+[2025-06-03 14:37:11] local.ERROR: Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at C:\laragon\www\rd\vendor\symfony\http-foundation\Response.php:387) in C:\laragon\www\rd\vendor\symfony\http-foundation\Response.php:322
+Stack trace:
+#0 C:\laragon\www\rd\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError(2, 'Cannot modify h...', 'C:\\laragon\\www\\...', 322)
+#1 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}(2, 'Cannot modify h...', 'C:\\laragon\\www\\...', 322)
+#2 C:\laragon\www\rd\vendor\symfony\http-foundation\Response.php(322): header('HTTP/1.0 500 In...', true, 500)
+#3 C:\laragon\www\rd\vendor\symfony\http-foundation\Response.php(401): Symfony\Component\HttpFoundation\Response->sendHeaders()
+#4 C:\laragon\www\rd\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(219): Symfony\Component\HttpFoundation\Response->send()
+#5 C:\laragon\www\rd\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(196): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#6 C:\laragon\www\rd\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#8 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at C:\\laragon\\www\\rd\\vendor\\symfony\\http-foundation\\Response.php:387) in C:\\laragon\\www\\rd\\vendor\\symfony\\http-foundation\\Response.php:322
+Stack trace:
+#0 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(256): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError(2, 'Cannot modify h...', 'C:\\\\laragon\\\\www\\\\...', 322)
+#1 [internal function]: Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}(2, 'Cannot modify h...', 'C:\\\\laragon\\\\www\\\\...', 322)
+#2 C:\\laragon\\www\\rd\\vendor\\symfony\\http-foundation\\Response.php(322): header('HTTP/1.0 500 In...', true, 500)
+#3 C:\\laragon\\www\\rd\\vendor\\symfony\\http-foundation\\Response.php(401): Symfony\\Component\\HttpFoundation\\Response->sendHeaders()
+#4 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(219): Symfony\\Component\\HttpFoundation\\Response->send()
+#5 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(196): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->renderHttpResponse(Object(Illuminate\\Contracts\\Container\\BindingResolutionException))
+#6 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(256): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleException(Object(Illuminate\\Contracts\\Container\\BindingResolutionException))
+#7 [internal function]: Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}(Object(Illuminate\\Contracts\\Container\\BindingResolutionException))
+#8 {main}
+  thrown at C:\\laragon\\www\\rd\\vendor\\symfony\\http-foundation\\Response.php:322)
+[stacktrace]
+#0 {main}
+"} 
+[2025-06-03 14:45:11] local.ERROR: Object of class Illuminate\Foundation\Configuration\Middleware could not be converted to string {"exception":"[object] (Error(code: 0): Object of class Illuminate\\Foundation\\Configuration\\Middleware could not be converted to string at C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Configuration\\Middleware.php:525)
+[stacktrace]
+#0 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Configuration\\Middleware.php(525): array_unique(Array)
+#1 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Configuration\\ApplicationBuilder.php(286): Illuminate\\Foundation\\Configuration\\Middleware->getMiddlewareGroups()
+#2 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(1432): Illuminate\\Foundation\\Configuration\\ApplicationBuilder->Illuminate\\Foundation\\Configuration\\{closure}(Object(Illuminate\\Foundation\\Http\\Kernel), Object(Illuminate\\Foundation\\Application))
+#3 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(1368): Illuminate\\Container\\Container->fireCallbackArray(Object(Illuminate\\Foundation\\Http\\Kernel), Array)
+#4 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(1354): Illuminate\\Container\\Container->fireAfterResolvingCallbacks('Illuminate\\\\Cont...', Object(Illuminate\\Foundation\\Http\\Kernel))
+#5 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(850): Illuminate\\Container\\Container->fireResolvingCallbacks('Illuminate\\\\Cont...', Object(Illuminate\\Foundation\\Http\\Kernel))
+#6 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1078): Illuminate\\Container\\Container->resolve('Illuminate\\\\Cont...', Array, true)
+#7 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(763): Illuminate\\Foundation\\Application->resolve('Illuminate\\\\Cont...', Array)
+#8 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1058): Illuminate\\Container\\Container->make('Illuminate\\\\Cont...', Array)
+#9 C:\\laragon\\www\\rd\\vendor\\laravel\\sanctum\\src\\SanctumServiceProvider.php(119): Illuminate\\Foundation\\Application->make('Illuminate\\\\Cont...')
+#10 C:\\laragon\\www\\rd\\vendor\\laravel\\sanctum\\src\\SanctumServiceProvider.php(58): Laravel\\Sanctum\\SanctumServiceProvider->configureMiddleware()
+#11 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(36): Laravel\\Sanctum\\SanctumServiceProvider->boot()
+#12 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Util.php(43): Illuminate\\Container\\BoundMethod::Illuminate\\Container\\{closure}()
+#13 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(95): Illuminate\\Container\\Util::unwrapIfClosure(Object(Closure))
+#14 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(35): Illuminate\\Container\\BoundMethod::callBoundMethod(Object(Illuminate\\Foundation\\Application), Array, Object(Closure))
+#15 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(696): Illuminate\\Container\\BoundMethod::call(Object(Illuminate\\Foundation\\Application), Array, Array, NULL)
+#16 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1151): Illuminate\\Container\\Container->call(Array)
+#17 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1132): Illuminate\\Foundation\\Application->bootProvider(Object(Laravel\\Sanctum\\SanctumServiceProvider))
+#18 [internal function]: Illuminate\\Foundation\\Application->Illuminate\\Foundation\\{closure}(Object(Laravel\\Sanctum\\SanctumServiceProvider), 'Laravel\\\\Sanctum...')
+#19 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1131): array_walk(Array, Object(Closure))
+#20 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\BootProviders.php(17): Illuminate\\Foundation\\Application->boot()
+#21 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(342): Illuminate\\Foundation\\Bootstrap\\BootProviders->bootstrap(Object(Illuminate\\Foundation\\Application))
+#22 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(474): Illuminate\\Foundation\\Application->bootstrapWith(Array)
+#23 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(196): Illuminate\\Foundation\\Console\\Kernel->bootstrap()
+#24 C:\\laragon\\www\\rd\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#25 C:\\laragon\\www\\rd\\artisan(13): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))
+#26 {main}
+"} 
+[2025-06-03 14:53:32] local.INFO: Register attempt {"nama":"varazubyga","email":"gecit@mailinator.com","nomor_hp":"1","password":"Pa$$w0rd!","password_confirmation":"Pa$$w0rd!"} 
+[2025-06-03 14:53:32] local.INFO: Register success {"user_id":10} 
+[2025-06-03 14:56:25] local.INFO: Register attempt {"nama":"zexut","email":"gitari@mailinator.com","nomor_hp":"1","password":"Pa$$w0rd!","password_confirmation":"Pa$$w0rd!"} 
+[2025-06-03 14:56:25] local.INFO: Register success {"user_id":11} 
+[2025-06-03 15:15:45] local.INFO: Register attempt {"nama":"taxeq","email":"kyjavunin@mailinator.com","nomor_hp":"1","password":"Pa$$w0rd!","password_confirmation":"Pa$$w0rd!"} 
+[2025-06-03 15:15:45] local.INFO: Register success {"user_id":12} 
+[2025-06-03 15:21:01] local.INFO: Register attempt {"nama":"zedyves","email":"sonykis@mailinator.com","nomor_hp":"1","password":"Pa$$w0rd!","password_confirmation":"Pa$$w0rd!"} 
+[2025-06-03 15:21:01] local.INFO: Register success {"user_id":13} 
+[2025-06-03 15:28:20] local.INFO: Register attempt {"nama":"qwe","email":"qw!@gmail.com","nomor_hp":"087821828","password":"Javi3r123.","password_confirmation":"Javi3r123."} 
+[2025-06-03 15:28:21] local.INFO: Register success {"user_id":14} 
+[2025-06-03 15:28:38] local.INFO: Login attempt {"email":"qw!@gmail.com"} 
+[2025-06-03 15:28:38] local.INFO: Login success {"user_id":14} 

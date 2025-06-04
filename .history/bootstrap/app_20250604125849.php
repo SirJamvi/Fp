@@ -1,19 +1,14 @@
 <?php
 
-// bootstrap/app.php
-
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Cache\RateLimiting\Limit;
 
 // Middleware classes
-use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\PelayanMiddleware;
-use App\Http\Middleware\KokiMiddleware;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,21 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // API middleware
+        // API middleware - TIDAK TERMASUK session middleware untuk stateless API
         $middleware->api([
-            EnsureFrontendRequestsAreStateful::class,
+            EnsureFrontendRequestsAreStateful::class, // Sanctum middleware
             'throttle:api',
         ]);
 
         // Alias middleware
         $middleware->alias([
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
-            'pelayan'  => PelayanMiddleware::class,
-            'admin'    => AdminMiddleware::class,
-            'koki'     => KokiMiddleware::class,
         ]);
 
-        // Exclude CSRF for API routes
+        // PENTING: Exclude CSRF untuk API routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);

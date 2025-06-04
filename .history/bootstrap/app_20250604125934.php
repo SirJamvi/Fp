@@ -1,19 +1,18 @@
 <?php
 
-// bootstrap/app.php
-
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Cache\RateLimiting\Limit;
 
 // Middleware classes
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\PelayanMiddleware;
-use App\Http\Middleware\KokiMiddleware;
+// Pastikan Anda juga mengimpor PelayanMiddleware dan KokiMiddleware jika Anda menggunakannya
+// use App\Http\Middleware\PelayanMiddleware;
+// use App\Http\Middleware\KokiMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,12 +31,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias middleware
         $middleware->alias([
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
-            'pelayan'  => PelayanMiddleware::class,
             'admin'    => AdminMiddleware::class,
-            'koki'     => KokiMiddleware::class,
+            // Aktifkan baris berikut jika Anda memiliki dan ingin menggunakan middleware tersebut
+            // 'pelayan'  => \App\Http\Middleware\PelayanMiddleware::class,
+            // 'koki'     => \App\Http\Middleware\KokiMiddleware::class,
         ]);
 
-        // Exclude CSRF for API routes
+        // Exclude CSRF untuk API routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
