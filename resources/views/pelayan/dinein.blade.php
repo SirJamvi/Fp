@@ -45,7 +45,33 @@
                 <tr>
                     <td>{{ $item->kode_reservasi ?? '-' }}</td>
                     <td>{{ $item->nama_pelanggan ?? $item->pengguna?->nama ?? '-' }}</td>
-                    <td>{{ $item->meja?->nomor_meja ?? '-' }} ({{ $item->meja?->area ?? '-' }})</td>
+                    <td>
+                        @php
+                            $rawCombined = $item->combined_tables;
+                            if (is_array($rawCombined)) {
+                                $tableIds = $rawCombined;
+                            } else {
+                                $decoded = @json_decode($rawCombined, true);
+                                $tableIds = is_array($decoded) ? $decoded : [];
+                            }
+                            $mejas = \App\Models\Meja::whereIn('id', $tableIds)->get();
+                        @endphp
+
+                        @if(count($mejas) > 0)
+                            @foreach($mejas as $mejaObj)
+                                <span>
+                                    {{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})
+                                </span>
+                                @if(!$loop->last)
+                                    <br>
+                                @endif
+                            @endforeach
+                        @else
+                            <span class="text-muted">-</span>
+                        @endif
+                    </td>
+
+
                     <td>{{ $item->jumlah_tamu ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan ?? $item->created_at)->translatedFormat('d M Y H:i') }}</td>
                     <td>

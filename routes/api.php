@@ -12,6 +12,7 @@ use App\Http\Controllers\Customer\RatingController;
 use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\TestController;
 
+
 // Rute publik (tanpa autentikasi)
 Route::post('customer/register', [AuthController::class, 'register']);
 Route::post('customer/login', [AuthController::class, 'login']);

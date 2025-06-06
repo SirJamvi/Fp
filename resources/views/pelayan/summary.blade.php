@@ -41,17 +41,43 @@
                 <div class="col-md-6">
                     <p><strong>ID Order:</strong> {{ $reservasi->kode_reservasi }}</p>
                     <p><strong>Pelanggan:</strong> {{ $reservasi->nama_pelanggan ?? 'N/A' }}</p>
-                    <p><strong>Waktu Pesan:</strong> {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan ?? $reservasi->created_at)->translatedFormat('l, d M Y H:i') }}</p>
+                    <p><strong>Waktu Pesan:</strong>
+                        {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan ?? $reservasi->created_at)
+                            ->translatedFormat('l, d M Y H:i') }}
+                    </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>No. Meja:</strong> 
-                        @if($reservasi->meja)
-                            {{ $reservasi->meja->nomor_meja }} ({{ $reservasi->meja->area }})
+                    <p><strong>No. Meja:</strong>
+                        @php
+                            // Jika Anda sudah membangun daftar meja di $orderSummary['combined_tables'],
+                            // Anda bisa menggunakan langsung variabel itu:
+                            $combinedTables = $orderSummary['combined_tables'] ?? [];
+
+                            // Jika ingin memuat ulang dari $reservasi->combined_tables, gunakan cara decode berikut:
+                            // $rawCombined = $reservasi->combined_tables;
+                            // if (is_array($rawCombined)) {
+                            //     $tableIds = $rawCombined;
+                            // } else {
+                            //     $decoded = @json_decode($rawCombined, true);
+                            //     $tableIds = is_array($decoded) ? $decoded : [];
+                            // }
+                            // $combinedTables = \App\Models\Meja::whereIn('id', $tableIds)
+                            //                     ->orderBy('nomor_meja')
+                            //                     ->get()
+                            //                     ->toArray();
+                        @endphp
+
+                        @if(count($combinedTables) > 0)
+                            @foreach($combinedTables as $idx => $mejaData)
+                                {{-- $mejaData sudah berupa array hasil ->toArray() --}}
+                                {{ $mejaData['nomor_meja'] }} ({{ $mejaData['area'] }})
+                                @if(!$loop->last), @endif
+                            @endforeach
                         @else
                             N/A
                         @endif
                     </p>
-                    <p><strong>Pelayan:</strong> {{ $reservasi->staff?->nama ?? 'N/A' }}</p>
+                    <p><strong>Pelayan:</strong> {{ $reservasi->staffYangMembuat->name ?? (auth()->check() ? auth()->user()->name : 'N/A') }}</p>
                 </div>
             </div>
 
@@ -70,6 +96,9 @@
                             @case('tunai')
                                 <span class="badge bg-warning">Tunai</span>
                                 @break
+
+                            @default
+                                <span class="text-muted">Tidak Diketahui</span>
                         @endswitch
                     </p>
                 </div>
@@ -89,9 +118,9 @@
                 <div class="col-md-4">
                     <p><strong>Waktu Pembayaran:</strong>
                         {{ 
-                            $reservasi->waktu_selesai 
-                                ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('l, d M Y H:i') 
-                                : 'N/A' 
+                            $reservasi->waktu_selesai
+                                ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('l, d M Y H:i')
+                                : 'N/A'
                         }}
                     </p>
                 </div>
@@ -112,13 +141,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($reservasi->orders as $index => $order)
+                    @foreach($orderSummary['items'] as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $order->menu->name }}</td>
-                            <td class="text-center">{{ $order->quantity }}</td>
-                            <td class="text-end">Rp {{ number_format($order->price_at_order, 0, ',', '.') }}</td>
-                            <td class="text-end">Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                            <td>{{ $item['nama_menu'] }}</td>
+                            <td class="text-center">{{ $item['quantity'] }}</td>
+                            <td class="text-end">
+                                Rp {{ number_format($item['harga_satuan'], 0, ',', '.') }}
+                            </td>
+                            <td class="text-end">
+                                Rp {{ number_format($item['subtotal'], 0, ',', '.') }}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -128,15 +161,17 @@
             <div class="row mt-3">
                 <div class="col-md-8"></div>
                 <div class="col-md-4 text-end">
-                    <h5><strong>Total Keseluruhan:</strong> Rp {{ number_format($reservasi->total_bill, 0, ',', '.') }}</h5>
+                    <h5><strong>Total Keseluruhan:</strong> 
+                        Rp {{ number_format($orderSummary['total_keseluruhan'], 0, ',', '.') }}
+                    </h5>
                 </div>
             </div>
         </div>
 
-        {{-- Bagian “Kembali” yang sudah dimodifikasi --}}
+        {{-- Bagian “Kembali” --}}
         <div class="card-footer text-end">
             @php
-                $from = request('from', 'reservasi');
+                $from = $from ?? 'reservasi';
             @endphp
 
             @if($from === 'dinein')

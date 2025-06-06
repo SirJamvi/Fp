@@ -143,72 +143,80 @@ class PelayanController extends Controller
     public function showQrisPayment($id)
     {
         $data = $this->paymentService->showQrisPayment($id);
-        return view('pelayan.qris-payment', $data);
+        return $this->paymentService->showQrisPayment($id);
     }
 
 
     public function showOrderSummary($reservasi_id)
-    {
-        try {
-            $from = request()->query('from', 'reservasi');
+{
+    try {
+        $from = request()->query('from', 'reservasi');
 
-            $reservasi = Reservasi::with(['meja', 'orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
+        // Ambil reservasi beserta relasi orders.menu dan staffYangMembuat
+        $reservasi = Reservasi::with(['orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
 
-            $combinedTables = [];
-            if ($reservasi->combined_tables) {
-                $combinedIds = is_string($reservasi->combined_tables)
-                    ? json_decode($reservasi->combined_tables, true)
-                    : $reservasi->combined_tables;
+        // Siapkan array untuk menyimpan semua data meja dari combined_tables
+        $combinedTables = [];
+        if ($reservasi->combined_tables) {
+            $combinedIds = is_string($reservasi->combined_tables)
+                ? json_decode($reservasi->combined_tables, true)
+                : $reservasi->combined_tables;
 
-                if (is_array($combinedIds)) {
-                    $combinedTables = Meja::whereIn('id', $combinedIds)
-                        ->orderBy('nomor_meja')
-                        ->get()
-                        ->toArray();
-                }
+            if (is_array($combinedIds) && count($combinedIds) > 0) {
+                $combinedTables = Meja::whereIn('id', $combinedIds)
+                    ->orderBy('nomor_meja')
+                    ->get()
+                    ->toArray();
             }
-
-            $orderSummary = [
-                'reservasi_id' => $reservasi->id,
-                'kode_reservasi' => $reservasi->kode_reservasi,
-                'nomor_meja' => $reservasi->meja->nomor_meja ?? 'N/A',
-                'combined_tables' => $combinedTables,
-                'area_meja' => $reservasi->meja->area ?? 'N/A',
-                'nama_pelanggan' => $reservasi->nama_pelanggan,
-                'nama_pelayan' => $reservasi->staffYangMembuat->name ?? (auth()->check() ? auth()->user()->name : 'N/A'),
-                'waktu_pesan' => $reservasi->created_at,
-                'items' => [],
-                'total_keseluruhan' => $reservasi->total_bill,
-                'subtotal' => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'),
-                'service_charge' => $reservasi->service_charge ?? 0,
-                'tax' => $reservasi->tax ?? 0,
-                'payment_method' => $reservasi->payment_method ?? 'N/A',
-                'payment_status' => $reservasi->status,
-                'waktu_pembayaran' => $reservasi->waktu_selesai,
-            ];
-
-            foreach ($reservasi->orders as $order) {
-                $orderSummary['items'][] = [
-                    'nama_menu' => $order->menu->name ?? 'N/A',
-                    'quantity' => $order->quantity,
-                    'harga_satuan' => $order->price_at_order,
-                    'subtotal' => $order->total_price,
-                    'catatan' => $order->notes,
-                    'status' => $order->status,
-                ];
-            }
-
-            return view('pelayan.summary', [
-                'title' => 'Ringkasan Pesanan #' . $reservasi->kode_reservasi,
-                'orderSummary' => $orderSummary,
-                'reservasi' => $reservasi,
-                'from' => $from,
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error showing order summary: " . $e->getMessage());
-            return redirect()->route('pelayan.dashboard')->with('error', 'Gagal menampilkan ringkasan pesanan.');
         }
+
+        // Ambil data meja utama (first) jika memang ada
+        $firstMeja = count($combinedTables) ? $combinedTables[0] : null;
+
+        $orderSummary = [
+            'reservasi_id'      => $reservasi->id,
+            'kode_reservasi'    => $reservasi->kode_reservasi,
+            // Ganti akses langsung ke $reservasi->meja dengan data dari $firstMeja
+            'nomor_meja'        => $firstMeja['nomor_meja'] ?? 'N/A',
+            'combined_tables'   => $combinedTables,
+            'area_meja'         => $firstMeja['area'] ?? 'N/A',
+            'nama_pelanggan'    => $reservasi->nama_pelanggan,
+            'nama_pelayan'      => $reservasi->staffYangMembuat->name
+                                     ?? (auth()->check() ? auth()->user()->name : 'N/A'),
+            'waktu_pesan'       => $reservasi->created_at,
+            'items'             => [],
+            'total_keseluruhan' => $reservasi->total_bill,
+            'subtotal'          => $reservasi->subtotal ?? $reservasi->orders->sum('total_price'),
+            'service_charge'    => $reservasi->service_charge ?? 0,
+            'tax'               => $reservasi->tax ?? 0,
+            'payment_method'    => $reservasi->payment_method ?? 'N/A',
+            'payment_status'    => $reservasi->status,
+            'waktu_pembayaran'  => $reservasi->waktu_selesai,
+        ];
+
+        foreach ($reservasi->orders as $order) {
+            $orderSummary['items'][] = [
+                'nama_menu'     => $order->menu->name ?? 'N/A',
+                'quantity'      => $order->quantity,
+                'harga_satuan'  => $order->price_at_order,
+                'subtotal'      => $order->total_price,
+                'catatan'       => $order->notes,
+                'status'        => $order->status,
+            ];
+        }
+
+        return view('pelayan.summary', [
+            'title'        => 'Ringkasan Pesanan #' . $reservasi->kode_reservasi,
+            'orderSummary' => $orderSummary,
+            'reservasi'    => $reservasi,
+            'from'         => $from,
+        ]);
+    } catch (\Exception $e) {
+        Log::error("Error showing order summary: " . $e->getMessage());
+        return redirect()->route('pelayan.dashboard')->with('error', 'Gagal menampilkan ringkasan pesanan.');
     }
+}
+
 
     public function addItemsToOrder(AddItemsRequest $request, $reservasi_id)
     {
