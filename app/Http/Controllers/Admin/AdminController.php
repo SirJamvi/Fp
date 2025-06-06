@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Reservasi;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Models\Rating;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -16,10 +17,8 @@ class AdminController extends Controller
     {
         $title = 'Dashboard Admin';
 
-        // Default filter
         $filter = $request->get('filter', 'month');
 
-        // Define date ranges
         $ranges = [
             'today' => [Carbon::today(), Carbon::now()],
             'week' => [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()],
@@ -27,17 +26,14 @@ class AdminController extends Controller
             'year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
         ];
 
-        // Ensure fallback to 'month'
         [$startDate, $endDate] = $ranges[$filter] ?? $ranges['month'];
 
-        // Stat cards
         $totalReservations = Reservasi::whereBetween('created_at', [$startDate, $endDate])->count();
         $presentReservations = Reservasi::where('status', 'selesai')
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
         $totalOrders = Order::whereBetween('created_at', [$startDate, $endDate])->count();
 
-        // Best selling menu item
         $bestSellingItem = DB::table('orders')
             ->join('menus', 'orders.menu_id', '=', 'menus.id')
             ->select('menus.name', DB::raw('SUM(orders.quantity) as total'))
@@ -45,22 +41,23 @@ class AdminController extends Controller
             ->orderByDesc('total')
             ->value('menus.name');
 
-        // Staff performance
-        $staffPerformance = DB::table('pengguna')
+        $staffPerformances = DB::table('pengguna')
             ->leftJoin('reservasi', 'pengguna.id', '=', 'reservasi.staff_id')
             ->leftJoin('ratings', 'pengguna.id', '=', 'ratings.staff_id')
+            ->whereIn('pengguna.peran', ['pelayan', 'koki'])
             ->select(
                 'pengguna.id',
                 'pengguna.nama',
                 'pengguna.peran',
                 DB::raw('COUNT(DISTINCT reservasi.id) as jumlah_reservasi'),
-                DB::raw('ROUND(AVG(ratings.rating), 2) as rata_rata_rating')
+                DB::raw('ROUND(AVG(CASE 
+                    WHEN pengguna.peran = "pelayan" THEN ratings.service_rating
+                    WHEN pengguna.peran = "koki" THEN ratings.food_rating
+                    ELSE NULL END), 2) as rata_rata_rating')
             )
-            ->whereIn('pengguna.peran', ['pelayan', 'koki'])
             ->groupBy('pengguna.id', 'pengguna.nama', 'pengguna.peran')
             ->get();
 
-        // Attendance Chart (Doughnut)
         $attendanceChart = [];
         foreach ($ranges as $key => [$start, $end]) {
             $attendanceChart[$key] = [
@@ -70,7 +67,6 @@ class AdminController extends Controller
             ];
         }
 
-        // Transaction Chart (Bar)
         $transactionChart = [];
         foreach ($ranges as $key => [$start, $end]) {
             $stats = DB::table('transactions')
@@ -88,6 +84,9 @@ class AdminController extends Controller
             ];
         }
 
+        // ✅ FIX: Tambahkan ratings
+        $ratings = Rating::with('pengguna')->latest()->take(10)->get();
+
         return view('admin.dashboard', compact(
             'title',
             'filter',
@@ -95,11 +94,36 @@ class AdminController extends Controller
             'bestSellingItem',
             'presentReservations',
             'totalOrders',
-            'staffPerformance',
+            'staffPerformances',
             'attendanceChart',
-            'transactionChart'
+            'transactionChart',
+            'ratings' // <-- ini harus ditambahkan
         ));
     }
+
+    public function exportPdf(Request $request)
+{
+    $filter = $request->query('filter', 'week'); // default filter misal minggu ini
+
+    // Ambil data rating sesuai filter, misal:
+    $ratings = Rating::query();
+
+    if ($filter === 'today') {
+        $ratings->whereDate('created_at', today());
+    } elseif ($filter === 'week') {
+        $ratings->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+    } elseif ($filter === 'month') {
+        $ratings->whereMonth('created_at', now()->month);
+    } elseif ($filter === 'year') {
+        $ratings->whereYear('created_at', now()->year);
+    }
+
+    $ratings = $ratings->get();
+
+    // Generate PDF (contoh pakai Dompdf / Snappy)
+    $pdf = \PDF::loadView('export.pdf', compact('ratings'));
+    return $pdf->stream('ratings_report.pdf');
+
 }
 
-
+}

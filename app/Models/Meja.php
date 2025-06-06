@@ -9,7 +9,7 @@ class Meja extends Model
 {
     use HasFactory;
 
-    // Tambahkan ini untuk menentukan nama tabel yang benar
+    // Nama tabel
     protected $table = 'meja';
 
     protected $fillable = [
@@ -19,14 +19,16 @@ class Meja extends Model
         'status'
     ];
 
-    // Jika ingin meng-cast status sebagai enum
     protected $casts = [
         'status' => 'string'
     ];
 
-    // Contoh relasi jika diperlukan nanti
-    public function reservasis()
+    /**
+     * Relasi many-to-many ke Reservasi (pivot meja_reservasi).
+     */
+    public function reservasi()
     {
-        return $this->hasMany(Reservasi::class);
+        return $this->belongsToMany(Reservasi::class, 'meja_reservasi', 'meja_id', 'reservasi_id')
+                    ->withTimestamps();
     }
 }

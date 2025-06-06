@@ -65,6 +65,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('meja', MejaController::class);
     Route::resource('kelola-akun', PenggunaController::class);
 
+    Route::get('/ratings/export-pdf', [AdminController::class, 'exportPdf'])->name('ratings.exportPdf');
+
     // Reservasi Management
     Route::get('/reservasi', [AdminReservasiController::class, 'index'])->name('reservasi');
     Route::get('/reservasi/export/excel', [AdminReservasiController::class, 'exportExcel'])->name('reservasi.export.excel');

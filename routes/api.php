@@ -14,6 +14,7 @@ use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Customer\MidtransController; // Tambahkan ini
 
+
 // Rute publik (tanpa autentikasi)
 Route::post('customer/register', [AuthController::class, 'register']);
 Route::post('customer/login', [AuthController::class, 'login']);

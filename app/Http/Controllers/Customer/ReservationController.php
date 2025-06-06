@@ -31,116 +31,138 @@ class ReservationController extends Controller
      */
     public function store(ReservationRequest $request)
     {
-        // Log untuk debugging
+        // Log payload untuk debugging
         Log::info('Reservation Request Data:', $request->all());
 
         DB::beginTransaction();
 
         try {
-            // Ambil user yang sedang login (model Pengguna)
             $user = Auth::user();
 
-            // Parse waktu kedatangan dengan lebih hati-hati
+            // 1) Parse waktu kedatangan
             try {
                 $waktuKedatangan = Carbon::createFromFormat('Y-m-d H:i:s', $request->waktu_kedatangan);
             } catch (\Exception $e) {
-                // Jika parsing gagal, coba parse dengan format lain
                 try {
                     $waktuKedatangan = Carbon::parse($request->waktu_kedatangan);
                 } catch (\Exception $e2) {
                     return response()->json([
                         'message' => 'Format waktu kedatangan tidak valid.',
-                        'error' => 'Gunakan format YYYY-MM-DD HH:mm:ss'
+                        'error'   => 'Gunakan format YYYY-MM-DD HH:mm:ss'
                     ], 400);
                 }
             }
 
-            // Validasi minimal 15 menit dari sekarang
-            $now = Carbon::now();
+            // 2) Validasi minimal 15 menit dari sekarang
+            $now     = Carbon::now();
             $minTime = $now->copy()->addMinutes(15);
-            
             if ($waktuKedatangan->lt($minTime)) {
                 return response()->json([
-                    'message' => 'Waktu kedatangan minimal 15 menit dari sekarang.',
-                    'current_time' => $now->format('Y-m-d H:i:s'),
-                    'min_time' => $minTime->format('Y-m-d H:i:s'),
-                    'requested_time' => $waktuKedatangan->format('Y-m-d H:i:s')
+                    'message'        => 'Waktu kedatangan minimal 15 menit dari sekarang.',
+                    'current_time'   => $now->format('Y-m-d H:i:s'),
+                    'min_time'       => $minTime->format('Y-m-d H:i:s'),
+                    'requested_time' => $waktuKedatangan->format('Y-m-d H:i:s'),
                 ], 400);
             }
 
-            // Cek ketersediaan meja: kapasitas >= jumlah_tamu, status tersedia,
-            // dan tidak ada reservasi lain yang overlap ±2 jam
-            $availableMeja = Meja::where('kapasitas', '>=', $request->jumlah_tamu)
-                                 ->where('status', 'tersedia')
-                                 ->whereNotExists(function ($query) use ($waktuKedatangan) {
-                                     $query->select(DB::raw(1))
-                                           ->from('reservasi')
-                                           ->whereRaw('reservasi.meja_id = meja.id')
-                                           ->whereNotIn('reservasi.status', ['dibatalkan', 'selesai'])
-                                           ->whereBetween('reservasi.waktu_kedatangan', [
-                                               $waktuKedatangan->copy()->subHours(2),
-                                               $waktuKedatangan->copy()->addHours(2)
-                                           ])
-                                           ->whereNull('reservasi.deleted_at');
-                                 })
-                                 ->first();
+            // 3) Ambil array id_meja
+            $mejaIds = $request->input('id_meja'); // misal: [4,8,9]
 
-            if (! $availableMeja) {
+            // 4) Validasi availability --- cek status tersedia
+            $availableMejas = Meja::whereIn('id', $mejaIds)
+                                  ->where('status', 'tersedia')
+                                  ->get();
+
+            if ($availableMejas->count() !== count($mejaIds)) {
                 DB::rollBack();
                 return response()->json([
-                    'message' => 'Tidak ada meja yang tersedia untuk jumlah tamu ini pada waktu tersebut.',
-                    'waktu_requested' => $waktuKedatangan->format('Y-m-d H:i:s'),
-                    'jumlah_tamu' => $request->jumlah_tamu
+                    'message'        => 'Ada satu atau lebih meja yang dipilih tidak tersedia.',
+                    'requested_ids'  => $mejaIds,
+                    'available_ids'  => $availableMejas->pluck('id')->toArray(),
                 ], 400);
             }
 
-            // Buat kode reservasi unik
+            // 5) Cek overlapping ±2 jam untuk setiap meja
+            $blocked = [];
+            foreach ($mejaIds as $idMeja) {
+                $overlap = Reservasi::whereHas('meja', function($q) use ($idMeja) {
+                                     $q->where('meja.id', $idMeja);
+                                 })
+                                 ->whereNotIn('status', ['dibatalkan', 'selesai'])
+                                 ->whereBetween('waktu_kedatangan', [
+                                     $waktuKedatangan->copy()->subHours(2),
+                                     $waktuKedatangan->copy()->addHours(2),
+                                 ])
+                                 ->whereNull('deleted_at')
+                                 ->exists();
+
+                if ($overlap) {
+                    $blocked[] = $idMeja;
+                }
+            }
+
+            if (!empty($blocked)) {
+                DB::rollBack();
+                return response()->json([
+                    'message'         => 'Beberapa meja sudah terreservasi di rentang waktu tersebut.',
+                    'blocked_meja_id' => $blocked,
+                    'waktu_requested' => $waktuKedatangan->format('Y-m-d H:i:s'),
+                ], 400);
+            }
+
+            // 6) Semua meja lolos validasi → buat kode reservasi unik
             $kodeReservasi = 'RES-' . strtoupper(Str::random(6));
             while (Reservasi::where('kode_reservasi', $kodeReservasi)->exists()) {
                 $kodeReservasi = 'RES-' . strtoupper(Str::random(6));
             }
 
-            // Simpan data reservasi
+            // 7) Simpan data reservasi (tanpa memasukkan meja_id tunggal)
             $reservasi = Reservasi::create([
-                'user_id'                 => $user->id,
-                'meja_id'                 => $availableMeja->id,
-                'nama_pelanggan'          => $user->nama,
-                'waktu_kedatangan'        => $waktuKedatangan->format('Y-m-d H:i:s'),
-                'jumlah_tamu'             => $request->jumlah_tamu,
-                'kehadiran_status'        => 'belum_dikonfirmasi',
-                'status'                  => 'pending_payment',
-                'source'                  => 'online',
-                'kode_reservasi'          => $kodeReservasi,
-                'catatan'                 => $request->catatan,
-                'total_bill'              => 0,
-                'sisa_tagihan_reservasi'  => 0,
+                'user_id'                => $user->id,
+                'waktu_kedatangan'       => $waktuKedatangan->format('Y-m-d H:i:s'),
+                'jumlah_tamu'            => $request->jumlah_tamu,
+                'nama_pelanggan'         => $user->nama,
+                'kehadiran_status'       => 'belum_dikonfirmasi',
+                'status'                 => 'pending_payment',
+                'source'                 => 'online',
+                'kode_reservasi'         => $kodeReservasi,
+                'catatan'                => $request->catatan,
+                'total_bill'             => 0,
+                'sisa_tagihan_reservasi' => 0,
             ]);
 
-            // Update status meja menjadi 'dipesan'
-            $availableMeja->update(['status' => 'dipesan']);
+            // 8) Attach semua meja ke pivot meja_reservasi
+            $reservasi->meja()->attach($mejaIds);
+
+            // 9) Update status setiap meja menjadi 'dipesan'
+            Meja::whereIn('id', $mejaIds)->update(['status' => 'dipesan']);
 
             DB::commit();
 
             Log::info('Reservation created successfully:', [
-                'reservation_id' => $reservasi->id,
-                'code' => $reservasi->kode_reservasi,
-                'waktu_kedatangan' => $reservasi->waktu_kedatangan
+                'reservation_id'   => $reservasi->id,
+                'kode_reservasi'   => $reservasi->kode_reservasi,
+                'waktu_kedatangan' => $reservasi->waktu_kedatangan,
+                'meja_ids'         => $mejaIds,
             ]);
+
+            // Muat relasi `meja` agar client tahu detailnya
+            $reservasi->load('meja');
 
             return response()->json([
                 'message'   => 'Reservasi berhasil dibuat.',
-                'reservasi' => $reservasi->load('meja'),
+                'reservasi' => $reservasi,
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Reservation creation failed:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'error'        => $e->getMessage(),
+                'trace'        => $e->getTraceAsString(),
+                'request_data' => $request->all(),
             ]);
-            
+
             return response()->json([
                 'message' => 'Terjadi kesalahan saat membuat reservasi.',
                 'error'   => $e->getMessage(),
@@ -150,14 +172,12 @@ class ReservationController extends Controller
 
     /**
      * Get a list of the authenticated customer's reservations.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
         $user = Auth::user();
 
+        // Muat relasi meja (many-to-many)
         $reservations = Reservasi::where('user_id', $user->id)
                                  ->with('meja')
                                  ->orderBy('waktu_kedatangan', 'desc')
@@ -171,9 +191,6 @@ class ReservationController extends Controller
 
     /**
      * Display the specified reservation.
-     *
-     * @param  \App\Models\Reservasi  $reservasi
-     * @return \Illuminate\Http\JsonResponse
      */
     public function show(Reservasi $reservasi)
     {
@@ -194,9 +211,6 @@ class ReservationController extends Controller
 
     /**
      * Cancel a customer's reservation.
-     *
-     * @param  \App\Models\Reservasi  $reservasi
-     * @return \Illuminate\Http\JsonResponse
      */
     public function cancel(Reservasi $reservasi)
     {
@@ -215,18 +229,22 @@ class ReservationController extends Controller
 
         DB::beginTransaction();
         try {
-            $reservasi->update(['status' => 'dibatalkan']);
+            // Hapus pivot relasi meja terlebih dahulu
+            $mejaIds = $reservasi->meja()->pluck('meja_id')->toArray();
 
-            // Kembalikan status meja menjadi 'tersedia' jika bukan combined_tables
-            if ($reservasi->meja && ! $reservasi->combined_tables) {
-                $reservasi->meja->update(['status' => 'tersedia']);
-            }
+            $reservasi->meja()->detach();
+
+            // Kembalikan status meja menjadi 'tersedia'
+            Meja::whereIn('id', $mejaIds)->update(['status' => 'tersedia']);
+
+            // Update status reservasi
+            $reservasi->update(['status' => 'dibatalkan']);
 
             DB::commit();
 
             return response()->json([
                 'message'   => 'Reservasi berhasil dibatalkan.',
-                'reservasi' => $reservasi,
+                'reservasi' => $reservasi->load('meja'),
             ], 200);
 
         } catch (\Exception $e) {
@@ -240,10 +258,6 @@ class ReservationController extends Controller
 
     /**
      * Process payment for a reservation.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Reservasi    $reservasi
-     * @return \Illuminate\Http\JsonResponse
      */
     public function processPayment(Request $request, Reservasi $reservasi)
     {
