@@ -47,21 +47,19 @@
                     <td>{{ $item->nama_pelanggan ?? $item->pengguna?->nama ?? '-' }}</td>
                     <td>
                         @php
-                            $rawCombined = $item->combined_tables;
-                            if (is_array($rawCombined)) {
-                                $tableIds = $rawCombined;
-                            } else {
-                                $decoded = @json_decode($rawCombined, true);
+                            // Cek apakah relasi meja tersedia
+                            $mejaList = $item->meja ?? collect();
+
+                            if ($mejaList->isEmpty() && $item->combined_tables) {
+                                $decoded = @json_decode($item->combined_tables, true);
                                 $tableIds = is_array($decoded) ? $decoded : [];
+                                $mejaList = \App\Models\Meja::whereIn('id', $tableIds)->get();
                             }
-                            $mejas = \App\Models\Meja::whereIn('id', $tableIds)->get();
                         @endphp
 
-                        @if(count($mejas) > 0)
-                            @foreach($mejas as $mejaObj)
-                                <span>
-                                    {{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})
-                                </span>
+                        @if($mejaList->isNotEmpty())
+                            @foreach($mejaList as $mejaObj)
+                                <span>{{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})</span>
                                 @if(!$loop->last)
                                     <br>
                                 @endif
@@ -70,20 +68,13 @@
                             <span class="text-muted">-</span>
                         @endif
                     </td>
-
-
                     <td>{{ $item->jumlah_tamu ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan ?? $item->created_at)->translatedFormat('d M Y H:i') }}</td>
                     <td>
-                        {{-- Jika status “dibatalkan” --}}
                         @if($item->status === 'dibatalkan')
                             <span class="badge bg-danger">Dibatalkan</span>
-
-                        {{-- Jika sudah lunas (paid atau selesai) --}}
                         @elseif($item->status === 'paid' || $item->status === 'selesai' || $item->payment_method === 'paid')
                             <span class="badge bg-success">Lunas</span>
-
-                        {{-- Sisanya (Belum Lunas) --}}
                         @else
                             <span class="badge bg-warning text-dark">Belum Lunas</span>
                         @endif
@@ -101,17 +92,16 @@
                         </a>
                     </td>
                     <td class="text-center">
-                    <form action="{{ route('pelayan.reservasi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
-                    </form>
-                </td>
-
+                        <form action="{{ route('pelayan.reservasi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted">Tidak ada pesanan dine-in.</td>
+                    <td colspan="9" class="text-center text-muted">Tidak ada pesanan dine-in.</td>
                 </tr>
             @endforelse
         </tbody>

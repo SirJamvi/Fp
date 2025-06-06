@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Customer\AuthController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\MenuController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\RatingController;
 use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\Customer\MidtransController; // Tambahkan ini
 
 
 // Rute publik (tanpa autentikasi)
@@ -28,6 +30,9 @@ Route::post('customer/tables/check-availability', [MejaController::class, 'check
 
 // Route Test API (untuk debugging awal)
 Route::get('/test', [TestController::class, 'index']);
+
+// Rute publik untuk notifikasi Midtrans
+Route::post('midtrans-notification', [MidtransController::class, 'handleNotification']);
 
 // Rute yang memerlukan autentikasi (menggunakan Sanctum)
 Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(function () {
@@ -58,4 +63,7 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(funct
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+
+    // Checkout dari keranjang (Midtrans)
+    Route::post('checkout', [MidtransController::class, 'checkoutFromCart']);
 });
