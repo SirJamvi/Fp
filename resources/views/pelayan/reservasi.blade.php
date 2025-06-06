@@ -52,7 +52,14 @@
                 <tr>
                     <td>{{ $item->kode_reservasi }}</td>
                     <td>{{ $item->nama_pelanggan ?? $item->pengguna?->name ?? '-' }}</td>
-                    <td>{{ $item->meja?->nomor_meja ?? '-' }} ({{ $item->meja?->area ?? '-' }})</td>
+
+                    <td>
+                        {{ $item->meja->pluck('nomor_meja')->implode(', ') ?? '-' }}
+                        @if($item->meja->isNotEmpty())
+                            ({{ $item->meja->first()->area ?? '-' }}) {{-- Asumsi area sama untuk meja gabungan --}}
+                        @endif
+                    </td>
+
                     <td>{{ $item->jumlah_tamu ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan ?? $item->created_at)->translatedFormat('d M Y H:i') }}</td>
                     <td>
