@@ -50,27 +50,15 @@
                 <tr>
                     <td>{{ $item->kode_reservasi }}</td>
                     <td>{{ $item->nama_pelanggan ?? $item->pengguna?->name ?? '-' }}</td>
-                    <td>
-                        @php
-                            $rawCombined = $item->combined_tables;
-                            if (is_array($rawCombined)) {
-                                $tableIds = $rawCombined;
-                            } else {
-                                $decoded = @json_decode($rawCombined, true);
-                                $tableIds = is_array($decoded) ? $decoded : [];
-                            }
-                            $mejas = \App\Models\Meja::whereIn('id', $tableIds)->get();
-                        @endphp
-
-                        @if(count($mejas) > 0)
-                            @foreach($mejas as $mejaObj)
-                                <span>{{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})</span>
-                                @if(!$loop->last)<br>@endif
-                            @endforeach
-                        @else
-                            <span class="text-muted">-</span>
-                        @endif
-                    </td>
+                   {{-- GUNAKAN KODE YANG LEBIH BAIK INI --}}
+<td>
+    {{-- Langsung loop relasi 'meja' yang sudah di-eager load oleh controller --}}
+    @forelse($item->meja as $meja)
+        <span>{{ $meja->nomor_meja }} ({{ $meja->area }})</span>@if(!$loop->last)<br>@endif
+    @empty
+        <span class="text-muted">-</span>
+    @endforelse
+</td>
                     <td>{{ $item->jumlah_tamu ?? '-' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan ?? $item->created_at)->translatedFormat('d M Y H:i') }}</td>
                     <td>

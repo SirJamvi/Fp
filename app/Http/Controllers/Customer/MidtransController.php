@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Http\Controllers\Controller; // <-- TAMBAHKAN BARIS INI
+use App\Http\Controllers\Controller;
 use App\Helpers\MidtransHelper;
 use App\Models\Menu;
 use App\Models\Order;
@@ -18,12 +18,9 @@ class MidtransController extends Controller
 {
     /**
      * Menangani proses checkout dari keranjang belanja di aplikasi mobile.
-     * Menerima detail reservasi & item, menghitung total,
-     * menyimpan order, dan mengembalikan Snap Token untuk pembayaran 50%.
      */
     public function checkoutFromCart(Request $request)
     {
-        // 1. Validasi input dari Ionic
         $validator = Validator::make($request->all(), [
             'reservasi_id' => 'required|exists:reservasi,id',
             'cart' => 'required|array|min:1',
@@ -31,10 +28,15 @@ class MidtransController extends Controller
             'cart.*.quantity' => 'required|integer|min:1',
             'cart.*.note' => 'nullable|string|max:255',
             'service_fee' => 'required|numeric|min:0',
+
+            // --- PERBARUI BARIS INI ---
+            // Tambahkan semua metode pembayaran yang valid dari frontend Anda
+            'payment_method' => 'required|string|in:gopay,shopeepay,dana,ovo,bca_va,mandiri_va,bri_va,bni_va,credit_card,indomaret,alfamart',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => 'Data keranjang tidak valid.', 'errors' => $validator->errors()], 422);
+            // Error akan muncul dari sini jika payment_method tidak ada dalam daftar 'in' di atas
+            return response()->json(['message' => 'Data keranjang atau pembayaran tidak valid.', 'errors' => $validator->errors()], 422);
         }
 
         DB::beginTransaction();
@@ -46,20 +48,17 @@ class MidtransController extends Controller
                 return response()->json(['message' => 'Reservasi tidak ditemukan.'], 403);
             }
 
-            // Hapus pesanan lama di reservasi ini untuk diganti dengan isi keranjang terbaru
             $reservasi->orders()->delete();
 
             $subtotal = 0;
             $item_details_midtrans = [];
 
-            // 2. Kalkulasi ulang total di backend dari data cart
             foreach ($request->input('cart') as $item) {
                 $menu = Menu::find($item['id']);
                 $price = $menu->final_price ?? $menu->price;
                 $totalItemPrice = $price * $item['quantity'];
                 $subtotal += $totalItemPrice;
 
-                // Buat record Order baru untuk setiap item di keranjang
                 Order::create([
                     'reservasi_id' => $reservasi->id,
                     'menu_id'      => $menu->id,
@@ -71,16 +70,14 @@ class MidtransController extends Controller
                     'status'       => 'pending',
                 ]);
 
-                // Siapkan detail item untuk dikirim ke Midtrans
                 $item_details_midtrans[] = [
                     'id'       => (string) $menu->id,
                     'price'    => (int) $price,
                     'quantity' => (int) $item['quantity'],
-                    'name'     => substr($menu->name, 0, 50), // Batasi panjang nama menu
+                    'name'     => substr($menu->name, 0, 50),
                 ];
             }
 
-            // Tambahkan Biaya Layanan
             $serviceFee = (int) $request->input('service_fee');
             $item_details_midtrans[] = [
                 'id' => 'SERVICE_FEE',
@@ -90,24 +87,21 @@ class MidtransController extends Controller
             ];
 
             $totalAmount = $subtotal + $serviceFee;
-            $paymentAmountDP = $totalAmount * 0.5; // << INI LOGIKA UTAMA: HITUNG 50% DP
+            $paymentAmountDP = $totalAmount * 0.5;
 
-            // Update reservasi dengan total tagihan dan status baru
             $reservasi->update([
                 'total_bill' => $totalAmount,
-                'sisa_tagihan_reservasi' => $totalAmount, // Sisa tagihan awalnya adalah full
+                'sisa_tagihan_reservasi' => $totalAmount,
                 'status' => 'pending_payment',
             ]);
 
-            // 3. Siapkan parameter dan panggil Midtrans
             MidtransHelper::configure();
-
             $orderId = 'RES-' . $reservasi->id . '-' . time();
 
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
-                    'gross_amount' => $paymentAmountDP, // Kirim jumlah 50% ke Midtrans
+                    'gross_amount' => $paymentAmountDP,
                 ],
                 'customer_details' => [
                     'first_name' => $user->nama,
@@ -115,14 +109,18 @@ class MidtransController extends Controller
                     'phone' => $user->nomor_hp,
                 ],
                 'item_details' => $item_details_midtrans,
-                 'custom_field1' => $reservasi->id, // Menyimpan ID Reservasi untuk webhook
+                 'custom_field1' => $reservasi->id,
             ];
+
+            $selectedPayment = $request->input('payment_method');
+            if ($selectedPayment) {
+                 $params['enabled_payments'] = [$selectedPayment];
+            }
 
             $snapToken = Snap::getSnapToken($params);
 
             DB::commit();
 
-            // 4. Kembalikan token ke frontend
             return response()->json([
                 'snap_token' => $snapToken,
                 'order_id' => $orderId,
@@ -153,10 +151,8 @@ class MidtransController extends Controller
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
-        // Cari reservasi berdasarkan custom_field1 jika ada
         $reservasi_id = $payload['custom_field1'] ?? null;
         if (!$reservasi_id) {
-             // Fallback jika custom_field1 tidak ada
             $orderIdParts = explode('-', $order_id);
             if(count($orderIdParts) > 1 && $orderIdParts[0] === 'RES') {
                 $reservasi_id = $orderIdParts[1];
@@ -168,7 +164,6 @@ class MidtransController extends Controller
             return response()->json(['message' => 'Reservasi tidak ditemukan'], 404);
         }
 
-        // Simpan data pembayaran
         Payment::updateOrCreate(
             ['order_id' => $order_id],
             [
@@ -180,11 +175,10 @@ class MidtransController extends Controller
             ]
         );
 
-        // Update status reservasi jika pembayaran DP berhasil
         if ($payload['transaction_status'] === 'settlement' && $reservasi->status === 'pending_payment') {
              $reservasi->update([
                  'sisa_tagihan_reservasi' => DB::raw("total_bill - {$gross_amount}"),
-                 'status' => 'confirmed' // Status berubah menjadi terkonfirmasi setelah DP lunas
+                 'status' => 'confirmed'
              ]);
         }
         
