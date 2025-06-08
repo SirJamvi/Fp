@@ -69,7 +69,17 @@
                         @endif
                     </td>
                     <td>{{ $item->jumlah_tamu ?? '-' }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->waktu_kedatangan ?? $item->created_at)->translatedFormat('d M Y H:i') }}</td>
+                    <td>
+                        {{
+                            (
+                                $item->waktu_kedatangan
+                                    ? \Carbon\Carbon::parse($item->waktu_kedatangan)
+                                    : $item->created_at
+                            )
+                            ->timezone('Asia/Jakarta')
+                            ->translatedFormat('l, d M Y H:i')
+                        }}
+                    </td>
                     <td>
                         @if($item->status === 'dibatalkan')
                             <span class="badge bg-danger">Dibatalkan</span>

@@ -23,24 +23,49 @@
 </div>
 
 <!-- Midtrans Snap JS -->
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+<script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('services.midtrans.client_key') }}"></script>
 <script>
     document.getElementById('pay-button').addEventListener('click', function() {
-        snap.pay('{{ $snapToken }}', {
+        // Panggil Snap UI
+        snap.pay('{{ $snap_token }}', {
             onSuccess: function(result) {
-                window.location.href = "{{ route('pelayan.reservasi') }}?payment=success";
+                // 1) AJAX untuk settle payment
+                fetch("{{ route('pelayan.reservasi.settle', $reservasi->id) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'   // ← tambahkan ini
+                },
+                body: JSON.stringify({}) 
+                })
+                .then(res => res.json())
+                .then(json => {
+                    if (json.success) {
+                        // 2) Redirect setelah konfirmasi backend
+                        window.location.href = "{{ route('pelayan.reservasi') }}?payment=success";
+                    } else {
+                        alert('Gagal menyimpan status pembayaran.');
+                    }
+                })
+                .catch(() => {
+                    alert('Terjadi kesalahan saat update status.');
+                });
             },
             onPending: function(result) {
-                // Tampilkan QRIS
+                // Tampilkan QRIS code
                 if (result.qris_image_url) {
-                    document.getElementById('qris-container').innerHTML = 
-                        '<img src="'+result.qris_image_url+'" alt="QRIS Code" class="img-fluid">' +
-                        '<p class="mt-2">Scan QRIS ini untuk melakukan pembayaran</p>';
+                    document.getElementById('qris-container').innerHTML =
+                        '<img src="'+result.qris_image_url+'" class="img-fluid" alt="Scan QRIS">'+
+                        '<p class="mt-2">Scan QRIS ini untuk menyelesaikan pembayaran</p>';
                     document.getElementById('qris-container').style.display = 'block';
                     document.getElementById('pay-button').style.display = 'none';
                 }
             },
-            onError: function(result) {
+            onError: function(err) {
+                console.error(err);
                 window.location.href = "{{ route('pelayan.reservasi') }}?payment=failed";
             }
         });
