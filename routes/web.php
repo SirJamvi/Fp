@@ -100,6 +100,9 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::post('/order/{reservasi_id}/pay', [PelayanController::class, 'processPayment'])->name('order.pay');
     Route::get('/order/summary/{reservasi_id}', [PelayanController::class, 'showOrderSummary'])->name('order.summary');
     Route::post('/order/{reservasi_id}/add-items', [PelayanController::class, 'addItemsToOrder'])->name('order.addItems');
+    
+    // Menangani AJAX marking payment as settled
+    Route::post('reservasi/{id}/settle', [PelayanController::class, 'settlePayment'])->name('reservasi.settle');
 
     // Reservation Status Management
     Route::post('/reservasi/{id}/complete', [PelayanController::class, 'completeReservation'])->name('reservasi.complete');
@@ -111,6 +114,12 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::post('/reservasi/{id}/bayar-sisa', [PelayanController::class, 'bayarSisaPost'])->name('reservasi.bayarSisa.post');
     Route::get('/reservasi/{id}/bayar-sisa/qris', [PelayanController::class, 'showQrisPayment'])->name('reservasi.bayarSisa.qris');
     Route::post('/reservasi/{id}/bayar-sisa/callback', [PelayanController::class, 'handleQrisCallback'])->name('reservasi.bayarSisa.callback');
+    // HARUS diletakkan **setelah** dua route di atas
+Route::get('/reservasi/{id}/bayar-sisa/{status}', [PelayanController::class,'bayarSisa'])
+     ->where('status', 'f|u|e')   // f = finish, u = unfinished, e = error
+     ->name('reservasi.bayarSisa.status');
+
+
 
     // Table Management
     Route::get('/meja', [PelayanMejaController::class, 'index'])->name('meja');
