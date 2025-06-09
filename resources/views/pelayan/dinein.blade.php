@@ -92,20 +92,22 @@
                     <td class="text-center">
                         <a href="{{ route('pelayan.order.summary', ['reservasi_id' => $item->id, 'from' => 'dinein']) }}"
                            class="btn btn-info btn-sm">
-                            <i class="bi bi-receipt"></i>
+                            <i class="bi bi-receipt me-1"></i> Detail Pembayaran
                         </a>
                     </td>
                     <td class="text-center">
                         <a href="{{ route('pelayan.reservasi.detail', ['id' => $item->id, 'from' => 'dinein']) }}"
                            class="btn btn-primary btn-sm">
-                            Detail
+                            <i class="bi bi-card-checklist me-1"></i> Detail Menu
                         </a>
                     </td>
                     <td class="text-center">
                         <form action="{{ route('pelayan.reservasi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash me-1"></i> Hapus
+                            </button>
                         </form>
                     </td>
                 </tr>
