@@ -23,6 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        // ✅ GUNAKAN CARA INI UNTUK MENGAKTIFKAN CORS
+        // Menambahkan middleware CORS ke paling awal (global) agar
+        // berjalan untuk semua jenis request, termasuk API.
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+
         // API middleware
         $middleware->api([
             EnsureFrontendRequestsAreStateful::class,

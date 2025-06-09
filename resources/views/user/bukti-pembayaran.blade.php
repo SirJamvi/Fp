@@ -33,9 +33,8 @@
     </p>
 
     <p>
-      <strong>Waktu Kedatangan:</strong>
-      {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan)
-             ->translatedFormat('d M Y H:i') }}
+        <strong>Waktu Kedatangan:</strong>
+        {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan)->translatedFormat('d M Y H:i') }}
     </p>
 
     <p><strong>Kode Reservasi:</strong> {{ $reservasi->kode_reservasi }}</p>
