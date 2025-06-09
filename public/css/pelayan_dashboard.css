@@ -1,0 +1,112 @@
+/* public/css/pelayan_dashboard.css */
+
+/* Styling untuk harga diskon */
+.original-price {
+    text-decoration: line-through;
+    color: #888;
+    font-size: 0.8em;
+    margin-right: 5px;
+}
+
+.discounted-price {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.price-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    font-size: 1.1em;
+    margin-bottom: 0.5rem;
+}
+
+.menu-item-card .card-body .mt-auto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* New styles for the customer info section */
+.customer-info-card {
+    margin-bottom: 20px;
+}
+.customer-info-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+.customer-info-card .form-label {
+    font-weight: 500;
+}
+
+/* New styles for quantity controls */
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.quantity-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50% !important;
+}
+
+.quantity-input {
+    width: 40px;
+    text-align: center;
+    padding: 0.25rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.delete-btn {
+    color: #dc3545;
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-item-details {
+    flex-grow: 1;
+    padding-right: 1rem;
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cart-item-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.cart-item-price {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.cart-item-total {
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+}
