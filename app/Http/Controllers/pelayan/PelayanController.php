@@ -109,21 +109,33 @@ class PelayanController extends Controller
         }
     }
 
-    public function bayarSisa(Request $request, $id)
-    {
-        $result = $this->paymentService->bayarSisa($id);
+    // PelayanController.php
 
-        if (!$result['success']) {
-            return redirect($result['redirect'])->with('info', $result['message']);
-        }
-
-        return view('pelayan.bayar-sisa', [
-            'reservasi' => $result['reservasi'],
-            'totalTagihan' => $result['totalTagihan'],
-            'totalDibayar' => $result['totalDibayar'],
-            'sisa' => $result['sisa'],
-        ]);
+public function bayarSisa(Request $request, $id, $status = null)
+{
+    // 1) Tangani flash jika datang dari Midtrans finish (suffix 'f')
+    if ($status === 'f') {
+        session()->flash('success', 'Pembayaran berhasil!');
     }
+    // (bila mau juga untuk 'e' atau 'u', bisa tambahkan elseif di sini)
+
+    // 2) Load data sisa via service (tidak perlu tahu $status)
+    $result = $this->paymentService->bayarSisa($id);
+
+    if (! $result['success']) {
+        return redirect($result['redirect'])
+               ->with('info', $result['message']);
+    }
+
+    // 3) Tampilkan view form bayar-sisa
+    return view('pelayan.bayar-sisa', [
+        'reservasi'    => $result['reservasi'],
+        'totalTagihan' => $result['totalTagihan'],
+        'totalDibayar' => $result['totalDibayar'],
+        'sisa'         => $result['sisa'],
+    ]);
+}
+
 
     public function bayarSisaPost(Request $request, $id)
     {
@@ -140,11 +152,22 @@ class PelayanController extends Controller
         return redirect()->route('pelayan.reservasi')->with('success', $result['message']);
     }
 
-    public function showQrisPayment($id)
-    {
-        $data = $this->paymentService->showQrisPayment($id);
-        return $this->paymentService->showQrisPayment($id);
-    }
+   public function showQrisPayment($id)
+{
+    $data = $this->paymentService->showQrisPayment($id);
+
+    return view('pelayan.qris-payment', [
+        'snap_token'     => $data['snap_token'],
+        'reservasi'      => $data['reservasi'],
+        'jumlah_dibayar' => $data['jumlah_dibayar'],
+    ]);
+}
+
+public function settleQrisPayment(Request $request, $id)
+{
+    return $this->paymentService->settlePayment($request, $id);
+}
+
 
 
     public function showOrderSummary($reservasi_id)
@@ -510,6 +533,31 @@ public function storeReservasi(Request $request)
     $reservasi->delete(); // Soft delete
     return redirect()->back()->with('success', 'Reservasi berhasil dihapus.');
 }
+
+public function settlePayment(Request $request, $id)
+{
+    // Pastikan hanya AJAX
+    if (! $request->ajax()) {
+        abort(403);
+    }
+
+    $reservasi = Reservasi::findOrFail($id);
+    // Jika sudah lunas, langsung sukses
+    if ($reservasi->status === 'paid' || $reservasi->status === 'selesai') {
+        return response()->json(['success' => true]);
+    }
+
+    // Tandai lunas
+    $reservasi->payment_status = 'paid';
+    $reservasi->sisa_tagihan_reservasi = 0;
+    $reservasi->status           = 'paid';
+    $reservasi->waktu_selesai    = now();
+    $reservasi->save();
+
+    return response()->json(['success' => true]);
+}
+
+
 
 
 }
