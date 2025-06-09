@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Pengguna;  // Import model Pengguna
+use App\Models\Meja;
+use App\Models\Order;
+use App\Models\Invoice;
 
 class Reservasi extends Model
 {
@@ -13,19 +17,19 @@ class Reservasi extends Model
     protected $table = 'reservasi';
 
     protected $casts = [
-        'combined_tables'          => 'array',
-        'payment_amount'           => 'float',
-        'total_bill'               => 'float',
-        'amount_paid'              => 'float',
-        'change_given'             => 'float',
-        'sisa_tagihan_reservasi'   => 'float',
-        'waktu_kedatangan'         => 'datetime',
-        'waktu_selesai'            => 'datetime',
+        'combined_tables'        => 'array',
+        'payment_amount'         => 'float',
+        'total_bill'             => 'float',
+        'amount_paid'            => 'float',
+        'change_given'           => 'float',
+        'sisa_tagihan_reservasi' => 'float',
+        'waktu_kedatangan'       => 'datetime',
+        'waktu_selesai'          => 'datetime',
     ];
 
     protected $fillable = [
         'user_id',
-        // 'meja_id',            // tidak lagi secara langsung diisi, karena multi-meja → gunakan pivot
+        'meja_id',
         'combined_tables',
         'nama_pelanggan',
         'staff_id',
@@ -49,7 +53,31 @@ class Reservasi extends Model
     ];
 
     /**
-     * Relasi many-to-many ke Meja (pivot meja_reservasi).
+     * Relasi ke pengguna yang membuat reservasi (customer)
+     */
+    public function user()
+    {
+        return $this->belongsTo(Pengguna::class, 'user_id');
+    }
+
+    /**
+     * Alias untuk konteks invoice: customer
+     */
+    public function customer()
+    {
+        return $this->belongsTo(Pengguna::class, 'user_id');
+    }
+
+    /**
+     * Relasi ke staf yang membuat (pelayan)
+     */
+    public function staff()
+    {
+        return $this->belongsTo(Pengguna::class, 'staff_id');
+    }
+
+    /**
+     * Relasi many-to-many ke meja
      */
     public function meja()
     {
@@ -57,29 +85,19 @@ class Reservasi extends Model
                     ->withTimestamps();
     }
 
-    // Jika Anda juga membutuhkan relasi individual (sebelum diubah ke pivot), bisa dihapus atau dikomentari:
-    /*
-    public function mejaSingle()
-    {
-        return $this->belongsTo(Meja::class, 'meja_id');
-    }
-    */
-
-    // Relasi ke Pengguna (Pelanggan)
-    public function pengguna()
-    {
-        return $this->belongsTo(Pengguna::class, 'user_id');
-    }
-
-    // Relasi ke Pengguna (Staf/Pelayan yang membuat)
-    public function staffYangMembuat()
-    {
-        return $this->belongsTo(Pengguna::class, 'staff_id');
-    }
-
-    // Relasi ke Order items jika ada
+    /**
+     * Relasi ke order items
+     */
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Relasi one-to-one ke invoice
+     */
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class, 'reservasi_id');
     }
 }

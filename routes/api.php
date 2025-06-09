@@ -11,9 +11,9 @@ use App\Http\Controllers\Customer\ReservationController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\RatingController;
 use App\Http\Controllers\Customer\NotificationController;
+use App\Http\Controllers\Customer\InvoiceController; // Add this
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\Customer\MidtransController; // Tambahkan ini
-
+use App\Http\Controllers\Customer\MidtransController;
 
 // Rute publik (tanpa autentikasi)
 Route::post('customer/register', [AuthController::class, 'register']);
@@ -33,6 +33,9 @@ Route::get('/test', [TestController::class, 'index']);
 
 // Rute publik untuk notifikasi Midtrans
 Route::post('midtrans-notification', [MidtransController::class, 'handleNotification']);
+
+// Rute publik untuk verifikasi kehadiran (QR Code scan)
+Route::get('customer/verify-attendance/{kodeReservasi}', [InvoiceController::class, 'verifyAttendance']);
 
 // Rute yang memerlukan autentikasi (menggunakan Sanctum)
 Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(function () {
@@ -63,6 +66,15 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(funct
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+
+    // Invoices - NEW ROUTES
+    Route::get('invoices', [InvoiceController::class, 'getUserInvoices']);
+    Route::get('invoices/{reservasiId}', [InvoiceController::class, 'getInvoiceData']);
+    Route::post('invoices/{reservasiId}/generate', [InvoiceController::class, 'generateInvoice']);
+    Route::get('invoices/{reservasiId}/qr-code', [InvoiceController::class, 'getQRCode']);
+    Route::post('invoices/{reservasiId}/update-payment', [InvoiceController::class, 'updatePaymentStatus']);
+    Route::get('invoices/summary', [InvoiceController::class, 'getInvoiceSummary']);
+    Route::post('invoices/{reservasiId}/resend', [InvoiceController::class, 'resendInvoice']);
 
     // Checkout dari keranjang (Midtrans)
     Route::post('checkout', [MidtransController::class, 'checkoutFromCart']);
