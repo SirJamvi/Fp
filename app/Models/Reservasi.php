@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Pengguna;  // Import model Pengguna
+use App\Models\Pengguna;    // Import model Pengguna
 use App\Models\Meja;
 use App\Models\Order;
 use App\Models\Invoice;
@@ -32,7 +32,7 @@ class Reservasi extends Model
         'meja_id',
         'combined_tables',
         'nama_pelanggan',
-        'staff_id',
+        'staff_id', // Ini adalah kolom foreign key yang akan digunakan oleh staffYangMembuat
         'waktu_kedatangan',
         'jumlah_tamu',
         'kehadiran_status',
@@ -43,7 +43,7 @@ class Reservasi extends Model
         'source',
         'kode_reservasi',
         'catatan',
-        'created_by_pelayan_id',
+        'created_by_pelayan_id', // Perhatikan apakah ini juga merujuk ke staff/pengguna yang membuat reservasi
         'total_bill',
         'payment_method',
         'sisa_tagihan_reservasi',
@@ -61,6 +61,14 @@ class Reservasi extends Model
     }
 
     /**
+     * Alias: supaya eager-load('pengguna') bekerja
+     */
+    public function pengguna()
+    {
+        return $this->belongsTo(Pengguna::class, 'user_id');
+    }
+
+    /**
      * Alias untuk konteks invoice: customer
      */
     public function customer()
@@ -70,10 +78,16 @@ class Reservasi extends Model
 
     /**
      * Relasi ke staf yang membuat (pelayan)
+     * Mengganti nama method 'staff' menjadi 'staffYangMembuat'
+     * agar sesuai dengan pemanggilan di PelayanController.php
      */
-    public function staff()
+    public function staffYangMembuat() // NAMA INI HARUS SAMA DENGAN YANG DIPANGGIL DI CONTROLLER
     {
+        // Asumsi 'staff_id' adalah foreign key yang merujuk ke ID pengguna/staff yang membuat reservasi
         return $this->belongsTo(Pengguna::class, 'staff_id');
+        // Jika Anda juga memiliki 'created_by_pelayan_id' yang merujuk ke staff,
+        // dan itu yang dimaksud 'staffYangMembuat', maka ganti 'staff_id' menjadi 'created_by_pelayan_id'
+        // return $this->belongsTo(Pengguna::class, 'created_by_pelayan_id');
     }
 
     /**
@@ -82,7 +96,7 @@ class Reservasi extends Model
     public function meja()
     {
         return $this->belongsToMany(Meja::class, 'meja_reservasi', 'reservasi_id', 'meja_id')
-                    ->withTimestamps();
+                     ->withTimestamps();
     }
 
     /**

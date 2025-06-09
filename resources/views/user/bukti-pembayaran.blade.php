@@ -7,7 +7,7 @@
     <h3 class="mb-4">Bukti Pembayaran</h3>
 
     <p><strong>Nama:</strong> {{ $reservasi->nama_pelanggan ?? $reservasi->pengguna->nama ?? '-' }}</p>
-    <p><strong>No Meja:</strong> {{ $reservasi->meja->nomor_meja ?? '-' }}</p>
+    <p><strong>No Meja:</strong> {{ $reservasi->meja->first()->nomor_meja ?? '-' }}</p>
     <p><strong>Waktu Kedatangan:</strong> {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan)->translatedFormat('d M Y H:i') }}</p>
     <p><strong>Kode Reservasi:</strong> {{ $reservasi->kode_reservasi }}</p>
 
