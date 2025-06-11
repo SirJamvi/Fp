@@ -31,4 +31,10 @@ class Meja extends Model
         return $this->belongsToMany(Reservasi::class, 'meja_reservasi', 'meja_id', 'reservasi_id')
                     ->withTimestamps();
     }
+    public function reservasiAktif()
+{
+    return $this->hasOne(Reservasi::class, 'id', 'current_reservasi_id')
+                ->where('status', '!=', 'selesai'); // atau sesuaikan kondisi status aktif
+}
+
 }

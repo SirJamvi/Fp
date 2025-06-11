@@ -27,7 +27,7 @@
                         <th>Area</th>
                         <th>Capacity</th>
                         <th>Status Meja</th>
-                        <th>Keterangan Meja</th> {{-- Menggunakan "Keterangan Meja" karena lebih deskriptif --}}
+                        <th>Keterangan Meja</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,27 +47,20 @@
                                 </form>
                             </td>
                             <td>
-                                @switch($item->status)
-                                    @case('tersedia')
-                                        <span class="badge bg-success">Siap digunakan</span>
-                                        @break
-                                    @case('terisi')
-                                        <form action="{{ route('pelayan.meja.setTersedia', $item->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="badge bg-warning text-dark border-0" style="cursor: pointer;">
-                                                Sedang digunakan (klik untuk kosongkan)
-                                            </button>
-                                        </form>
-                                        @break
-                                    @case('dipesan')
-                                        <span class="badge bg-primary">Sudah dipesan</span>
-                                        @break
-                                    @case('nonaktif')
-                                        <span class="badge bg-secondary">Tidak aktif</span>
-                                        @break
-                                    @default
-                                        <span class="badge bg-light text-dark">Tidak diketahui</span>
-                                @endswitch
+                                @if (in_array($item->status, ['terisi', 'dipesan']))
+                                    <form action="{{ route('pelayan.meja.setTersedia', $item->id) }}" method="POST" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="badge bg-warning text-dark border-0" style="cursor: pointer;">
+                                            {{ $item->status === 'dipesan' ? 'Sudah dipesan (klik untuk kosongkan)' : 'Sedang digunakan (klik untuk kosongkan)' }}
+                                        </button>
+                                    </form>
+                                @elseif ($item->status === 'tersedia')
+                                    <span class="badge bg-success">Siap digunakan</span>
+                                @elseif ($item->status === 'nonaktif')
+                                    <span class="badge bg-secondary">Tidak aktif</span>
+                                @else
+                                    <span class="badge bg-light text-dark">Tidak diketahui</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -127,10 +120,7 @@
         background-color: #dc3545;
     }
 
-    .switch-ready input:checked + .slider:before {
-        transform: translateX(26px);
-    }
-
+    .switch-ready input:checked + .slider:before,
     .switch-nonaktif input:checked + .slider:before {
         transform: translateX(26px);
     }

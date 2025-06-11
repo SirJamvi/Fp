@@ -24,6 +24,8 @@ use App\Http\Controllers\Pelayan\PelayanMejaController;
 // Koki
 use App\Http\Controllers\Koki\KokiController;
 
+use App\Http\Controllers\Customer\InvoiceController;
+
 // =======================
 // Public Routes
 // =======================
@@ -38,6 +40,11 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// routes/web.php
+Route::post('customer/verify-attendance/{kodeReservasi}', [InvoiceController::class, 'verifyAttendance'])
+     ->name('verify.attendance');
+
 
 // =======================
 // Public User Routes
@@ -115,9 +122,9 @@ Route::prefix('pelayan')->name('pelayan.')->middleware(['auth', 'pelayan'])->gro
     Route::get('/reservasi/{id}/bayar-sisa/qris', [PelayanController::class, 'showQrisPayment'])->name('reservasi.bayarSisa.qris');
     Route::post('/reservasi/{id}/bayar-sisa/callback', [PelayanController::class, 'handleQrisCallback'])->name('reservasi.bayarSisa.callback');
     // HARUS diletakkan **setelah** dua route di atas
-Route::get('/reservasi/{id}/bayar-sisa/{status}', [PelayanController::class,'bayarSisa'])
-     ->where('status', 'f|u|e')   // f = finish, u = unfinished, e = error
-     ->name('reservasi.bayarSisa.status');
+    Route::get('/reservasi/{id}/bayar-sisa/{status}', [PelayanController::class,'bayarSisa'])
+        ->where('status', 'f|u|e')   // f = finish, u = unfinished, e = error
+        ->name('reservasi.bayarSisa.status');
 
 
 
