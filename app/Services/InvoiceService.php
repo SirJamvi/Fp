@@ -11,29 +11,30 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InvoiceService
 {
-    /**
-     * Buat atau perbarui invoice untuk reservasi.
-     */
     public function generateInvoice(int $reservasiId): array
     {
         try {
-            // Ambil reservasi + orders untuk perhitungan
-            $reservasi = Reservasi::with('orders')->findOrFail($reservasiId);
+            // Load reservasi dengan relasi meja dan menu
+            $reservasi = Reservasi::with([
+                'meja',
+                'orders.menu'
+            ])->findOrFail($reservasiId);
 
             // Hitung subtotal dari order
-            $subtotal    = $reservasi->orders->sum(fn($o) => $o->price * $o->quantity);
-            $serviceFee  = round($subtotal * 0.10);        // 10% service fee
+            $subtotal = $reservasi->orders->sum(function ($order) {
+                // Ambil harga dari field 'price' atau fallback ke harga menu
+                return ($order->price ?? $order->menu->harga ?? 0) * $order->quantity;
+            });
+
+            $serviceFee  = round($subtotal * 0.10); // 10%
             $totalAmount = $subtotal + $serviceFee;
             $amountPaid  = 0;
             $remaining   = $totalAmount - $amountPaid;
 
-            // Generate nomor invoice
-            $invoiceNumber = 'INV-'
-                . now()->format('Ymd')
-                . '-'
-                . Str::upper(Str::random(6));
+            // Nomor invoice unik
+            $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
 
-            // Generate QR code sebagai Data URI dengan penanganan error yang lebih baik
+            // QR code
             $qrUrl  = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
             $qrData = $this->generateQRCodeSafely($qrUrl);
 
@@ -72,9 +73,6 @@ class InvoiceService
         }
     }
 
-    /**
-     * Update status pembayaran: set amount_paid, remaining_amount & payment_status.
-     */
     public function updatePaymentStatus(int $reservasiId, float $amountPaid, ?string $paymentMethod): array
     {
         try {
@@ -107,9 +105,6 @@ class InvoiceService
         }
     }
 
-    /**
-     * Verifikasi kehadiran berdasarkan kode_reservasi.
-     */
     public function verifyAttendance(string $kodeReservasi): array
     {
         try {
@@ -130,22 +125,15 @@ class InvoiceService
         }
     }
 
-    /**
-     * Generate QR code dengan penanganan error yang lebih baik
-     */
     public function generateQRCode(Reservasi $reservasi): string
     {
         $url = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
         return $this->generateQRCodeSafely($url);
     }
 
-    /**
-     * Generate QR code dengan multiple fallback methods
-     */
     private function generateQRCodeSafely(string $content): string
     {
         try {
-            // Method 1: Gunakan GD driver secara eksplisit
             $png = QrCode::format('png')
                          ->size(150)
                          ->margin(1)
@@ -161,7 +149,6 @@ class InvoiceService
             ]);
 
             try {
-                // Method 2: Force GD driver melalui konfigurasi runtime
                 $originalDriver = config('simple-qrcode.driver');
                 config(['simple-qrcode.driver' => 'gd']);
 
@@ -169,7 +156,6 @@ class InvoiceService
                              ->size(150)
                              ->generate($content);
 
-                // Restore original config
                 config(['simple-qrcode.driver' => $originalDriver]);
 
                 return 'data:image/png;base64,' . base64_encode($png);
@@ -180,7 +166,6 @@ class InvoiceService
                 ]);
 
                 try {
-                    // Method 3: Gunakan SVG sebagai fallback
                     $svg = QrCode::format('svg')
                                  ->size(150)
                                  ->generate($content);
@@ -195,19 +180,14 @@ class InvoiceService
                         'content' => $content
                     ]);
 
-                    // Return placeholder QR code URL jika semua gagal
                     return $this->generatePlaceholderQR($content);
                 }
             }
         }
     }
 
-    /**
-     * Generate placeholder QR code menggunakan service eksternal
-     */
     private function generatePlaceholderQR(string $content): string
     {
-        // Gunakan QR Server API sebagai fallback
         $encodedContent = urlencode($content);
         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={$encodedContent}";
         
@@ -220,7 +200,14 @@ class InvoiceService
             Log::error('Placeholder QR generation failed', ['error' => $e->getMessage()]);
         }
 
-        // Jika semua gagal, return empty data URI
         return 'data:image/png;base64,';
+    }
+
+    public function getQrPayload(int $reservasiId): array
+    {
+        $reservasi = Reservasi::findOrFail($reservasiId);
+        return [
+            'kode_reservasi' => $reservasi->kode_reservasi,
+        ];
     }
 }
