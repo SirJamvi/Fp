@@ -66,7 +66,7 @@ class MidtransController extends Controller
                 $totalItemPrice = $price * $item['quantity'];
                 $subtotal += $totalItemPrice;
 
-                // Buat record Order
+                // Buat record Order dengan harga penuh (untuk referensi)
                 Order::create([
                     'reservasi_id' => $reservasi->id,
                     'menu_id'      => $menu->id,
@@ -78,17 +78,42 @@ class MidtransController extends Controller
                     'status'       => 'pending',
                 ]);
 
-                // Siapkan detail item untuk Midtrans
+                // PERBAIKAN: Siapkan detail item untuk Midtrans dengan harga DP 50%
+                $dpPrice = $price * 0.5; // Harga DP 50%
                 $item_details_midtrans[] = [
                     'id'       => (string) $menu->id,
-                    'price'    => (int) $price,
+                    'price'    => (int) $dpPrice, // ← PERBAIKAN: Gunakan harga DP, bukan harga penuh
                     'quantity' => (int) $item['quantity'],
-                    'name'     => substr($menu->name, 0, 50),
+                    'name'     => substr($menu->name . ' (DP 50%)', 0, 50), // ← PERBAIKAN: Tambah keterangan DP
                 ];
             }
 
             $totalAmount = $subtotal;
             $paymentAmountDP = $totalAmount * 0.5;
+
+            // VALIDASI: Pastikan total item_details sama dengan gross_amount
+            $calculatedTotal = 0;
+            foreach ($item_details_midtrans as $item) {
+                $calculatedTotal += $item['price'] * $item['quantity'];
+            }
+
+            if ($calculatedTotal != $paymentAmountDP) {
+                Log::error('Mismatch between calculated total and payment amount', [
+                    'calculated_total' => $calculatedTotal,
+                    'payment_amount_dp' => $paymentAmountDP,
+                    'item_details' => $item_details_midtrans
+                ]);
+                
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error dalam kalkulasi pembayaran.',
+                    'debug' => [
+                        'calculated_total' => $calculatedTotal,
+                        'expected_amount' => $paymentAmountDP
+                    ]
+                ], 500);
+            }
 
             // Update reservasi
             $reservasi->update([
@@ -105,32 +130,43 @@ class MidtransController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
-                    'gross_amount' => (int) $paymentAmountDP,
+                    'gross_amount' => (int) $paymentAmountDP, // ← Sekarang akan sama dengan total item_details
                 ],
                 'customer_details' => [
                     'first_name' => $user->nama,
                     'email' => $user->email,
                     'phone' => $user->nomor_hp,
                 ],
-                'item_details' => $item_details_midtrans,
+                'item_details' => $item_details_midtrans, // ← Item dengan harga DP
                 'custom_field1' => $reservasi->id,
                
                 // PENTING: Hapus finish_url, unfinish_url, error_url
                 // Hanya andalkan callback onSuccess/onError di frontend dan webhook
             ];
 
+            // Log untuk debugging
+            Log::info('Midtrans params prepared', [
+                'order_id' => $orderId,
+                'gross_amount' => $paymentAmountDP,
+                'item_details_count' => count($item_details_midtrans),
+                'calculated_total' => $calculatedTotal,
+                'item_details' => $item_details_midtrans
+            ]);
+
             // PERBAIKAN: Sesuaikan dengan struktur tabel customer_notifications yang ada
-            // Hanya menggunakan kolom yang tersedia: user_id, type, data, read_at, created_at, updated_at
             CustomerNotification::create([
-    'user_id'      => $user->id,
-    'reservasi_id' => $reservasi->id, // Kita tambahkan reservasi_id langsung
-    'type'         => 'reservation_created',
-    'title'        => 'Menunggu Pembayaran', // <-- Pindahkan ke sini
-    'message'      => "Pesanan Anda dengan kode #{$reservasi->id} telah dibuat. Segera selesaikan pembayaran.", // <-- Pindahkan ke sini
-    'data'         => [ // Kolom data sekarang hanya berisi info tambahan
-        'order_id'     => $orderId
-    ]
-]);
+                'user_id'      => $user->id,
+                'reservasi_id' => $reservasi->id,
+                'type'         => 'reservation_created',
+                'title'        => 'Menunggu Pembayaran',
+                'message'      => "Pesanan Anda dengan kode #{$reservasi->id} telah dibuat. Segera selesaikan pembayaran DP 50%.",
+                'data'         => [
+                    'order_id'     => $orderId,
+                    'total_amount' => $totalAmount,
+                    'dp_amount'    => $paymentAmountDP
+                ]
+            ]);
+
             $snapToken = Snap::getSnapToken($params);
 
             DB::commit();
@@ -139,7 +175,9 @@ class MidtransController extends Controller
                 'reservasi_id' => $reservasi->id,
                 'order_id' => $orderId,
                 'total_amount' => $totalAmount,
-                'payment_amount' => $paymentAmountDP
+                'payment_amount' => $paymentAmountDP,
+                'midtrans_gross_amount' => $paymentAmountDP,
+                'item_details_total' => $calculatedTotal
             ]);
 
             // 4. Return response ke frontend
@@ -150,7 +188,7 @@ class MidtransController extends Controller
                 'reservasi_id' => $reservasi->id,
                 'total_amount' => $totalAmount,
                 'payment_amount' => $paymentAmountDP,
-                'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran.'
+                'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran DP 50%.'
             ]);
 
         } catch (\Exception $e) {
@@ -215,14 +253,14 @@ class MidtransController extends Controller
                     'amount' => $gross_amount,
                     'payment_type' => $payload['payment_type'],
                     'status' => $payload['transaction_status'],
-                    'deposit' => true,
+                    'deposit' => true, // ← Menandai ini adalah pembayaran DP
                     'midtrans_response' => json_encode($payload)
                 ]
             );
 
             // Handle different payment statuses
             if ($payload['transaction_status'] === 'settlement') {
-                // Payment successful
+                // Payment successful - DP sudah dibayar
                 $totalPaid = Payment::where('reservasi_id', $reservasi->id)
                                   ->where('status', 'settlement')
                                   ->sum('amount');
@@ -231,68 +269,74 @@ class MidtransController extends Controller
                     'amount_paid' => $totalPaid,
                     'sisa_tagihan_reservasi' => $reservasi->total_bill - $totalPaid,
                     'payment_method' => $payload['payment_type'],
-                    'status' => 'confirmed'
+                    'status' => 'confirmed' // ← Status confirmed karena DP sudah dibayar
                 ]);
 
-                // PERBAIKAN: Sesuaikan dengan struktur tabel customer_notifications
+                // Update orders status
+                Order::where('reservasi_id', $reservasi->id)->update(['status' => 'confirmed']);
+
                 CustomerNotification::create([
-    'user_id'      => $reservasi->user_id,
-    'reservasi_id' => $reservasi->id,
-    'type'         => 'payment_success',
-    'title'        => 'Pembayaran Berhasil!', // <-- Pindahkan ke sini
-    'message'      => "Pembayaran untuk pesanan #{$reservasi->id} telah kami terima. Pesanan Anda sedang disiapkan.", // <-- Pindahkan ke sini
-    'data'         => [
-        'order_id'     => $order_id,
-        'amount_paid'  => $gross_amount
-    ]
-]);
+                    'user_id'      => $reservasi->user_id,
+                    'reservasi_id' => $reservasi->id,
+                    'type'         => 'payment_success',
+                    'title'        => 'Pembayaran DP Berhasil!',
+                    'message'      => "Pembayaran DP 50% untuk pesanan #{$reservasi->id} telah kami terima. Sisa pembayaran akan dilakukan saat kedatangan.",
+                    'data'         => [
+                        'order_id'     => $order_id,
+                        'amount_paid'  => $gross_amount,
+                        'remaining_amount' => $reservasi->total_bill - $totalPaid
+                    ]
+                ]);
 
                 // Generate invoice setelah pembayaran berhasil
                 try {
                     $invoiceResult = $this->invoiceService->generateInvoice($reservasi->id);
-                    Log::info('Invoice generated after payment', [
+                    Log::info('Invoice generated after DP payment', [
                         'reservasi_id' => $reservasi->id,
                         'invoice_success' => $invoiceResult['success'] ?? false
                     ]);
                 } catch (\Exception $invoiceError) {
-                    Log::error('Failed to generate invoice after payment', [
+                    Log::error('Failed to generate invoice after DP payment', [
                         'reservasi_id' => $reservasi->id,
                         'error' => $invoiceError->getMessage()
                     ]);
                 }
 
-                Log::info('Payment settlement processed', [
+                Log::info('DP Payment settlement processed', [
                     'order_id' => $order_id,
                     'reservasi_id' => $reservasi->id,
-                    'amount' => $gross_amount,
-                    'total_paid' => $totalPaid
+                    'dp_amount' => $gross_amount,
+                    'total_paid' => $totalPaid,
+                    'remaining_amount' => $reservasi->total_bill - $totalPaid
                 ]);
 
             } elseif ($payload['transaction_status'] === 'pending') {
                 // Payment pending - tidak perlu update status reservasi
-                Log::info('Payment pending', ['order_id' => $order_id, 'reservasi_id' => $reservasi->id]);
+                Log::info('DP Payment pending', ['order_id' => $order_id, 'reservasi_id' => $reservasi->id]);
 
             } elseif (in_array($payload['transaction_status'], ['cancel', 'deny', 'expire', 'failure'])) {
                 // Payment failed
                 $reservasi->update([
                     'status' => 'cancelled',
-                    'cancelled_reason' => 'Payment failed: ' . $payload['transaction_status']
+                    'cancelled_reason' => 'DP Payment failed: ' . $payload['transaction_status']
                 ]);
 
-                // PERBAIKAN: Tambahkan notifikasi untuk payment failed
+                // Update orders status
+                Order::where('reservasi_id', $reservasi->id)->update(['status' => 'cancelled']);
+
                 CustomerNotification::create([
-                    'user_id' => $reservasi->user_id,
-                    'type'    => 'payment_failed',
-                    'data'    => json_encode([
-                        'title'        => 'Pembayaran Gagal',
-                        'message'      => "Pembayaran untuk pesanan #{$reservasi->id} gagal. Status: {$payload['transaction_status']}",
-                        'reservasi_id' => $reservasi->id,
+                    'user_id'      => $reservasi->user_id,
+                    'reservasi_id' => $reservasi->id,
+                    'type'         => 'payment_failed',
+                    'title'        => 'Pembayaran DP Gagal',
+                    'message'      => "Pembayaran DP untuk pesanan #{$reservasi->id} gagal. Pesanan dibatalkan. Status: {$payload['transaction_status']}",
+                    'data'         => [
                         'order_id'     => $order_id,
                         'status'       => $payload['transaction_status']
-                    ])
+                    ]
                 ]);
                
-                Log::warning('Payment failed, reservation cancelled', [
+                Log::warning('DP Payment failed, reservation cancelled', [
                     'order_id' => $order_id,
                     'reservasi_id' => $reservasi->id,
                     'status' => $payload['transaction_status']
