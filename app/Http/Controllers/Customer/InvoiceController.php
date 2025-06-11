@@ -58,53 +58,60 @@ class InvoiceController extends Controller
     /**
      * API: Ambil data invoice + reservasi + customer + items sebagai JSON
      */
-    public function getInvoiceData(int $reservasiId)
-    {
-        try {
-            $userId = Auth::id();
+   public function getInvoiceData(int $reservasiId)
+{
+    try {
+        $userId = Auth::id();
 
-            $reservasi = Reservasi::with(['meja', 'orders', 'pengguna'])
-                                  ->where('id', $reservasiId)
-                                  ->where('user_id', $userId)
-                                  ->firstOrFail();
+        // 1) Eager‐load meja, orders.menu, dan pengguna
+        $reservasi = Reservasi::with(['meja', 'orders.menu', 'pengguna'])
+                              ->where('id', $reservasiId)
+                              ->where('user_id', $userId)
+                              ->firstOrFail();
 
-            // Hasil generateInvoice sudah mengisi subtotal, service_fee, dll
-            $invoiceResult = $this->invoiceService->generateInvoice($reservasiId);
-            if (! $invoiceResult['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $invoiceResult['message'] ?? 'Gagal membuat invoice',
-                ], 400);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data'    => [
-                    'invoice'   => $invoiceResult['data'],
-                    'reservasi' => $reservasi,
-                    'customer'  => $reservasi->pengguna,
-                    'items'     => $reservasi->orders,
-                ],
-            ], 200);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        // 2) Generate atau ambil invoice
+        $invoiceResult = $this->invoiceService->generateInvoice($reservasiId);
+        if (! $invoiceResult['success']) {
             return response()->json([
                 'success' => false,
-                'message' => 'Reservasi tidak ditemukan atau akses ditolak',
-            ], 404);
-
-        } catch (\Exception $e) {
-            Log::error('Error getInvoiceData', [
-                'reservasi_id' => $reservasiId,
-                'user_id'      => Auth::id(),
-                'error'        => $e->getMessage(),
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Server error: ' . $e->getMessage(),
-            ], 500);
+                'message' => $invoiceResult['message'] ?? 'Gagal membuat invoice',
+            ], 400);
         }
+
+        // 3) Map orders ke items
+        $items = $reservasi->orders->map(function($order) {
+            $price = $order->price_at_order
+                    ?? ($order->menu->price ?? $order->menu->harga ?? 0);
+
+            return [
+                'nama'        => $order->menu->name  ?? $order->menu->nama ?? 'Item tidak diketahui',
+                'quantity'    => $order->quantity,
+                'price'       => $price,
+                'total_price' => $order->total_price ?? ($price * $order->quantity),
+                'note'        => $order->notes,    // kolom 'notes'
+            ];
+        });
+
+        // 4) Return JSON
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'invoice'   => $invoiceResult['data'],
+                'reservasi' => $reservasi,
+                'customer'  => $reservasi->pengguna,
+                'items'     => $items,
+            ],
+        ]);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([ 'success'=>false,'message'=>'Reservasi tidak ditemukan' ],404);
+    } catch (\Exception $e) {
+        Log::error('Error getInvoiceData',['error'=>$e->getMessage()]);
+        return response()->json([ 'success'=>false,'message'=>'Server error' ],500);
     }
+}
+
+
 
     /**
      * API: Generate atau regenerate invoice (POST).

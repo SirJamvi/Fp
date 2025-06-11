@@ -57,8 +57,10 @@ class Order extends Model
     }
 
     // Relationship to Reservasi
+   // Order.php
     public function reservasi()
     {
-        return $this->belongsTo(Reservasi::class);
+        return $this->belongsTo(Reservasi::class, 'reservasi_id');
     }
+
 }
