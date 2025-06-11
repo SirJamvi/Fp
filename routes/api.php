@@ -11,7 +11,7 @@ use App\Http\Controllers\Customer\ReservationController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\RatingController;
 use App\Http\Controllers\Customer\NotificationController;
-use App\Http\Controllers\Customer\InvoiceController; // Add this
+use App\Http\Controllers\Customer\InvoiceController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Customer\MidtransController;
 
@@ -66,12 +66,18 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(funct
     Route::post('ratings', [RatingController::class, 'store']);
     Route::get('ratings', [RatingController::class, 'index']);
 
-    // Notifications
+    // Notifications - Updated Routes
     Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/latest', [NotificationController::class, 'getLatestNotifications']);
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+    
+    // Notification testing routes
+    Route::get('notifications/pending', [NotificationController::class, 'getPendingNotifications']);
+    Route::post('notifications/send-pending', [NotificationController::class, 'sendPendingNotifications']);
 
-    // Invoices - NEW ROUTES
+    // Invoices
     Route::get('invoices', [InvoiceController::class, 'getUserInvoices']);
     Route::get('invoices/{reservasiId}', [InvoiceController::class, 'getInvoiceData']);
     Route::post('invoices/{reservasiId}/generate', [InvoiceController::class, 'generateInvoice']);

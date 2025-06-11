@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Reservasi;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
+use App\Models\CustomerNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -113,11 +114,23 @@ class MidtransController extends Controller
                 ],
                 'item_details' => $item_details_midtrans,
                 'custom_field1' => $reservasi->id,
-                
+               
                 // PENTING: Hapus finish_url, unfinish_url, error_url
                 // Hanya andalkan callback onSuccess/onError di frontend dan webhook
             ];
 
+            // PERBAIKAN: Sesuaikan dengan struktur tabel customer_notifications yang ada
+            // Hanya menggunakan kolom yang tersedia: user_id, type, data, read_at, created_at, updated_at
+            CustomerNotification::create([
+    'user_id'      => $user->id,
+    'reservasi_id' => $reservasi->id, // Kita tambahkan reservasi_id langsung
+    'type'         => 'reservation_created',
+    'title'        => 'Menunggu Pembayaran', // <-- Pindahkan ke sini
+    'message'      => "Pesanan Anda dengan kode #{$reservasi->id} telah dibuat. Segera selesaikan pembayaran.", // <-- Pindahkan ke sini
+    'data'         => [ // Kolom data sekarang hanya berisi info tambahan
+        'order_id'     => $orderId
+    ]
+]);
             $snapToken = Snap::getSnapToken($params);
 
             DB::commit();
@@ -162,7 +175,7 @@ class MidtransController extends Controller
     {
         MidtransHelper::configure();
         $payload = $request->all();
-        
+       
         Log::info('Midtrans notification received', ['payload' => $payload]);
 
         $order_id = $payload['order_id'];
@@ -185,7 +198,7 @@ class MidtransController extends Controller
                 $reservasi_id = $orderIdParts[1];
             }
         }
-        
+       
         $reservasi = Reservasi::find($reservasi_id);
         if (!$reservasi) {
             Log::error('Reservasi not found for notification', ['reservasi_id' => $reservasi_id, 'order_id' => $order_id]);
@@ -221,6 +234,19 @@ class MidtransController extends Controller
                     'status' => 'confirmed'
                 ]);
 
+                // PERBAIKAN: Sesuaikan dengan struktur tabel customer_notifications
+                CustomerNotification::create([
+    'user_id'      => $reservasi->user_id,
+    'reservasi_id' => $reservasi->id,
+    'type'         => 'payment_success',
+    'title'        => 'Pembayaran Berhasil!', // <-- Pindahkan ke sini
+    'message'      => "Pembayaran untuk pesanan #{$reservasi->id} telah kami terima. Pesanan Anda sedang disiapkan.", // <-- Pindahkan ke sini
+    'data'         => [
+        'order_id'     => $order_id,
+        'amount_paid'  => $gross_amount
+    ]
+]);
+
                 // Generate invoice setelah pembayaran berhasil
                 try {
                     $invoiceResult = $this->invoiceService->generateInvoice($reservasi->id);
@@ -252,7 +278,20 @@ class MidtransController extends Controller
                     'status' => 'cancelled',
                     'cancelled_reason' => 'Payment failed: ' . $payload['transaction_status']
                 ]);
-                
+
+                // PERBAIKAN: Tambahkan notifikasi untuk payment failed
+                CustomerNotification::create([
+                    'user_id' => $reservasi->user_id,
+                    'type'    => 'payment_failed',
+                    'data'    => json_encode([
+                        'title'        => 'Pembayaran Gagal',
+                        'message'      => "Pembayaran untuk pesanan #{$reservasi->id} gagal. Status: {$payload['transaction_status']}",
+                        'reservasi_id' => $reservasi->id,
+                        'order_id'     => $order_id,
+                        'status'       => $payload['transaction_status']
+                    ])
+                ]);
+               
                 Log::warning('Payment failed, reservation cancelled', [
                     'order_id' => $order_id,
                     'reservasi_id' => $reservasi->id,
@@ -271,7 +310,7 @@ class MidtransController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+           
             return response()->json(['message' => 'Failed to process notification'], 500);
         }
     }

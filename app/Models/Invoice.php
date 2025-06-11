@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Order;
 
 class Invoice extends Model
 {
@@ -19,7 +20,6 @@ class Invoice extends Model
         'remaining_amount',
         'payment_method',
         'payment_status',
-        'qr_code',
         'generated_at'
     ];
 
@@ -77,7 +77,6 @@ class Invoice extends Model
                 'remaining_amount' => $this->remaining_amount,
                 'payment_method' => $this->payment_method,
                 'payment_status' => $this->payment_status,
-                'qr_code' => $this->qr_code
             ],
             'reservasi' => [
                 'id' => $reservasi->id,
@@ -87,7 +86,8 @@ class Invoice extends Model
                 'nama_pelanggan' => $reservasi->nama_pelanggan,
                 'catatan' => $reservasi->catatan,
                 'status' => $reservasi->status,
-                'kehadiran_status' => $reservasi->kehadiran_status,
+                'status_kehadiran' => $reservasi->status_kehadiran,
+                'waktu_checkin' => $reservasi->waktu_checkin,
                 'meja' => $reservasi->meja->map(function($meja) {
                     return [
                         'id' => $meja->id,
@@ -110,7 +110,67 @@ class Invoice extends Model
                     'total' => $order->total_price,
                     'note' => $order->notes ?? ''
                 ];
-            })
+            }),
+            'attendance' => [
+                'status' => $reservasi->status_kehadiran,
+                'waktu_checkin' => $reservasi->waktu_checkin,
+                'can_checkin' => $this->canCheckIn($reservasi),
+            ]
         ];
+    }
+
+    /**
+     * Check if reservation can do check-in
+     */
+    private function canCheckIn($reservasi): bool
+    {
+        if ($reservasi->status_kehadiran === 'hadir') {
+            return false;
+        }
+
+        $now = now();
+        $waktuKedatangan = \Carbon\Carbon::parse($reservasi->waktu_kedatangan);
+        $batasCheckin = $waktuKedatangan->copy()->subMinutes(30);
+        $batasExpired = $waktuKedatangan->copy()->addHours(2);
+
+        return $now->gte($batasCheckin) && $now->lte($batasExpired);
+    }
+
+    /**
+     * Get payment status with color coding
+     */
+    public function getPaymentStatusAttribute()
+    {
+        return [
+            'status' => $this->attributes['payment_status'],
+            'label' => $this->getPaymentStatusLabel(),
+            'color' => $this->getPaymentStatusColor(),
+        ];
+    }
+
+    /**
+     * Get payment status label
+     */
+    private function getPaymentStatusLabel(): string
+    {
+        return match($this->attributes['payment_status']) {
+            'pending' => 'Menunggu Pembayaran',
+            'partial' => 'Dibayar Sebagian',
+            'paid' => 'Lunas',
+            default => 'Tidak Diketahui'
+        };
+    }
+
+    /**
+     * Get payment status color
+     */
+    private function getPaymentStatusColor(): string
+    {
+        return match($this->attributes['payment_status']) {
+            'pending' => 'warning',
+            'partial' => 'info',
+            'paid' => 'success',
+            default => 'secondary'
+        };
     }
 }
