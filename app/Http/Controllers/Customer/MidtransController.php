@@ -353,7 +353,7 @@ class MidtransController extends Controller
                 'reservasi_id' => $reservasi_id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
-            ]);
+            ]);//
            
             return response()->json(['message' => 'Failed to process notification'], 500);
         }
