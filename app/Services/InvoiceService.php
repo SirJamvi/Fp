@@ -11,67 +11,77 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InvoiceService
 {
-    public function generateInvoice(int $reservasiId): array
-    {
-        try {
-            // Load reservasi dengan relasi meja dan menu
-            $reservasi = Reservasi::with([
-                'meja',
-                'orders.menu'
-            ])->findOrFail($reservasiId);
+   public function generateInvoice(int $reservasiId): array
+{
+    try {
+        $reservasi = Reservasi::with(['meja', 'orders.menu'])->findOrFail($reservasiId);
 
-            // Hitung subtotal dari order
-            $subtotal = $reservasi->orders->sum(function ($order) {
-                // Ambil harga dari field 'price' atau fallback ke harga menu
-                return ($order->price ?? $order->menu->harga ?? 0) * $order->quantity;
-            });
+        $subtotal = $reservasi->orders->sum(function ($order) use ($reservasiId) {
+            $price    = $order->price_at_order 
+                          ?? ($order->menu->price ?? $order->menu->harga ?? 0);
+            $quantity = $order->quantity ?? 0;
 
-            $serviceFee  = round($subtotal * 0.10); // 10%
-            $totalAmount = $subtotal + $serviceFee;
-            $amountPaid  = 0;
-            $remaining   = $totalAmount - $amountPaid;
+            if ($price == 0 || $quantity == 0) {
+                Log::warning('Order item bermasalah saat generate invoice', [
+                    'reservasi_id' => $reservasiId,
+                    'order_id'     => $order->id,
+                    'price_at_order'=> $order->price_at_order,
+                    'menu_price'   => $order->menu->price ?? $order->menu->harga ?? null,
+                    'quantity'     => $order->quantity,
+                ]);
+            }
 
-            // Nomor invoice unik
-            $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
+            return $price * $quantity;
+        });
 
-            // QR code
-            $qrUrl  = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
-            $qrData = $this->generateQRCodeSafely($qrUrl);
+        $serviceFee  = round($subtotal * 0.10); // 10% biaya layanan
+        $totalAmount = $subtotal + $serviceFee;
+        $amountPaid  = 0;
+        $remaining   = $totalAmount - $amountPaid;
 
-            // Simpan atau update invoice
-            $invoice = Invoice::updateOrCreate(
-                ['reservasi_id' => $reservasiId],
-                [
-                    'invoice_number'   => $invoiceNumber,
-                    'subtotal'         => $subtotal,
-                    'service_fee'      => $serviceFee,
-                    'total_amount'     => $totalAmount,
-                    'amount_paid'      => $amountPaid,
-                    'remaining_amount' => $remaining,
-                    'payment_method'   => null,
-                    'payment_status'   => 'pending',
-                    'qr_code'          => $qrData,
-                    'generated_at'     => now(),
-                ]
-            );
+        // Nomor invoice unik
+        $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
 
-            return [
-                'success' => true,
-                'message' => 'Invoice berhasil dibuat',
-                'data'    => $invoice,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error generateInvoice', [
-                'reservasi_id' => $reservasiId,
-                'error'        => $e->getMessage(),
-                'trace'        => $e->getTraceAsString()
-            ]);
-            return [
-                'success' => false,
-                'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
-            ];
-        }
+        // QR Code
+        $qrUrl  = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
+        $qrData = $this->generateQRCodeSafely($qrUrl);
+
+        // Simpan / update invoice
+        $invoice = Invoice::updateOrCreate(
+            ['reservasi_id' => $reservasiId],
+            [
+                'invoice_number'   => $invoiceNumber,
+                'subtotal'         => $subtotal,
+                'service_fee'      => $serviceFee,
+                'total_amount'     => $totalAmount,
+                'amount_paid'      => $amountPaid,
+                'remaining_amount' => $remaining,
+                'payment_method'   => null,
+                'payment_status'   => 'pending',
+                'qr_code'          => $qrData,
+                'generated_at'     => now(),
+            ]
+        );
+
+        return [
+            'success' => true,
+            'message' => 'Invoice berhasil dibuat',
+            'data'    => $invoice,
+        ];
+
+    } catch (\Exception $e) {
+        Log::error('Error generateInvoice', [
+            'reservasi_id' => $reservasiId,
+            'error'        => $e->getMessage(),
+            'trace'        => $e->getTraceAsString()
+        ]);
+        return [
+            'success' => false,
+            'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
+        ];
     }
+}
+
 
     public function updatePaymentStatus(int $reservasiId, float $amountPaid, ?string $paymentMethod): array
     {
