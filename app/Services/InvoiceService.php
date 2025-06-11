@@ -17,23 +17,40 @@ class InvoiceService
     public function generateInvoice(int $reservasiId): array
     {
         try {
-            // Ambil reservasi + orders untuk perhitungan
-            $reservasi = Reservasi::with('orders')->findOrFail($reservasiId);
+            $reservasi = Reservasi::with(['meja', 'orders.menu'])->findOrFail($reservasiId);
 
-            // Hitung subtotal dari order
-            $subtotal    = $reservasi->orders->sum(fn($o) => $o->price * $o->quantity);
-            $serviceFee  = round($subtotal * 0.10);        // 10% service fee
+            // Hitung subtotal dari order, menggunakan price_at_order jika ada, atau fallback ke menu.price/harga
+            $subtotal = $reservasi->orders->sum(function ($order) use ($reservasiId) {
+                $price = $order->price_at_order
+                    ?? ($order->menu->price ?? $order->menu->harga ?? 0);
+                $quantity = $order->quantity ?? 0;
+
+                if (($price == 0 || $quantity == 0) && $order->id) {
+                    Log::warning('Order item bermasalah saat generate invoice', [
+                        'reservasi_id'   => $reservasiId,
+                        'order_id'       => $order->id,
+                        'price_at_order' => $order->price_at_order,
+                        'menu_price'     => $order->menu->price ?? $order->menu->harga ?? null,
+                        'quantity'       => $order->quantity,
+                    ]);
+                }
+                return $price * $quantity;
+            });
+
+            $serviceFee  = round($subtotal * 0.10); // 10% biaya layanan
             $totalAmount = $subtotal + $serviceFee;
             $amountPaid  = 0;
             $remaining   = $totalAmount - $amountPaid;
 
-            // Generate nomor invoice
-            $invoiceNumber = 'INV-'
-                . now()->format('Ymd')
-                . '-'
-                . Str::upper(Str::random(6));
+            // Nomor invoice unik
+            $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
 
-            // Simpan atau update invoice (QR code akan di-generate dinamis)
+            // QR Code untuk keperluan invoice atau referensi (jika diperlukan)
+            // Misal route pelayan.scanqr.proses menerima parameter kode_reservasi
+            $qrUrl  = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
+            $qrData = $this->generateQRCodeSafely($qrUrl);
+
+            // Simpan atau update invoice
             $invoice = Invoice::updateOrCreate(
                 ['reservasi_id' => $reservasiId],
                 [
@@ -45,6 +62,8 @@ class InvoiceService
                     'remaining_amount' => $remaining,
                     'payment_method'   => null,
                     'payment_status'   => 'pending',
+                    // Pastikan kolom 'qr_code' ada di tabel invoices; jika tidak, sesuaikan atau hapus baris ini
+                    'qr_code'          => $qrData,
                     'generated_at'     => now(),
                 ]
             );
@@ -58,7 +77,7 @@ class InvoiceService
             Log::error('Error generateInvoice', [
                 'reservasi_id' => $reservasiId,
                 'error'        => $e->getMessage(),
-                'trace'        => $e->getTraceAsString()
+                'trace'        => $e->getTraceAsString(),
             ]);
             return [
                 'success' => false,
@@ -68,7 +87,7 @@ class InvoiceService
     }
 
     /**
-     * Update status pembayaran: set amount_paid, remaining_amount & payment_status.
+     * Update status pembayaran pada invoice.
      */
     public function updatePaymentStatus(int $reservasiId, float $amountPaid, ?string $paymentMethod): array
     {
@@ -103,15 +122,15 @@ class InvoiceService
     }
 
     /**
-     * Verifikasi kehadiran berdasarkan kode_reservasi.
+     * Verifikasi kehadiran berdasarkan kode reservasi.
      */
     public function verifyAttendance(string $kodeReservasi): array
     {
         try {
             $reservasi = Reservasi::where('kode_reservasi', $kodeReservasi)->firstOrFail();
-            
+
             // Cek apakah sudah hadir
-            if ($reservasi->status_kehadiran === 'hadir') {
+            if (($reservasi->status_kehadiran ?? null) === 'hadir') {
                 return [
                     'success' => false,
                     'message' => 'Kehadiran sudah diverifikasi sebelumnya',
@@ -119,20 +138,20 @@ class InvoiceService
                 ];
             }
 
-            // Cek apakah waktu kedatangan sudah lewat atau belum saatnya
+            // Cek waktu kedatangan: misal 30 menit sebelum sampai 2 jam setelah
             $now = now();
             $waktuKedatangan = \Carbon\Carbon::parse($reservasi->waktu_kedatangan);
-            $batasWaktu = $waktuKedatangan->copy()->addHours(2); // Toleransi 2 jam setelah waktu kedatangan
+            $batasAwal = $waktuKedatangan->copy()->subMinutes(30);
+            $batasAkhir = $waktuKedatangan->copy()->addHours(2);
 
-            if ($now->lt($waktuKedatangan->subMinutes(30))) { // 30 menit sebelum waktu kedatangan
+            if ($now->lt($batasAwal)) {
                 return [
                     'success' => false,
                     'message' => 'Belum saatnya untuk check-in. Silakan datang 30 menit sebelum waktu reservasi.',
                     'data'    => $reservasi,
                 ];
             }
-
-            if ($now->gt($batasWaktu)) {
+            if ($now->gt($batasAkhir)) {
                 return [
                     'success' => false,
                     'message' => 'Waktu check-in telah berakhir.',
@@ -140,9 +159,10 @@ class InvoiceService
                 ];
             }
 
+            // Tandai kehadiran
             $reservasi->update([
                 'status_kehadiran' => 'hadir',
-                'waktu_checkin' => $now
+                'waktu_checkin'    => $now,
             ]);
 
             return [
@@ -151,7 +171,10 @@ class InvoiceService
                 'data'    => $reservasi,
             ];
         } catch (\Exception $e) {
-            Log::error('Error verifyAttendance', ['error' => $e->getMessage()]);
+            Log::error('Error verifyAttendance', [
+                'kode_reservasi' => $kodeReservasi,
+                'error'          => $e->getMessage(),
+            ]);
             return [
                 'success' => false,
                 'message' => 'Gagal verifikasi kehadiran: ' . $e->getMessage(),
@@ -160,73 +183,24 @@ class InvoiceService
     }
 
     /**
-     * Generate QR code dinamis untuk presensi
+     * Generate QR code sederhana untuk keperluan tampilan/invoice.
+     * Dipanggil di generateInvoice atau saat dibutuhkan: generateQRCode($reservasi).
      */
-    public function generateAttendanceQRCode(Reservasi $reservasi): array
-    {
-        try {
-            // Generate token unik untuk keamanan
-            $token = $this->generateAttendanceToken($reservasi);
-            
-            // Data yang akan di-encode dalam QR code
-            $qrData = [
-                'type' => 'attendance',
-                'kode_reservasi' => $reservasi->kode_reservasi,
-                'token' => $token,
-                'timestamp' => now()->timestamp,
-                'expires_at' => now()->addMinutes(30)->timestamp, // QR code berlaku 30 menit
-            ];
-
-            // URL untuk verifikasi kehadiran
-            $verificationUrl = URL::route('pelayan.scanqr.proses', [
-                'kode_reservasi' => $reservasi->kode_reservasi,
-                'token' => $token
-            ]);
-
-            // Generate QR code
-            $qrCodeBase64 = $this->generateQRCodeSafely($verificationUrl);
-
-            return [
-                'success' => true,
-                'message' => 'QR Code presensi berhasil dibuat',
-                'data' => [
-                    'qr_code_base64' => $qrCodeBase64,
-                    'verification_url' => $verificationUrl,
-                    'token' => $token,
-                    'expires_at' => now()->addMinutes(30)->toISOString(),
-                    'qr_data' => $qrData
-                ]
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error generating attendance QR code', [
-                'reservasi_id' => $reservasi->id,
-                'error' => $e->getMessage()
-            ]);
-            return [
-                'success' => false,
-                'message' => 'Gagal membuat QR code presensi: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Generate token keamanan untuk QR code presensi
-     */
-    private function generateAttendanceToken(Reservasi $reservasi): string
+    public function generateQRCode(Reservasi $reservasi): string
     {
         $data = [
-            'reservasi_id' => $reservasi->id,
-            'kode_reservasi' => $reservasi->kode_reservasi,
-            'user_id' => $reservasi->user_id,
-            'timestamp' => now()->timestamp,
-            'random' => Str::random(16)
+            'reservasi_id'    => $reservasi->id,
+            'kode_reservasi'  => $reservasi->kode_reservasi,
+            'user_id'         => $reservasi->user_id,
+            'timestamp'       => now()->timestamp,
+            'random'          => Str::random(16),
         ];
 
         return hash('sha256', json_encode($data));
     }
 
     /**
-     * Validasi token QR code presensi
+     * Validasi token QR code presensi (jika digunakan mekanisme token).
      */
     public function validateAttendanceToken(string $kodeReservasi, string $token): bool
     {
@@ -235,80 +209,65 @@ class InvoiceService
             if (!$reservasi) {
                 return false;
             }
-
-            // Untuk validasi sederhana, kita bisa menyimpan token di cache atau database
-            // Untuk saat ini, kita akan validasi berdasarkan format token
+            // Validasi sederhana: panjang 64 dan hex
             return strlen($token) === 64 && ctype_xdigit($token);
         } catch (\Exception $e) {
             Log::error('Error validating attendance token', [
                 'kode_reservasi' => $kodeReservasi,
-                'error' => $e->getMessage()
+                'error'          => $e->getMessage(),
             ]);
             return false;
         }
     }
 
     /**
-     * Generate QR code dengan multiple fallback methods
+     * Generate QR Code image base64 dengan beberapa fallback.
      */
     private function generateQRCodeSafely(string $content): string
     {
         try {
-            // Method 1: Gunakan GD driver secara eksplisit
             $png = QrCode::format('png')
                          ->size(200)
                          ->margin(2)
-                         ->errorCorrection('H') // High error correction untuk presensi
+                         ->errorCorrection('H')
                          ->generate($content);
 
             return 'data:image/png;base64,' . base64_encode($png);
-
         } catch (\Exception $e1) {
             Log::warning('QR Code generation failed with default method', [
-                'error' => $e1->getMessage(),
-                'content' => $content
+                'error'   => $e1->getMessage(),
+                'content' => $content,
             ]);
-
+            // Fallback ke GD driver
             try {
-                // Method 2: Force GD driver melalui konfigurasi runtime
                 $originalDriver = config('simple-qrcode.driver');
                 config(['simple-qrcode.driver' => 'gd']);
-
                 $png = QrCode::format('png')
                              ->size(200)
                              ->margin(2)
                              ->errorCorrection('H')
                              ->generate($content);
-
-                // Restore original config
                 config(['simple-qrcode.driver' => $originalDriver]);
-
                 return 'data:image/png;base64,' . base64_encode($png);
-
             } catch (\Exception $e2) {
                 Log::warning('QR Code generation failed with GD override', [
-                    'error' => $e2->getMessage()
+                    'error' => $e2->getMessage(),
                 ]);
-
+                // Fallback ke SVG
                 try {
-                    // Method 3: Gunakan SVG sebagai fallback
                     $svg = QrCode::format('svg')
                                  ->size(200)
                                  ->margin(2)
                                  ->errorCorrection('H')
                                  ->generate($content);
-
                     return 'data:image/svg+xml;base64,' . base64_encode($svg);
-
                 } catch (\Exception $e3) {
                     Log::error('All QR Code generation methods failed', [
-                        'gd_error' => $e1->getMessage(),
-                        'override_error' => $e2->getMessage(),
-                        'svg_error' => $e3->getMessage(),
-                        'content' => $content
+                        'error_default'  => $e1->getMessage(),
+                        'error_gd'       => $e2->getMessage(),
+                        'error_svg'      => $e3->getMessage(),
+                        'content'        => $content,
                     ]);
-
-                    // Return placeholder QR code URL jika semua gagal
                     return $this->generatePlaceholderQR($content);
                 }
             }
@@ -316,77 +275,32 @@ class InvoiceService
     }
 
     /**
-     * Generate placeholder QR code menggunakan service eksternal
+     * Jika semua metode QR gagal, generate placeholder via API eksternal.
      */
     private function generatePlaceholderQR(string $content): string
     {
-        // Gunakan QR Server API sebagai fallback
         $encodedContent = urlencode($content);
         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=H&data={$encodedContent}";
-        
         try {
-            $qrImage = file_get_contents($qrUrl);
+            $qrImage = @file_get_contents($qrUrl);
             if ($qrImage !== false) {
                 return 'data:image/png;base64,' . base64_encode($qrImage);
             }
         } catch (\Exception $e) {
             Log::error('Placeholder QR generation failed', ['error' => $e->getMessage()]);
         }
-
-        // Jika semua gagal, return empty data URI
+        // Kembalikan string kosong atau placeholder minimal
         return 'data:image/png;base64,';
     }
 
     /**
-     * Get status presensi reservasi
+     * Dapatkan payload QR untuk Ionic atau endpoint lain.
      */
-    public function getAttendanceStatus(int $reservasiId): array
+    public function getQrPayload(int $reservasiId): array
     {
-        try {
-            $reservasi = Reservasi::findOrFail($reservasiId);
-            
-            $now = now();
-            $waktuKedatangan = \Carbon\Carbon::parse($reservasi->waktu_kedatangan);
-            $batasCheckin = $waktuKedatangan->copy()->subMinutes(30);
-            $batasExpired = $waktuKedatangan->copy()->addHours(2);
-
-            $status = 'not_available';
-            $message = '';
-
-            if ($reservasi->status_kehadiran === 'hadir') {
-                $status = 'checked_in';
-                $message = 'Sudah melakukan check-in';
-            } elseif ($now->lt($batasCheckin)) {
-                $status = 'too_early';
-                $message = 'Belum saatnya check-in';
-            } elseif ($now->gt($batasExpired)) {
-                $status = 'expired';
-                $message = 'Waktu check-in telah berakhir';
-            } else {
-                $status = 'available';
-                $message = 'Dapat melakukan check-in';
-            }
-
-            return [
-                'success' => true,
-                'data' => [
-                    'status' => $status,
-                    'message' => $message,
-                    'waktu_kedatangan' => $reservasi->waktu_kedatangan,
-                    'waktu_checkin' => $reservasi->waktu_checkin,
-                    'batas_checkin_mulai' => $batasCheckin->toISOString(),
-                    'batas_checkin_berakhir' => $batasExpired->toISOString(),
-                ]
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error getting attendance status', [
-                'reservasi_id' => $reservasiId,
-                'error' => $e->getMessage()
-            ]);
-            return [
-                'success' => false,
-                'message' => 'Gagal mendapatkan status presensi',
-            ];
-        }
+        $reservasi = Reservasi::findOrFail($reservasiId);
+        return [
+            'kode_reservasi' => $reservasi->kode_reservasi,
+        ];
     }
 }

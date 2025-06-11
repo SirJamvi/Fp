@@ -35,7 +35,11 @@ Route::get('/test', [TestController::class, 'index']);
 Route::post('midtrans-notification', [MidtransController::class, 'handleNotification']);
 
 // Rute publik untuk verifikasi kehadiran (QR Code scan)
-Route::get('customer/verify-attendance/{kodeReservasi}', [InvoiceController::class, 'verifyAttendance']);
+// routes/api.php
+
+// Ganti GET menjadi POST:
+Route::post('customer/verify-attendance/{kodeReservasi}', [InvoiceController::class, 'verifyAttendance']);
+
 
 // Rute yang memerlukan autentikasi (menggunakan Sanctum)
 Route::middleware(['auth:sanctum', 'customer'])->prefix('customer')->group(function () {

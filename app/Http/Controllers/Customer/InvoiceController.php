@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class InvoiceController extends Controller
 {
@@ -21,30 +22,29 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Tampilkan halaman bukti pembayaran (invoice + dinamis QR)
+     * Tampilkan halaman bukti pembayaran (blade view).
      */
     public function showPaymentReceipt(int $reservasiId)
     {
         try {
             $userId = Auth::id();
 
-            $reservasi = Reservasi::with(['meja', 'pengguna'])
+            $reservasi = Reservasi::with(['meja', 'pengguna', 'orders'])
                                   ->where('id', $reservasiId)
                                   ->where('user_id', $userId)
                                   ->firstOrFail();
 
-            // Generate invoice
+            // Generate atau ambil invoice
             $invoiceResult = $this->invoiceService->generateInvoice($reservasiId);
-            $invoice = $invoiceResult['data'] ?? null;
+            if (! $invoiceResult['success']) {
+                abort(500, 'Gagal membuat invoice');
+            }
+            $invoice = $invoiceResult['data'];
 
-            // Generate QR code dinamis untuk presensi
-            $qrResult = $this->invoiceService->generateAttendanceQRCode($reservasi);
-            $qrCode = $qrResult['success'] ? $qrResult['data'] : null;
+            // QR Code untuk blade
+            $qrCode = $this->invoiceService->generateQRCode($reservasi);
 
-            // Get attendance status
-            $attendanceStatus = $this->invoiceService->getAttendanceStatus($reservasiId);
-
-            return view('user.bukti-pembayaran', compact('reservasi', 'invoice', 'qrCode', 'attendanceStatus'));
+            return view('user.bukti-pembayaran', compact('reservasi', 'invoice', 'qrCode'));
         } catch (\Exception $e) {
             Log::error('Error showing payment receipt', [
                 'reservasi_id' => $reservasiId,
@@ -56,59 +56,68 @@ class InvoiceController extends Controller
     }
 
     /**
-     * API: Get invoice data (draft or final) as JSON
+     * API: Ambil data invoice + reservasi + customer + items sebagai JSON
      */
     public function getInvoiceData(int $reservasiId)
     {
         try {
             $userId = Auth::id();
-            $reservasi = Reservasi::where('id', $reservasiId)
-                                  ->where('user_id', $userId)
-                                  ->with(['meja', 'orders'])
-                                  ->first();
 
-            if (!$reservasi) {
+            // 1) Eager‐load meja, orders.menu, dan pengguna
+            $reservasi = Reservasi::with(['meja', 'orders.menu', 'pengguna'])
+                                  ->where('id', $reservasiId)
+                                  ->where('user_id', $userId)
+                                  ->firstOrFail();
+
+            // 2) Generate atau ambil invoice
+            $invoiceResult = $this->invoiceService->generateInvoice($reservasiId);
+            if (! $invoiceResult['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Reservasi tidak ditemukan atau akses ditolak',
-                ], 404);
+                    'message' => $invoiceResult['message'] ?? 'Gagal membuat invoice',
+                ], 400);
             }
 
-            // Get invoice data
-            $invoiceResult = $this->invoiceService->generateInvoice($reservasiId);
-            
-            if (!$invoiceResult['success']) {
-                return response()->json($invoiceResult, 400);
-            }
+            // 3) Map orders ke items
+            $items = $reservasi->orders->map(function($order) {
+                $price = $order->price_at_order
+                        ?? ($order->menu->price ?? $order->menu->harga ?? 0);
 
-            // Get formatted invoice data if available
-            $invoice = Invoice::where('reservasi_id', $reservasiId)->first();
-            $formattedData = $invoice ? $invoice->getFormattedData() : null;
+                return [
+                    'nama'        => $order->menu->name  ?? $order->menu->nama ?? 'Item tidak diketahui',
+                    'quantity'    => $order->quantity,
+                    'price'       => $price,
+                    'total_price' => $order->total_price ?? ($price * $order->quantity),
+                    'note'        => $order->notes,
+                ];
+            });
 
+            // 4) Return JSON
             return response()->json([
                 'success' => true,
-                'message' => 'Data invoice berhasil diambil',
-                'data' => [
-                    'invoice_raw' => $invoiceResult['data'],
-                    'invoice_formatted' => $formattedData
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error getting invoice data', [
-                'reservasi_id' => $reservasiId,
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'data'    => [
+                    'invoice'   => $invoiceResult['data'],
+                    'reservasi' => $reservasi,
+                    'customer'  => $reservasi->pengguna,
+                    'items'     => $items,
+                ],
             ]);
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data invoice',
+                'success'=> false,
+                'message'=> 'Reservasi tidak ditemukan'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error getInvoiceData', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success'=> false,
+                'message'=> 'Server error'
             ], 500);
         }
     }
 
     /**
-     * API: Permanently generate or regenerate invoice
+     * API: Generate atau regenerate invoice (POST).
      */
     public function generateInvoice(int $reservasiId)
     {
@@ -116,17 +125,17 @@ class InvoiceController extends Controller
             $userId = Auth::id();
             $reservasi = Reservasi::where('id', $reservasiId)
                                   ->where('user_id', $userId)
-                                  ->first();
-
-            if (!$reservasi) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reservasi tidak ditemukan atau akses ditolak',
-                ], 404);
-            }
+                                  ->firstOrFail();
 
             $result = $this->invoiceService->generateInvoice($reservasiId);
             return response()->json($result, $result['success'] ? 201 : 400);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reservasi tidak ditemukan atau akses ditolak',
+            ], 404);
+
         } catch (\Exception $e) {
             Log::error('Error generating invoice', [
                 'reservasi_id' => $reservasiId,
@@ -141,52 +150,37 @@ class InvoiceController extends Controller
     }
 
     /**
-     * API: Get QR code dinamis untuk presensi as JSON
+     * API: Get QR code payload untuk Ionic (GET).
      */
     public function getQRCode(int $reservasiId)
     {
         try {
             $userId = Auth::id();
-            $reservasi = Reservasi::where('id', $reservasiId)
-                                  ->where('user_id', $userId)
-                                  ->first();
 
-            if (!$reservasi) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reservasi tidak ditemukan atau akses ditolak',
-                ], 404);
-            }
+            Reservasi::where('id', $reservasiId)
+                     ->where('user_id', $userId)
+                     ->firstOrFail();
 
-            // Generate QR code dinamis untuk presensi
-            $qrResult = $this->invoiceService->generateAttendanceQRCode($reservasi);
-
-            if (!$qrResult['success']) {
-                return response()->json($qrResult, 400);
-            }
-
-            // Get attendance status
-            $attendanceStatus = $this->invoiceService->getAttendanceStatus($reservasiId);
-
+            $payload = $this->invoiceService->getQrPayload($reservasiId);
             return response()->json([
                 'success' => true,
-                'message' => 'QR Code presensi berhasil dibuat',
-                'data' => [
-                    'qr_code' => $qrResult['data'],
-                    'attendance_status' => $attendanceStatus['data'] ?? null,
-                    'kode_reservasi' => $reservasi->kode_reservasi,
-                ],
+                'data'    => $payload,
             ], 200);
 
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reservasi tidak ditemukan atau akses ditolak',
+            ], 404);
+
         } catch (\Exception $e) {
-            Log::error('Error generating attendance QR code', [
+            Log::error('Error getQRCode', [
                 'reservasi_id' => $reservasiId,
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error'        => $e->getMessage(),
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat QR code presensi',
+                'message' => 'Gagal mengambil QR code',
             ], 500);
         }
     }
@@ -264,14 +258,14 @@ class InvoiceController extends Controller
             return response()->json($result, $result['success'] ? 200 : 400);
 
         } catch (\Exception $e) {
-            Log::error('Error getting attendance status', [
+            Log::error('Error getAttendanceStatus', [
                 'reservasi_id' => $reservasiId,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mendapatkan status presensi',
+                'message' => 'Gagal mengambil status presensi',
             ], 500);
         }
     }
@@ -363,21 +357,33 @@ class InvoiceController extends Controller
     /**
      * API: Verify attendance (untuk pelayan/admin)
      */
-    public function verifyAttendance(string $kodeReservasi)
+    public function verifyAttendance(Request $request, $kodeReservasi)
     {
-        try {
-            $result = $this->invoiceService->verifyAttendance($kodeReservasi);
-            return response()->json($result, $result['success'] ? 200 : 400);
-        } catch (\Exception $e) {
-            Log::error('Error verifying attendance', [
-                'kode_reservasi' => $kodeReservasi,
-                'error' => $e->getMessage(),
-            ]);
+        // Cari reservasi berdasarkan kode
+        $reservasi = Reservasi::where('kode_reservasi', $kodeReservasi)->first();
+
+        if (! $reservasi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal verifikasi kehadiran',
-            ], 500);
+                'message' => 'Kode reservasi tidak ditemukan'
+            ], 404);
         }
+
+        if ($reservasi->kehadiran_status === 'hadir') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kehadiran sudah terverifikasi'
+            ], 400);
+        }
+
+        // Tandai kehadiran
+        $reservasi->kehadiran_status = 'hadir';
+        $reservasi->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kehadiran berhasil diverifikasi'
+        ]);
     }
 
     /**
