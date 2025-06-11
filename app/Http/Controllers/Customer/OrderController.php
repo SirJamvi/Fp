@@ -11,6 +11,7 @@ use App\Services\OrderService; // Menggunakan OrderService yang ada
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\CustomerNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
@@ -99,6 +100,17 @@ class OrderController extends Controller
             $reservasi->total_bill = $totalBill + $serviceCharge + $tax;
             $reservasi->sisa_tagihan_reservasi = $reservasi->total_bill; // Awalnya sama dengan total_bill
             $reservasi->save();
+            
+             CustomerNotification::create([
+                'user_id' => $user->id,
+                'type'    => 'reservation_created', // Menggunakan tipe yang sudah ada di model Anda
+                'title'   => 'Pesanan Diterima',
+                'message' => "Pesanan Anda dengan kode #{$reservasi->kode_reservasi} telah berhasil dibuat.",
+                'data'    => [ // Menyimpan data tambahan jika diperlukan
+                    'reservasi_id' => $reservasi->id,
+                    'total_bill'   => $reservasi->total_bill
+                ]
+            ]);
 
 
             DB::commit();

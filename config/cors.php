@@ -1,37 +1,44 @@
 <?php
 
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cross-Origin Resource Sharing (CORS) Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure your settings for cross-origin resource sharing
+    | or "CORS". This determines what cross-origin operations may execute
+    | in web browsers. You are free to adjust these settings as needed.
+    |
+    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+    |
+    */
+
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Spesifik methods
+
+    'allowed_methods' => ['*'],
+
     'allowed_origins' => [
-        'http://localhost:8100',   // Port default Ionic
-        'http://localhost:8101',   // Port yang Anda gunakan
+        'http://localhost:8100',
         'http://127.0.0.1:8100',
-        'http://127.0.0.1:8101',
-        'capacitor://localhost',   // Untuk mobile app
-        'ionic://localhost',       // Untuk mobile app
-        'http://localhost:3000',   // Jika menggunakan React/Next.js
-        'http://localhost:4200',   // Jika menggunakan Angular
+        'http://localhost:4200',
+        'http://127.0.0.1:4200',
+        'capacitor://localhost',
+        'ionic://localhost',
+        'http://localhost',
+        'http://localhost:8080',
+        'http://localhost:3000'
     ],
-    'allowed_origins_patterns' => [
-        '/^http:\/\/localhost:\d+$/', // Pattern untuk localhost dengan port apapun
-        '/^http:\/\/127\.0\.0\.1:\d+$/', // Pattern untuk 127.0.0.1 dengan port apapun
-    ],
-    'allowed_headers' => [
-        'Accept',
-        'Authorization',
-        'Content-Type',
-        'X-Requested-With',
-        'X-CSRF-TOKEN',
-        'X-XSRF-TOKEN',
-        'Origin',
-        'Cache-Control',
-        'Pragma',
-    ],
-    'exposed_headers' => [
-        'Authorization',
-        'X-Total-Count',
-    ],
-    'max_age' => 86400, // Cache preflight untuk 24 jam
+
+    'allowed_origins_patterns' => [],
+
+    'allowed_headers' => ['*'],
+
+    'exposed_headers' => [],
+
+    'max_age' => 0,
+
     'supports_credentials' => true,
+
 ];
