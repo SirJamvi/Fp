@@ -66,7 +66,7 @@ class MidtransController extends Controller
                 $totalItemPrice = $price * $item['quantity'];
                 $subtotal += $totalItemPrice;
 
-                // Buat record Order dengan harga penuh (untuk referensi)
+                // Buat record Order
                 Order::create([
                     'reservasi_id' => $reservasi->id,
                     'menu_id'      => $menu->id,
@@ -78,17 +78,30 @@ class MidtransController extends Controller
                     'status'       => 'pending',
                 ]);
 
-                // PERBAIKAN: Siapkan detail item untuk Midtrans dengan harga DP 50%
-                $dpPrice = $price * 0.5; // Harga DP 50%
+                // Item DP
+                $dpPrice = $price * 0.5;
                 $item_details_midtrans[] = [
                     'id'       => (string) $menu->id,
-                    'price'    => (int) $dpPrice, // ← PERBAIKAN: Gunakan harga DP, bukan harga penuh
+                    'price'    => (int) $dpPrice,
                     'quantity' => (int) $item['quantity'],
-                    'name'     => substr($menu->name . ' (DP 50%)', 0, 50), // ← PERBAIKAN: Tambah keterangan DP
+                    'name'     => substr($menu->name . ' (DP 50%)', 0, 50),
                 ];
             }
 
-            $totalAmount = $subtotal;
+            // Pajak 10%
+            $taxAmount = $subtotal * 0.10;
+            $dpTaxAmount = $taxAmount * 0.5;
+
+            // Tambahkan item pajak sebagai item terpisah
+            $item_details_midtrans[] = [
+                'id' => 'tax-10',
+                'price' => (int) $dpTaxAmount,
+                'quantity' => 1,
+                'name' => 'Pajak 10% (DP)'
+            ];
+
+            // Total termasuk pajak
+            $totalAmount = $subtotal + $taxAmount;
             $paymentAmountDP = $totalAmount * 0.5;
 
             // VALIDASI: Pastikan total item_details sama dengan gross_amount
@@ -182,14 +195,16 @@ class MidtransController extends Controller
 
             // 4. Return response ke frontend
             return response()->json([
-                'success' => true,
-                'snap_token' => $snapToken,
-                'order_id' => $orderId,
-                'reservasi_id' => $reservasi->id,
-                'total_amount' => $totalAmount,
-                'payment_amount' => $paymentAmountDP,
-                'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran DP 50%.'
-            ]);
+            'success' => true,
+            'snap_token' => $snapToken,
+            'order_id' => $orderId,
+            'reservasi_id' => $reservasi->id,
+            'total_amount' => $totalAmount,
+            'tax' => $taxAmount,
+            'payment_amount' => $paymentAmountDP,
+            'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran DP 50% termasuk pajak.'
+        ]);
+
 
         } catch (\Exception $e) {
             DB::rollBack();
