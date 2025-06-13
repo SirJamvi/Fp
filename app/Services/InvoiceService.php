@@ -19,34 +19,25 @@ class InvoiceService
         try {
             $reservasi = Reservasi::with(['meja', 'orders.menu'])->findOrFail($reservasiId);
 
-            // Hitung subtotal dari order, menggunakan price_at_order jika ada, atau fallback ke menu.price/harga
-            $subtotal = $reservasi->orders->sum(function ($order) use ($reservasiId) {
+            // Hitung subtotal dari order
+            $subtotal = $reservasi->orders->sum(function ($order) {
                 $price = $order->price_at_order
                     ?? ($order->menu->price ?? $order->menu->harga ?? 0);
                 $quantity = $order->quantity ?? 0;
-
-                if (($price == 0 || $quantity == 0) && $order->id) {
-                    Log::warning('Order item bermasalah saat generate invoice', [
-                        'reservasi_id'   => $reservasiId,
-                        'order_id'       => $order->id,
-                        'price_at_order' => $order->price_at_order,
-                        'menu_price'     => $order->menu->price ?? $order->menu->harga ?? null,
-                        'quantity'       => $order->quantity,
-                    ]);
-                }
                 return $price * $quantity;
             });
 
             $serviceFee  = round($subtotal * 0.10); // 10% biaya layanan
             $totalAmount = $subtotal + $serviceFee;
-            $amountPaid  = 0;
+
+            // **Bayar 50% di awal**
+            $amountPaid  = round($totalAmount * 0.5);
             $remaining   = $totalAmount - $amountPaid;
 
             // Nomor invoice unik
             $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
 
-            // QR Code untuk keperluan invoice atau referensi (jika diperlukan)
-            // Misal route pelayan.scanqr.proses menerima parameter kode_reservasi
+            // QR Code untuk referensi (jika diperlukan)
             $qrUrl  = URL::route('pelayan.scanqr.proses', $reservasi->kode_reservasi);
             $qrData = $this->generateQRCodeSafely($qrUrl);
 
@@ -61,8 +52,7 @@ class InvoiceService
                     'amount_paid'      => $amountPaid,
                     'remaining_amount' => $remaining,
                     'payment_method'   => null,
-                    'payment_status'   => 'pending',
-                    // Pastikan kolom 'qr_code' ada di tabel invoices; jika tidak, sesuaikan atau hapus baris ini
+                    'payment_status'   => $remaining > 0 ? 'partial' : 'paid',
                     'qr_code'          => $qrData,
                     'generated_at'     => now(),
                 ]

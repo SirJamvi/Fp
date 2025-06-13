@@ -72,20 +72,22 @@ class ReservationController extends Controller
             }
 
             $blocked = [];
+                        // Di method store()
             foreach ($mejaIds as $idMeja) {
-                $overlap = Reservasi::whereHas('meja', function($q) use ($idMeja) {
-                                     $q->where('meja.id', $idMeja);
-                                 })
-                                 ->whereNotIn('status', ['dibatalkan', 'selesai'])
-                                 ->whereBetween('waktu_kedatangan', [
-                                     $waktuKedatangan->copy()->subHours(2),
-                                     $waktuKedatangan->copy()->addHours(2),
-                                 ])
-                                 ->whereNull('deleted_at')
-                                 ->exists();
+                $existing = Reservasi::whereHas('meja', function($q) use ($idMeja, $waktuKedatangan) {
+                        $q->where('meja.id', $idMeja);
+                    })
+                    ->whereNotIn('status', ['dibatalkan', 'selesai'])
+                    ->whereRaw('TIME(waktu_kedatangan) = ?', [$waktuKedatangan->format('H:i:s')])
+                    ->whereDate('waktu_kedatangan', $waktuKedatangan->format('Y-m-d'))
+                    ->exists();
 
-                if ($overlap) {
-                    $blocked[] = $idMeja;
+                if ($existing) {
+                    return response()->json([
+                        'message' => 'Meja sudah dipesan pada jam tersebut',
+                        'meja_id' => $idMeja,
+                        'waktu' => $waktuKedatangan->format('Y-m-d H:i:s')
+                    ], 400);
                 }
             }
 
@@ -250,5 +252,27 @@ class ReservationController extends Controller
             $result,
             $result['success'] ? 200 : 400
         );
+    }
+
+    public function getBookedTimes(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date_format:Y-m-d'
+        ]);
+
+        $date = $request->input('date');
+
+        $bookedTimes = Reservasi::whereDate('waktu_kedatangan', $date)
+            ->whereNotIn('status', ['dibatalkan', 'selesai'])
+            ->get()
+            ->map(function ($reservation) {
+                // Pastikan format waktu konsisten 'HH:MM'
+                return Carbon::parse($reservation->waktu_kedatangan)->format('H:i');
+            })
+            ->toArray();
+            
+        return response()->json([
+            'booked_times' => $bookedTimes
+        ]);
     }
 }
