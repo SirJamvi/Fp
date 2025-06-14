@@ -66,7 +66,7 @@ class MidtransController extends Controller
                 $totalItemPrice = $price * $item['quantity'];
                 $subtotal += $totalItemPrice;
 
-                // Buat record Order dengan harga penuh (untuk referensi)
+                // Buat record Order
                 Order::create([
                     'reservasi_id' => $reservasi->id,
                     'menu_id'      => $menu->id,
@@ -78,13 +78,13 @@ class MidtransController extends Controller
                     'status'       => 'pending',
                 ]);
 
-                // Siapkan detail item untuk Midtrans dengan harga DP 50%
+                // PERBAIKAN: Siapkan detail item untuk Midtrans dengan harga DP 50%
                 $dpPrice = $price * 0.5; // Harga DP 50%
                 $item_details_midtrans[] = [
                     'id'       => (string) $menu->id,
-                    'price'    => (int) $dpPrice, // Gunakan harga DP, bukan harga penuh
+                    'price'    => (int) $dpPrice, // ← PERBAIKAN: Gunakan harga DP, bukan harga penuh
                     'quantity' => (int) $item['quantity'],
-                    'name'     => substr($menu->name . ' (DP 50%)', 0, 50), // Tambah keterangan DP
+                    'name'     => substr($menu->name . ' (DP 50%)', 0, 50), // ← PERBAIKAN: Tambah keterangan DP
                 ];
             }
 
@@ -206,12 +206,11 @@ class MidtransController extends Controller
                 'snap_token' => $snapToken,
                 'order_id' => $orderId,
                 'reservasi_id' => $reservasi->id,
-                'total_amount' => $totalAmount, // total bill penuh
-                'payment_amount' => $paymentAmountDP, // DP 50% saja
-                'service_fee' => $serviceFeeAmount, // biaya layanan
-                'amount_to_pay_midtrans' => $totalAmountToPay, // total yang dibayarkan ke Midtrans
-                'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran DP 50% ditambah biaya layanan.'
+                'total_amount' => $totalAmount,
+                'payment_amount' => $paymentAmountDP,
+                'message' => 'Checkout berhasil. Silakan lanjutkan pembayaran DP 50%.'
             ]);
+
 
         } catch (\Exception $e) {
             DB::rollBack();
