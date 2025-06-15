@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Customer\PreOrderRequest; // Akan kita buat nanti
-use App\Models\Reservasi; // Menggunakan model Reservasi yang ada
-use App\Models\Order; // Menggunakan model Order yang ada
-use App\Models\Menu; // Menggunakan model Menu yang ada
-use App\Services\OrderService; // Menggunakan OrderService yang ada
+use App\Http\Requests\Customer\PreOrderRequest;
+use App\Models\Reservasi;
+use App\Models\Order;
+use App\Models\Menu;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustomerNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
-
 
 class OrderController extends Controller
 {
@@ -26,12 +25,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Allow customer to place a pre-order (without immediate table reservation).
-     * This could be for pickup or future dine-in where table is assigned later.
-     * This assumes a 'Reservasi' record is created as a container for the order.
-     *
-     * @param  \App\Http\Requests\Customer\PreOrderRequest  $request
-     * @return \Illuminate\Http\JsonResponse
+     * Buat pra-pemesanan (PreOrder) dengan DP 50%
      */
     public function storePreOrder(PreOrderRequest $request)
     {
@@ -39,150 +33,185 @@ class OrderController extends Controller
         try {
             $user = $request->user();
 
-            // Create a 'Reservasi' record as a container for the pre-order
-            // Meja_id bisa null atau diisi dengan meja default jika ada
-            // Source bisa 'pre_order' atau 'pickup'/'delivery'
-            $kodeReservasi = 'PO-' . strtoupper(Str::random(6)); // Kode khusus pre-order
-            while (Reservasi::where('kode_reservasi', $kodeReservasi)->exists()) {
-                $kodeReservasi = 'PO-' . strtoupper(Str::random(6));
-            }
+            // 1) Generate kode pra-order
+            do {
+                $kodeReservasi = 'PO-'.Str::upper(Str::random(6));
+            } while (Reservasi::where('kode_reservasi', $kodeReservasi)->exists());
 
+            // 2) Simpan reservasi kosong dulu
             $reservasi = Reservasi::create([
-                'user_id'           => $user->id,
-                'meja_id'           => null, // Meja akan diassign nanti atau tidak diperlukan
-                'nama_pelanggan'    => $user->nama,
-                'waktu_kedatangan'  => Carbon::now(), // Waktu order dibuat
-                'jumlah_tamu'       => $request->jumlah_tamu ?? 1, // Default 1 jika tidak ada
-                'kehadiran_status'  => 'belum',
-                'status'            => 'pending_payment', // Atau 'pending_pickup', 'pending_delivery'
-                // Tetap menggunakan 'online' jika Anda belum menambahkan 'pre_order' ke ENUM di database
-                'source'            => 'online',
-                'kode_reservasi'    => $kodeReservasi,
-                'catatan'           => $request->catatan,
-                'total_bill'        => 0, // Akan diupdate setelah order items ditambahkan
+                'user_id'                => $user->id,
+                'meja_id'                => null,
+                'nama_pelanggan'         => $user->nama,
+                'waktu_kedatangan'       => Carbon::now()->toDateTimeString(),
+                'jumlah_tamu'            => $request->jumlah_tamu ?? 1,
+                'kehadiran_status'       => 'belum',
+                'status'                 => 'pending_payment',
+                'payment_status'         => 'partial',     // DP = partial
+                'payment_method'         => null,
+                'source'                 => 'online',
+                'kode_reservasi'         => $kodeReservasi,
+                'catatan'                => $request->catatan,
+                'total_bill'             => 0,
+                'dp_terbayar'            => 0,
                 'sisa_tagihan_reservasi' => 0,
             ]);
 
-            $totalBill = 0;
+            // 3) Tambah order item & hitung subtotal
+            $subtotal = 0;
             foreach ($request->items as $item) {
-                $menu = Menu::find($item['menu_id']);
-                if (!$menu || !$menu->is_available) {
-                    DB::rollBack();
-                    return response()->json(['message' => "Menu '{$menu->name}' tidak tersedia."], 400);
-                }
+                $menu = Menu::findOrFail($item['menu_id']);
 
-                // PASTIKAN harga tidak NULL, default ke 0.00 jika $menu->final_price NULL
-                $priceAtOrder = $menu->final_price ?? 0.00;
-                $totalItemPrice = $priceAtOrder * $item['quantity'];
+                $priceAtOrder = $menu->final_price ?? 0;
+                $totalItem    = $priceAtOrder * $item['quantity'];
 
                 Order::create([
-                    'reservasi_id' => $reservasi->id,
-                    'menu_id'      => $item['menu_id'],
-                    'user_id'      => $user->id, // User yang membuat order
-                    'quantity'     => $item['quantity'],
+                    'reservasi_id'   => $reservasi->id,
+                    'menu_id'        => $menu->id,
+                    'user_id'        => $user->id,
+                    'quantity'       => $item['quantity'],
                     'price_at_order' => $priceAtOrder,
-                    'total_price'  => $totalItemPrice,
-                    'notes'        => $item['notes'] ?? null,
-                    'status'       => 'pending', // Status awal pesanan item
+                    'total_price'    => $totalItem,
+                    'notes'          => $item['notes'] ?? null,
+                    'status'         => 'pending',
                 ]);
-                $totalBill += $totalItemPrice;
+
+                $subtotal += $totalItem;
             }
 
-            // HITUNG TOTAL BILL TANPA MENYIMPAN SUBTOTAL, SERVICE_CHARGE, DAN TAX DI KOLOM TERPISAH
+            // 4) Hitung service charge & pajak jika perlu
             $serviceChargeRate = 0.10; // 10%
-            $taxRate = 0.11; // 11% PPN (contoh)
+            $taxRate           = 0.11; // 11%
+            $serviceCharge     = (int) round($subtotal * $serviceChargeRate);
+            $afterService      = $subtotal + $serviceCharge;
+            $tax               = (int) round($afterService * $taxRate);
 
-            $serviceCharge = (int) ($totalBill * $serviceChargeRate);
-            $totalAfterService = $totalBill + $serviceCharge;
-            $tax = (int) ($totalAfterService * $taxRate);
+            // 5) Hitung total akhir
+            $totalBill = $subtotal + $serviceCharge + $tax;
 
-            // Update hanya total_bill dan sisa_tagihan_reservasi
-            $reservasi->total_bill = $totalBill + $serviceCharge + $tax;
-            $reservasi->sisa_tagihan_reservasi = $reservasi->total_bill; // Awalnya sama dengan total_bill
-            $reservasi->save();
-            
-             CustomerNotification::create([
-                'user_id' => $user->id,
-                'type'    => 'reservation_created', // Menggunakan tipe yang sudah ada di model Anda
-                'title'   => 'Pesanan Diterima',
-                'message' => "Pesanan Anda dengan kode #{$reservasi->kode_reservasi} telah berhasil dibuat.",
-                'data'    => [ // Menyimpan data tambahan jika diperlukan
-                    'reservasi_id' => $reservasi->id,
-                    'total_bill'   => $reservasi->total_bill
-                ]
+            // 6) DP 50% & sisa
+            $dpBayar       = (int) round(0.5 * $totalBill);
+            $sisaTagihan   = $totalBill - $dpBayar;
+
+            // 7) Update reservasi dengan angka final
+            $reservasi->update([
+                'total_bill'             => $totalBill,
+                'dp_terbayar'            => $dpBayar,
+                'sisa_tagihan_reservasi' => $sisaTagihan,
             ]);
 
+            // 8) Notifikasi
+            CustomerNotification::create([
+                'user_id' => $user->id,
+                'type'    => 'reservation_created',
+                'title'   => 'Pesanan Diterima',
+                'message' => "Kode #{$kodeReservasi}, total: Rp{$totalBill}",
+                'data'    => ['reservasi_id' => $reservasi->id],
+            ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Pra-pemesanan berhasil dibuat. Lanjutkan ke pembayaran.',
+                'message'   => 'Pra-pemesanan berhasil dibuat.',
                 'reservasi' => $reservasi->load('orders.menu'),
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Terjadi kesalahan saat membuat pra-pemesanan.',
-                'error' => $e->getMessage(),
+                'message' => 'Gagal membuat pra-pemesanan.',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
 
-
     /**
-     * Add items to an existing active reservation (for dine-in scenario).
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Reservasi  $reservasi
-     * @return \Illuminate\Http\JsonResponse
+     * Tambah item ke pesanan yang sudah ada (DP tetap 50% dari total baru)
      */
     public function addItemsToReservation(Request $request, Reservasi $reservasi)
     {
-        // Pastikan reservasi ini milik pengguna yang sedang login dan statusnya aktif
-        if ($reservasi->user_id !== Auth::id() || !in_array($reservasi->status, ['confirmed', 'check_in', 'pending_payment'])) {
-            return response()->json(['message' => 'Reservasi tidak ditemukan atau tidak aktif.'], 404);
-        }
+        $this->authorize('update', $reservasi); // Pastikan policy atau manual check user_id
 
-        // Gunakan AddItemsRequest yang sudah ada, tapi namespace-nya berbeda
         $request->validate([
-            'items' => 'required|array|min:1',
-            'items.*.menu_id' => 'required|exists:menus,id',
+            'items'            => 'required|array|min:1',
+            'items.*.menu_id'  => 'required|exists:menus,id',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.notes' => 'nullable|string|max:1000',
+            'items.*.notes'    => 'nullable|string',
         ]);
 
-        $result = $this->orderService->addItemsToOrder($request->items, $reservasi->id);
+        DB::beginTransaction();
+        try {
+            // 1) Tambah items & hitung subtotal baru
+            $newSubtotal = 0;
+            foreach ($request->items as $item) {
+                $menu = Menu::findOrFail($item['menu_id']);
+                $priceAtOrder = $menu->final_price ?? 0;
+                $totalItem    = $priceAtOrder * $item['quantity'];
 
-        if ($result['success']) {
+                Order::create([
+                    'reservasi_id'   => $reservasi->id,
+                    'menu_id'        => $menu->id,
+                    'user_id'        => $reservasi->user_id,
+                    'quantity'       => $item['quantity'],
+                    'price_at_order' => $priceAtOrder,
+                    'total_price'    => $totalItem,
+                    'notes'          => $item['notes'] ?? null,
+                    'status'         => 'pending',
+                ]);
+
+                $newSubtotal += $totalItem;
+            }
+
+            // 2) Hitung kembali total (termasuk service & pajak)
+            $serviceCharge = (int) round($newSubtotal * 0.10);
+            $afterService  = $newSubtotal + $serviceCharge;
+            $tax           = (int) round($afterService * 0.11);
+            $newTotalBill  = $newSubtotal + $serviceCharge + $tax;
+
+            // 3) Total keseluruhan = yang lama + yang baru
+            $grandTotal    = $reservasi->total_bill + $newTotalBill;
+
+            // 4) Recalculate DP & sisa: DP = 50% × grandTotal
+            $newDpBayar     = (int) round(0.5 * $grandTotal);
+            $newSisaTagihan = $grandTotal - $newDpBayar;
+
+            // 5) Update reservasi
+            $reservasi->update([
+                'total_bill'             => $grandTotal,
+                'dp_terbayar'            => $newDpBayar,
+                'sisa_tagihan_reservasi' => $newSisaTagihan,
+            ]);
+
+            DB::commit();
+
             return response()->json([
-                'message' => $result['message'],
-                'reservasi' => $reservasi->fresh()->load('orders.menu'), // Refresh dan load relasi
+                'message'   => 'Item berhasil ditambahkan.',
+                'reservasi' => $reservasi->fresh()->load('orders.menu'),
             ], 200);
-        } else {
+
+        } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
-                'message' => $result['message'],
-            ], 400);
+                'message' => 'Gagal menambahkan item.',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
     }
 
     /**
-     * Get a list of the authenticated customer's orders (linked via reservations).
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * Daftar pesanan milik user
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user   = $request->user();
         $orders = Order::where('user_id', $user->id)
-                        ->with('menu', 'reservasi')
-                        ->orderBy('created_at', 'desc')
-                        ->paginate(10);
+                      ->with('menu','reservasi')
+                      ->orderBy('created_at','desc')
+                      ->paginate(10);
 
         return response()->json([
             'message' => 'Daftar pesanan berhasil diambil.',
-            'orders' => $orders,
+            'orders'  => $orders,
         ], 200);
     }
 }

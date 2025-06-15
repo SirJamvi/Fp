@@ -130,117 +130,125 @@ class PaymentService
      * Tampilkan form bayar sisa (tunai + opsi QRIS/VA).
      */
     public function bayarSisa($id)
-    {
-        $reservasi = Reservasi::with('orders')->findOrFail($id);
-        $total     = $reservasi->orders->sum('total_price');
-        $dibayar   = $total - ($reservasi->sisa_tagihan_reservasi ?? $total);
-        $sisa      = $reservasi->sisa_tagihan_reservasi ?? $total;
+{
+    $reservasi = Reservasi::with('orders')->findOrFail($id);
+    $total     = $reservasi->orders->sum('total_price');
+    $pajakPersen = 10;
+    $pajakNominal = $total * ($pajakPersen / 100);
+    $totalSetelahPajak = $total + $pajakNominal;
 
-        return [
-            'success'      => true,
-            'reservasi'    => $reservasi,
-            'totalTagihan' => $total,
-            'totalDibayar' => $dibayar,
-            'sisa'         => $sisa,
-        ];
-    }
+    $dibayar = $totalSetelahPajak - ($reservasi->sisa_tagihan_reservasi ?? $totalSetelahPajak);
+    $sisa    = $reservasi->sisa_tagihan_reservasi ?? $totalSetelahPajak;
+
+    return [
+        'success'           => true,
+        'reservasi'         => $reservasi,
+        'totalTagihan'      => $total,
+        'pajakNominal'      => $pajakNominal,
+        'pajakPersen'       => $pajakPersen,
+        'totalSetelahPajak' => $totalSetelahPajak,
+        'totalDibayar'      => $dibayar,
+        'sisa'              => $sisa,
+    ];
+}
+
 
     /**
      * Proses form bayar sisa; tunai langsung update, QRIS generate Snap token.
      */
     public function bayarSisaPost(Request $request, $id)
-    {
-        $reservasi = Reservasi::with('orders','pengguna')->findOrFail($id);
-        $request->validate([
-            'jumlah_dibayar' => 'required|numeric|min:1',
-            'metode'         => 'required|in:tunai,qris',
-        ]);
+{
+    $reservasi = Reservasi::with('orders','pengguna')->findOrFail($id);
+    $request->validate([
+        'jumlah_dibayar' => 'required|numeric|min:1',
+        'metode'         => 'required|in:tunai,qris',
+    ]);
 
-        $total = $reservasi->orders->sum('total_price');
-        $sisa  = $reservasi->sisa_tagihan_reservasi ?? $total;
-        $bayar = (int) round($request->jumlah_dibayar);
+    $total = $reservasi->orders->sum('total_price');
+    $pajak = $total * 0.10;
+    $totalSetelahPajak = $total + $pajak;
 
-        if ($bayar > $sisa) {
-            return ['success' => false, 'message' => 'Pembayaran melebihi sisa tagihan.'];
-        }
+    $sisa  = $reservasi->sisa_tagihan_reservasi ?? $totalSetelahPajak;
+    $bayar = (int) round($request->jumlah_dibayar);
 
-        // Tunai
-        if ($request->metode === 'tunai') {
-            DB::beginTransaction();
-            try {
-                $reservasi->sisa_tagihan_reservasi = $sisa - $bayar;
-                $reservasi->payment_method         = 'tunai';
-                if ($reservasi->sisa_tagihan_reservasi <= 0) {
-                    $reservasi->sisa_tagihan_reservasi = 0;
-                    $reservasi->status                 = 'paid';
-                    $reservasi->payment_status         = 'paid';
-                    $reservasi->waktu_selesai          = now();
-                }
-                $reservasi->save();
-                DB::commit();
-                return ['success' => true, 'message' => 'Pembayaran sisa berhasil.'];
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return ['success' => false, 'message' => 'Gagal simpan pembayaran: '.$e->getMessage()];
-            }
-        }
-
-        // QRIS / VA (partial)
-        if ($request->metode === 'qris') {
-            DB::beginTransaction();
-            try {
-                $grossAmount = $bayar;
-                $item_details = [[
-                    'id'       => 'part-'.$reservasi->kode_reservasi,
-                    'price'    => $grossAmount,
-                    'quantity' => 1,
-                    'name'     => 'Pembayaran Sisa #' . $reservasi->kode_reservasi
-                ]];
-                $customer = [
-                    'first_name' => $reservasi->nama_pelanggan ?? 'Pelanggan',
-                    'email'      => $reservasi->pengguna->email ?? null,
-                    'phone'      => $reservasi->pengguna->phone ?? null,
-                ];
-                $transaction_details = [
-                    'order_id'     => $reservasi->kode_reservasi.'-PART-'.time(),
-                    'gross_amount' => $grossAmount,
-                ];
-                // Contoh di PaymentService::bayarSisaPost, bagian QRIS:
-                $params = [
-                    'transaction_details' => $transaction_details,
-                    'item_details'        => $item_details,
-                    'customer_details'    => $customer,
-                    'callbacks'           => ['finish' => false],
-                    // <<< GANTI finish_redirect_url ke route summary
-                    'finish_redirect_url' => route('pelayan.order.summary', $reservasi->id),
-                ];
-
-
-                // generate Snap
-                $snapToken = Snap::getSnapToken($params);
-
-                // simpan pending partial
-                $reservasi->payment_method          = 'qris';
-                $reservasi->payment_token           = $snapToken;
-                $reservasi->payment_status          = 'pending';
-                $reservasi->payment_amount          = $grossAmount;
-                $reservasi->sisa_tagihan_reservasi  = max(0, $sisa - $grossAmount);
-                $reservasi->save();
-
-                DB::commit();
-                return [
-                    'success'    => true,
-                    'snap_token' => $snapToken,
-                    'redirect'   => route('pelayan.reservasi.bayarSisa.qris', $reservasi->id),
-                ];
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return ['success' => false, 'message' => 'Gagal generate Snap: '.$e->getMessage()];
-            }
-        }
-
-        return ['success' => false, 'message' => 'Metode tidak dikenali.'];
+    if ($bayar > $sisa) {
+        return ['success' => false, 'message' => 'Pembayaran melebihi sisa tagihan.'];
     }
+
+    // Tunai
+    if ($request->metode === 'tunai') {
+        DB::beginTransaction();
+        try {
+            $reservasi->sisa_tagihan_reservasi = $sisa - $bayar;
+            $reservasi->payment_method         = 'tunai';
+            if ($reservasi->sisa_tagihan_reservasi <= 0) {
+                $reservasi->sisa_tagihan_reservasi = 0;
+                $reservasi->status                 = 'paid';
+                $reservasi->payment_status         = 'paid';
+                $reservasi->waktu_selesai          = now();
+            }
+            $reservasi->save();
+            DB::commit();
+            return ['success' => true, 'message' => 'Pembayaran sisa berhasil.'];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['success' => false, 'message' => 'Gagal simpan pembayaran: '.$e->getMessage()];
+        }
+    }
+
+    // QRIS (partial)
+    if ($request->metode === 'qris') {
+        DB::beginTransaction();
+        try {
+            $grossAmount = $bayar;
+            $item_details = [[
+                'id'       => 'part-'.$reservasi->kode_reservasi,
+                'price'    => $grossAmount,
+                'quantity' => 1,
+                'name'     => 'Pembayaran Sisa #' . $reservasi->kode_reservasi
+            ]];
+            $customer = [
+                'first_name' => $reservasi->nama_pelanggan ?? 'Pelanggan',
+                'email'      => $reservasi->pengguna->email ?? null,
+                'phone'      => $reservasi->pengguna->phone ?? null,
+            ];
+            $transaction_details = [
+                'order_id'     => $reservasi->kode_reservasi.'-PART-'.time(),
+                'gross_amount' => $grossAmount,
+            ];
+
+            $params = [
+                'transaction_details' => $transaction_details,
+                'item_details'        => $item_details,
+                'customer_details'    => $customer,
+                'callbacks'           => ['finish' => false],
+                'finish_redirect_url' => route('pelayan.order.summary', $reservasi->id),
+            ];
+
+            $snapToken = Snap::getSnapToken($params);
+
+            $reservasi->payment_method         = 'qris';
+            $reservasi->payment_token          = $snapToken;
+            $reservasi->payment_status         = 'pending';
+            $reservasi->payment_amount         = $grossAmount;
+            $reservasi->sisa_tagihan_reservasi = max(0, $sisa - $grossAmount);
+            $reservasi->save();
+
+            DB::commit();
+            return [
+                'success'    => true,
+                'snap_token' => $snapToken,
+                'redirect'   => route('pelayan.reservasi.bayarSisa.qris', $reservasi->id),
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['success' => false, 'message' => 'Gagal generate Snap: '.$e->getMessage()];
+        }
+    }
+
+    return ['success' => false, 'message' => 'Metode tidak dikenali.'];
+}
+
 
     /**
      * Dipanggil via AJAX oleh JS Snap onSuccess untuk menandai lunas.
