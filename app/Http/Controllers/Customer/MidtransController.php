@@ -130,10 +130,11 @@ class MidtransController extends Controller
 
             // Update reservasi
             $reservasi->update([
-                'total_bill' => $totalAmount,
-                'sisa_tagihan_reservasi' => $totalAmount,
-                'status' => 'pending_payment',
-            ]);
+            'total_bill'               => $totalAmount,
+            'dp_terbayar'              => $paymentAmountDP,    
+            'sisa_tagihan_reservasi'   => $totalAmount - $paymentAmountDP,
+            'status'                   => 'pending_payment',
+        ]);
 
             // 3. Konfigurasi Midtrans TANPA finish_url
             MidtransHelper::configure();

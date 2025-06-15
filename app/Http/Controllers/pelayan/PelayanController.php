@@ -127,13 +127,17 @@ public function bayarSisa(Request $request, $id, $status = null)
                ->with('info', $result['message']);
     }
 
-    // 3) Tampilkan view form bayar-sisa
-    return view('pelayan.bayar-sisa', [
-        'reservasi'    => $result['reservasi'],
-        'totalTagihan' => $result['totalTagihan'],
-        'totalDibayar' => $result['totalDibayar'],
-        'sisa'         => $result['sisa'],
+        // 3) Tampilkan view form bayar-sisa
+        return view('pelayan.bayar-sisa', [
+        'reservasi'         => $result['reservasi'],
+        'totalTagihan'      => $result['totalTagihan'],
+        'totalDibayar'      => $result['totalDibayar'],
+        'sisa'              => $result['sisa'],
+        'pajakNominal'      => $result['pajakNominal'],
+        'pajakPersen'       => $result['pajakPersen'],
+        'totalSetelahPajak' => $result['totalSetelahPajak'],
     ]);
+
 }
 
 

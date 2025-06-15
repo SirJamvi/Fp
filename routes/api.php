@@ -70,6 +70,14 @@ Route::middleware(['auth:sanctum', 'customer'])
         ReservationController::class,
         'processPayment'
     ])->where('reservasi', '[0-9]+');
+     Route::post('reservations/{reservasiId}/auto-cancel', [
+     ReservationController::class,
+     'autoCancel'
+     ])->where('reservasiId', '[0-9]+');
+
+
+
+
 
     // Orders (Pre-order dari customer)
     Route::post('orders/pre-order', [OrderController::class, 'storePreOrder']);
