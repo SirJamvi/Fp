@@ -25,30 +25,51 @@
         </div>
         <div class="card-body">
             <div class="row mb-4">
+                {{-- Kiri: Info dasar --}}
                 <div class="col-md-6">
                     <p><strong>ID Order:</strong> {{ $reservasi->kode_reservasi }}</p>
                     <p><strong>Pelanggan:</strong> {{ $reservasi->nama_pelanggan ?? 'N/A' }}</p>
-                    <p><strong>Waktu Pesan:</strong> {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan ?? $reservasi->created_at)->translatedFormat('l, d M Y H:i') }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>No. Meja:</strong>
-                        @php
-                            $combinedTables = $orderSummary['combined_tables'] ?? [];
-                        @endphp
-                        @if(count($combinedTables) > 0)
-                            @foreach($combinedTables as $mejaData)
-                                {{ $mejaData['nomor_meja'] }} ({{ $mejaData['area'] }})@if(!$loop->last), @endif
-                            @endforeach
-                        @else
-                            N/A
-                        @endif
+                    <p><strong>Waktu Pesan:</strong>
+                        {{ \Carbon\Carbon::parse($reservasi->waktu_kedatangan ?? $reservasi->created_at)
+                            ->translatedFormat('l, d M Y H:i') }}
                     </p>
-                    <p><strong>Pelayan:</strong> {{ $reservasi->staffYangMembuat->name ?? (auth()->check() ? auth()->user()->name : 'N/A') }}</p>
                 </div>
-            </div>
+
+                
+        {{-- Kanan: No. Meja & Pelayan --}}
+        <div class="col-md-6">
+          @php $from = $from ?? 'reservasi'; @endphp
+          <p><strong>No. Meja:</strong>
+            @if($from === 'reservasi')
+              @php $mejaReservasi = $reservasi->mejaReservasi ?? collect(); @endphp
+
+              @if($mejaReservasi->isNotEmpty())
+                @foreach($mejaReservasi as $mr)
+                  {{ $mr->meja->nomor_meja ?? '-' }} ({{ $mr->meja->area ?? '-' }})@if(!$loop->last), @endif
+                @endforeach
+              @else
+                N/A
+              @endif
+
+            @elseif($from === 'dinein')
+              {{-- Dine-in: pakai mejaUtama --}}
+              @if($reservasi->mejaUtama)
+                {{ $reservasi->mejaUtama->nomor_meja }} ({{ $reservasi->mejaUtama->area }})
+              @else
+                N/A
+              @endif
+
+            @else
+              N/A
+            @endif
+          </p>
+        </div>
+      </div>
+
 
             <hr>
 
+            {{-- Detail Pembayaran --}}
             <h5>Detail Pembayaran:</h5>
             <div class="row mb-3">
                 <div class="col-md-4">
@@ -64,7 +85,7 @@
                     <p><strong>Status Pembayaran:</strong>
                         @if($reservasi->status === 'dibatalkan')
                             <span class="badge bg-danger">Dibatalkan</span>
-                        @elseif(in_array($reservasi->status, ['paid', 'selesai']))
+                        @elseif(in_array($reservasi->status, ['paid','selesai']))
                             <span class="badge bg-success">LUNAS</span>
                         @else
                             <span class="badge bg-warning text-dark">Belum Lunas</span>
@@ -72,12 +93,18 @@
                     </p>
                 </div>
                 <div class="col-md-4">
-                    <p><strong>Waktu Pembayaran:</strong> {{ $reservasi->waktu_selesai ? \Carbon\Carbon::parse($reservasi->waktu_selesai)->translatedFormat('l, d M Y H:i') : 'N/A' }}</p>
+                    <p><strong>Waktu Pembayaran:</strong>
+                        {{ $reservasi->waktu_selesai
+                            ? \Carbon\Carbon::parse($reservasi->waktu_selesai)
+                                ->translatedFormat('l, d M Y H:i')
+                            : 'N/A' }}
+                    </p>
                 </div>
             </div>
 
             <hr>
 
+            {{-- Detail Item --}}
             <h5>Detail Item Pesanan:</h5>
             <table class="table table-bordered mt-2 items-table">
                 <thead class="table-light">
@@ -95,8 +122,8 @@
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $item['nama_menu'] }}</td>
                         <td class="text-center">{{ $item['quantity'] }}</td>
-                        <td class="text-end">Rp {{ number_format($item['harga_satuan'], 0, ',', '.') }}</td>
-                        <td class="text-end">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                        <td class="text-end">Rp {{ number_format($item['harga_satuan'],0,',','.') }}</td>
+                        <td class="text-end">Rp {{ number_format($item['subtotal'],0,',','.') }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -105,16 +132,19 @@
             <div class="row mt-3">
                 <div class="col-md-8"></div>
                 <div class="col-md-4 text-end grand-total-value">
-                    <strong>Total Keseluruhan: Rp {{ number_format($orderSummary['total_keseluruhan'], 0, ',', '.') }}</strong>
+                    <strong>Total Keseluruhan:
+                        Rp {{ number_format($orderSummary['total_keseluruhan'],0,',','.') }}
+                    </strong>
                 </div>
             </div>
         </div>
 
+        {{-- Footer tombol --}}
         <div class="card-footer text-end">
-            @php $from = $from ?? 'reservasi'; @endphp
             @if($from === 'reservasi')
-                @if(!in_array($reservasi->status, ['paid', 'selesai']))
-                    <a href="{{ route('pelayan.reservasi.bayarSisa', $reservasi->id) }}" class="btn btn-warning me-2">
+                @if(!in_array($reservasi->status, ['paid','selesai']))
+                    <a href="{{ route('pelayan.reservasi.bayarSisa', $reservasi->id) }}"
+                       class="btn btn-warning me-2">
                         <i class="bi bi-cash-coin"></i> Bayar Sisa
                     </a>
                 @endif

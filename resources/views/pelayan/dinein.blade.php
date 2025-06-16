@@ -10,13 +10,9 @@
         <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari (Nama/Kode/Meja)">
 
         <select name="filter" class="form-select" onchange="this.form.submit()">
-            <option value="">Semua Status & Waktu</option>
-            <option value="today" {{ request('filter') == 'today' ? 'selected' : '' }}>Hari Ini</option>
-            <option value="upcoming" {{ request('filter') == 'upcoming' ? 'selected' : '' }}>Akan Datang</option>
-            <option value="past_week" {{ request('filter') == 'past_week' ? 'selected' : '' }}>Seminggu Terakhir</option>
-            <option value="active" {{ request('filter') == 'active' ? 'selected' : '' }}>Pesanan Aktif</option>
-            <option value="paid" {{ request('filter') == 'paid' ? 'selected' : '' }}>Sudah Dibayar</option>
-            <option value="selesai" {{ request('filter') == 'selesai' ? 'selected' : '' }}>Selesai (Manual)</option>
+            <option value="">Filter Status Dine_in</option>
+            <option value="active_order" {{ request('filter') == 'active_order' ? 'selected' : '' }}>Aktif</option>
+            <option value="selesai" {{ request('filter') == 'selesai' ? 'selected' : '' }}>Selesai</option>
             <option value="dibatalkan" {{ request('filter') == 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
         </select>
 
