@@ -38,73 +38,40 @@ class OrderService
 
             // 3. Jika kapasitas meja utama belum cukup, cari kombinasi meja tambahan
             if ($totalCapacity < $jumlahTamu) {
-                // Hitung sisa kursi yang dibutuhkan setelah meja utama
                 $needed = $jumlahTamu - $totalCapacity;
 
-                // Ambil semua kandidat meja tambahan (status 'tersedia', area sama, bukan meja utama)
                 $mejaTambahanList = Meja::where('status', 'tersedia')
                     ->where('id', '!=', $mejaUtama->id)
                     ->where('area', $mejaUtama->area)
                     ->get(['id', 'kapasitas']);
 
-                // Ubah menjadi array sederhana: [ ['id'=>.., 'kapasitas'=>..], ... ]
                 $candidates = $mejaTambahanList->map(function($m) {
-                    return [
-                        'id'        => $m->id,
-                        'kapasitas' => (int) $m->kapasitas,
-                    ];
+                    return ['id' => $m->id, 'kapasitas' => (int) $m->kapasitas];
                 })->toArray();
 
-                // Persiapkan variabel global untuk mencari subset terbaik
                 $bestSum    = PHP_INT_MAX;
                 $bestSubset = [];
 
-                /**
-                 * Backtracking (DFS) untuk menemukan kombinasi meja tambahan
-                 * yang total kapasitasnya >= $needed dan seminimal mungkin.
-                 *
-                 * @param int   $idx
-                 * @param int   $currentSum
-                 * @param array $currentSubset
-                 */
-                $dfs = function($idx, $currentSum, $currentSubset)
-                    use (&$dfs, $needed, &$bestSum, &$bestSubset, $candidates)
-                {
-                    // Jika sudah mencukupi kebutuhan
+                $dfs = function($idx, $currentSum, $currentSubset) use (&$dfs, $needed, &$bestSum, &$bestSubset, $candidates) {
                     if ($currentSum >= $needed) {
-                        // Simpan jika lebih efisien (smaller sum)
                         if ($currentSum < $bestSum) {
                             $bestSum    = $currentSum;
                             $bestSubset = $currentSubset;
                         }
-                        // Langsung return karena tidak perlu menambahkan lebih banyak
+                        return;
+                    }
+                    if ($idx >= count($candidates) || $currentSum >= $bestSum) {
                         return;
                     }
 
-                    // Jika sudah melewati batas kandidat, stop
-                    if ($idx >= count($candidates)) {
-                        return;
-                    }
-
-                    // Pruning: jika currentSum sudah ≥ bestSum, tidak usah lanjut
-                    if ($currentSum >= $bestSum) {
-                        return;
-                    }
-
-                    // 1) Pilih kandidat idx
                     $m = $candidates[$idx];
-                    $subsetWith = $currentSubset;
-                    $subsetWith[] = $m['id'];
+                    $subsetWith = array_merge($currentSubset, [$m['id']]);
                     $dfs($idx + 1, $currentSum + $m['kapasitas'], $subsetWith);
-
-                    // 2) Lewati kandidat idx
                     $dfs($idx + 1, $currentSum, $currentSubset);
                 };
 
-                // Jalankan DFS mulai dari idx=0, sum=0, subset=[]
                 $dfs(0, 0, []);
 
-                // Jika bestSum tetap PHP_INT_MAX, tidak ada kombinasi yang cocok
                 if ($bestSum === PHP_INT_MAX) {
                     DB::rollBack();
                     return [
@@ -113,7 +80,6 @@ class OrderService
                     ];
                 }
 
-                // Tambahkan meja tambahan dari bestSubset ke combinedTables
                 foreach ($bestSubset as $mejaId) {
                     $combinedTables[] = $mejaId;
                     $totalCapacity   += Meja::find($mejaId)->kapasitas;
@@ -126,7 +92,7 @@ class OrderService
                 $kodeReservasi = 'RES-' . Carbon::now()->format('YmdHis') . Str::random(6);
             }
 
-            // 5. Proses order items (hitung subtotal dan kumpulkan data)
+            // 5. Proses order items
             $subtotal       = 0;
             $orderItemsData = [];
             foreach ($request->items as $itemData) {
@@ -152,13 +118,13 @@ class OrderService
                 ];
             }
 
-            // 6. Hitung total bill (serviceCharge & tax masih 0 sementara)
+            // 6. Hitung total bill
             $serviceCharge   = 0;
             $tax             = 0;
             $finalTotalBill  = $subtotal + $serviceCharge + $tax;
 
             // 7. Simpan data reservasi
-           $reservasi = Reservasi::create([
+            $reservasi = Reservasi::create([
                 'kode_reservasi'   => $kodeReservasi,
                 'meja_id'          => $mejaUtama->id,
                 'combined_tables'  => json_encode($combinedTables),
@@ -166,7 +132,7 @@ class OrderService
                 'staff_id'         => $pelayan->id,
                 'nama_pelanggan'   => $request->nama_pelanggan ?? 'Walk-in Customer',
                 'jumlah_tamu'      => $jumlahTamu,
-                'waktu_kedatangan' => now(),    
+                'waktu_kedatangan' => now(),
                 'status'           => 'pending_payment',
                 'source'           => 'dine_in',
                 'kehadiran_status' => 'hadir',
@@ -190,11 +156,14 @@ class OrderService
                 ]);
             }
 
-            // 9. Update status semua meja (utama + tambahan) menjadi 'terisi'
+            // 9. Kaitkan semua meja yang digabungkan ke relasi Many-to-Many reservasi
+            $reservasi->meja()->attach($combinedTables);
+
+            // 10. Update status semua meja (utama + tambahan)
             foreach ($combinedTables as $mejaId) {
                 $meja = Meja::find($mejaId);
                 if ($meja && $meja->status === 'tersedia') {
-                    $meja->status             = 'terisi';
+                    $meja->status               = 'terisi';
                     $meja->current_reservasi_id = $reservasi->id;
                     $meja->save();
                 }
@@ -202,7 +171,6 @@ class OrderService
 
             DB::commit();
 
-            // 10. Kembalikan respon sukses
             return [
                 'success'         => true,
                 'message'         => 'Pesanan berhasil dibuat. Lanjutkan ke pembayaran.',
@@ -211,8 +179,7 @@ class OrderService
                 'kode_reservasi'  => $reservasi->kode_reservasi,
                 'combined_tables' => $combinedTables,
             ];
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating order: ' . $e->getMessage());
             return [
@@ -265,21 +232,20 @@ class OrderService
             $currentServiceCharge = $reservasi->service_charge ?? 0;
             $currentTax           = $reservasi->tax ?? 0;
 
-            $updatedSubtotal = $currentSubtotal + $newItemsSubtotal;
-
-            $serviceChargeRate = 0.10; // 10%
-            $taxRate           = 0.11; // 11%
+            $updatedSubtotal      = $currentSubtotal + $newItemsSubtotal;
+            $serviceChargeRate    = 0.10;
+            $taxRate              = 0.11;
 
             $updatedServiceCharge = (int) ($updatedSubtotal * $serviceChargeRate);
             $totalAfterService    = $updatedSubtotal + $updatedServiceCharge;
             $updatedTax           = (int) ($totalAfterService * $taxRate);
 
-            $updatedTotalBill = $updatedSubtotal + $updatedServiceCharge + $updatedTax;
+            $updatedTotalBill     = $updatedSubtotal + $updatedServiceCharge + $updatedTax;
 
-            $reservasi->total_bill      = $updatedTotalBill;
-            $reservasi->subtotal        = $updatedSubtotal;
-            $reservasi->service_charge  = $updatedServiceCharge;
-            $reservasi->tax             = $updatedTax;
+            $reservasi->subtotal       = $updatedSubtotal;
+            $reservasi->service_charge = $updatedServiceCharge;
+            $reservasi->tax            = $updatedTax;
+            $reservasi->total_bill     = $updatedTotalBill;
             $reservasi->save();
 
             DB::commit();

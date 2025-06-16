@@ -14,6 +14,7 @@ use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\Customer\InvoiceController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Customer\MidtransController;
+use App\Http\Controllers\Customer\PasswordController;
 
 // Rute publik (tanpa autentikasi)
 Route::post('customer/register', [AuthController::class, 'register']);
@@ -22,6 +23,11 @@ Route::post('customer/login',    [AuthController::class, 'login']);
 // Menu bisa dilihat tanpa login
 Route::get('customer/menus',       [MenuController::class, 'index']);
 Route::get('customer/menus/{menu}',[MenuController::class, 'show']);
+
+// --- TAMBAHKAN RUTE INI UNTUK RESET PASSWORD ---
+Route::post('/customer/password/request-reset', [PasswordController::class, 'requestReset']);
+Route::post('/customer/password/reset', [PasswordController::class, 'reset']);
+// --- AKHIR PENAMBAHAN ---
 
 // Meja bisa dilihat tanpa login untuk reservasi
 Route::get('customer/tables',                [MejaController::class, 'index']);
