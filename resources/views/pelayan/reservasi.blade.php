@@ -9,8 +9,11 @@
     <form method="GET" action="{{ route('pelayan.reservasi') }}" class="d-flex mb-3 gap-2">
         <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari (Nama/Kode/Meja)">
         <select name="filter" class="form-select" onchange="this.form.submit()">
-            <!-- opsi filter -->
-        </select>
+        <option value="">-- Filter Status Reservasi --</option>
+        <option value="active_order" {{ request('filter') == 'active_order' ? 'selected' : '' }}>Aktif</option>
+        <option value="paid" {{ request('filter') == 'paid' ? 'selected' : '' }}>Selesai</option>
+        <option value="dibatalkan" {{ request('filter') == 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
+    </select>
         <button type="submit" class="btn btn-primary">Cari/Filter</button>
         @if(request('search') || request('filter'))
             <a href="{{ route('pelayan.reservasi') }}" class="btn btn-secondary">Reset Filter</a>

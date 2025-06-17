@@ -114,4 +114,19 @@ class Reservasi extends Model
     {
         return $this->hasOne(Invoice::class, 'reservasi_id');
     }
+
+    // App\Models\Reservasi.php
+    public function mejaReservasi()
+    {
+        return $this->hasMany(MejaReservasi::class);
+    }
+
+    /**
+ * Relasi ke 1 meja utama (kolom meja_id)
+ */
+public function mejaUtama()
+{
+    return $this->belongsTo(Meja::class, 'meja_id');
+}
+
 }

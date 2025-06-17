@@ -80,23 +80,36 @@ class PelayanController extends Controller
     }
 
     public function showDetailReservasi($id)
-    {
-        try {
-            $reservasi = Reservasi::with('meja')->findOrFail($id);
-            $orders = Order::with('menu')->where('reservasi_id', $id)->get();
-            $totalHarga = $orders->sum(fn($order) => $order->quantity * $order->menu->price);
+{
+    try {
+        // 1) Tangkap context (reservasi atau dinein)
+        $from = request()->query('from', 'reservasi');
 
-            return view('pelayan.detail', [
-                'title' => 'Detail Menu',
-                'reservasi' => $reservasi,
-                'orders' => $orders,
-                'totalHarga' => $totalHarga,
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error loading detail reservasi: " . $e->getMessage());
-            return redirect()->route('pelayan.reservasi')->with('error', 'Gagal memuat detail reservasi.');
-        }
+        // 2) Eager‐load orders.menu dan mejaUtama (kolom meja_id)
+        $reservasi = Reservasi::with(['orders.menu', 'mejaUtama'])
+                              ->findOrFail($id);
+
+        // 3) Ambil orders dan hitung total
+        $orders     = Order::with('menu')
+                           ->where('reservasi_id', $id)
+                           ->get();
+        $totalHarga = $orders->sum(fn($o) => $o->quantity * $o->menu->price);
+
+        // 4) Kirim ke view, termasuk $from
+        return view('pelayan.detail', [
+            'title'      => 'Detail Menu',
+            'reservasi'  => $reservasi,
+            'orders'     => $orders,
+            'totalHarga' => $totalHarga,
+            'from'       => $from,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error("Error loading detail reservasi: " . $e->getMessage());
+        return redirect()->route('pelayan.reservasi')
+                         ->with('error', 'Gagal memuat detail reservasi.');
     }
+}
 
     public function processPayment(Request $request, $reservasi_id)
     {
@@ -180,7 +193,13 @@ public function settleQrisPayment(Request $request, $id)
         $from = request()->query('from', 'reservasi');
 
         // Ambil reservasi beserta relasi orders.menu dan staffYangMembuat
-        $reservasi = Reservasi::with(['orders.menu', 'staffYangMembuat'])->findOrFail($reservasi_id);
+        $reservasi = Reservasi::with([
+            'orders.menu',
+            'mejaReservasi.meja',  // untuk reservasi (online)
+            'meja',                // untuk dine-in
+            'staffYangMembuat'
+        ])->findOrFail($reservasi_id);
+
 
         // Siapkan array untuk menyimpan semua data meja dari combined_tables
         $combinedTables = [];
