@@ -102,6 +102,7 @@ class PaymentService
                 $reservasi->payment_token          = $snapToken;
                 $reservasi->payment_status         = 'selesai';
                 $reservasi->status                 = 'selesai';
+                $reservasi->waktu_selesai          = now();
                 // status dan sisa tetap menunggu callback JS
                 $reservasi->payment_amount         = $totalBill;
                 $reservasi->sisa_tagihan_reservasi = 0;

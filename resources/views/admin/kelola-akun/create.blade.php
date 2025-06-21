@@ -1,12 +1,11 @@
+<!-- kelola-akun/create.blade.php -->
 <x-layout>
   <x-slot:title>{{ $title }}</x-slot:title>
   
   <div class="container mx-auto p-4">
     <div class="flex items-center mb-6">
-      <a href="{{ route('admin.kelola-akun.index') }}" class="text-blue-500 hover:text-blue-700 mr-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
+      <a href="{{ route('admin.kelola-akun.index') }}" class="text-teal-700 hover:text-teal-900 mr-4">
+        <i class="bi bi-arrow-left"></i>
       </a>
       <h1 class="text-2xl font-bold">Tambah Akun Baru</h1>
     </div>
@@ -108,10 +107,10 @@
         </div>
         
         <div class="flex items-center justify-between">
-          <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+          <button class="bg-teal-700 hover:bg-teal-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
             Simpan
           </button>
-          <a href="{{ route('admin.kelola-akun.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+          <a href="{{ route('admin.kelola-akun.index') }}" class="inline-block align-baseline font-bold text-sm text-teal-700 hover:text-teal-900">
             Batal
           </a>
         </div>
