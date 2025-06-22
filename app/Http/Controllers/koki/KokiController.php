@@ -6,14 +6,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Reservasi;
-use App\Models\Menu;
-use App\Models\Meja;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+// START: Perubahan - Import NotificationController
+use App\Http\Controllers\Customer\NotificationController;
+// END: Perubahan
 
 class KokiController extends Controller
 {
+    // ... fungsi index() dan getOrders() tidak berubah ...
     public function index()
     {
         return view('koki.dashboard', [
@@ -24,7 +26,6 @@ class KokiController extends Controller
     public function getOrders(Request $request)
     {
         try {
-            // Eager load dengan relasi many-to-many yang benar
             $allOrders = Order::with(['menu', 'reservasi.meja'])
                                ->whereIn('status', ['pending', 'preparing', 'completed', 'cancelled'])
                                ->whereDate('created_at', Carbon::today())
@@ -40,13 +41,8 @@ class KokiController extends Controller
 
             foreach ($groupedOrders as $reservasiId => $ordersInReservation) {
                 $firstOrder = $ordersInReservation->first();
-                
-                // Check if reservasi exists
-                if (!$firstOrder->reservasi) {
-                    continue;
-                }
+                if (!$firstOrder->reservasi) continue;
 
-                // Determine reservation status
                 $reservationStatus = 'completed';
                 foreach ($ordersInReservation as $order) {
                     if ($order->status === 'pending') {
@@ -57,10 +53,7 @@ class KokiController extends Controller
                     }
                 }
 
-                // Skip completed/cancelled reservations
-                if ($ordersInReservation->every(function($order) {
-                    return in_array($order->status, ['completed', 'cancelled']);
-                })) {
+                if ($ordersInReservation->every(fn($order) => in_array($order->status, ['completed', 'cancelled']))) {
                     continue;
                 }
 
@@ -69,8 +62,8 @@ class KokiController extends Controller
                     if (in_array($order->status, ['pending', 'preparing'])) {
                         $items[] = [
                             'order_id' => $order->id,
-                            'menu_name' => $order->menu->name ?? 'Menu Tidak Ditemukan',
-                            'menu_image' => $order->menu->image_url ?? asset('assets/img/default-food.png'),
+                            'menu_name' => $order->menu->name ?? 'N/A',
+                            'menu_image' => $order->menu->image_url ?? '',
                             'quantity' => $order->quantity,
                             'notes' => $order->notes,
                             'status' => $order->status,
@@ -79,21 +72,13 @@ class KokiController extends Controller
                 }
 
                 if (!empty($items)) {
-                    // Handle many-to-many relationship for meja
-                    $mejaCollection = $firstOrder->reservasi->meja; // This returns a collection
-                    
-                    // Get table display from collection
                     $tableDisplay = 'N/A';
-                    if ($mejaCollection && $mejaCollection->count() > 0) {
-                        // If multiple tables, combine them
-                        $tableNumbers = $mejaCollection->map(function($meja) {
+                    if ($firstOrder->reservasi->meja && $firstOrder->reservasi->meja->count() > 0) {
+                        $tableNumbers = $firstOrder->reservasi->meja->map(function($meja) {
                             $display = $meja->nomor_meja ?? 'N/A';
-                            if ($meja->area) {
-                                $display .= ' (' . $meja->area . ')';
-                            }
+                            if ($meja->area) $display .= ' (' . $meja->area . ')';
                             return $display;
                         })->toArray();
-                        
                         $tableDisplay = implode(', ', $tableNumbers);
                     }
 
@@ -109,9 +94,7 @@ class KokiController extends Controller
                 }
             }
 
-            usort($formattedReservations, function($a, $b) {
-                return $a['ordered_at'] <=> $b['ordered_at'];
-            });
+            usort($formattedReservations, fn($a, $b) => $a['ordered_at'] <=> $b['ordered_at']);
 
             return response()->json([
                 'success' => true,
@@ -120,13 +103,12 @@ class KokiController extends Controller
                     'new_orders' => $newOrdersCount,
                     'preparing_orders' => $preparingOrdersCount,
                     'completed_orders' => $completedOrdersCount,
-                    'low_stock_items' => 0,
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error fetching koki orders: " . $e->getMessage() . " Stack: " . $e->getTraceAsString());
-            return response()->json(['success' => false, 'message' => 'Gagal memuat pesanan dapur: ' . $e->getMessage()], 500);
+            Log::error("Error fetching koki orders: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memuat pesanan dapur.'], 500);
         }
     }
 
@@ -140,34 +122,60 @@ class KokiController extends Controller
         try {
             $newStatus = $request->status;
             $message = '';
+            $statusChanged = false;
+
+            // Pastikan kita memuat relasi user karena dibutuhkan untuk notifikasi
+            $reservasi->load('user');
+
+            if (!$reservasi->user) {
+                DB::rollBack();
+                Log::warning("Reservasi ID {$reservasi->id} tidak memiliki user terkait.");
+                return response()->json(['success' => false, 'message' => 'Reservasi tidak memiliki data pelanggan.'], 404);
+            }
 
             $ordersToUpdate = $reservasi->orders()->whereIn('status', ['pending', 'preparing'])->get();
 
             if ($ordersToUpdate->isEmpty()) {
                 DB::rollBack();
-                return response()->json(['success' => false, 'message' => 'Tidak ada item pesanan yang perlu diperbarui dalam reservasi ini.'], 400);
+                return response()->json(['success' => false, 'message' => 'Tidak ada item pesanan yang perlu diperbarui.'], 400);
             }
 
             foreach ($ordersToUpdate as $order) {
                 $oldStatus = $order->status;
 
+                // Terapkan perubahan status berdasarkan logika
                 if ($oldStatus === 'pending' && $newStatus === 'preparing') {
                     $order->status = $newStatus;
-                    $message = 'Pesanan berhasil diubah menjadi Sedang Diproses.';
+                    $message = 'Pesanan sekarang sedang disiapkan.';
+                    $statusChanged = true;
                 } elseif ($oldStatus === 'preparing' && $newStatus === 'completed') {
                     $order->status = $newStatus;
-                    $message = 'Pesanan berhasil diubah menjadi Selesai.';
-                } elseif ($newStatus === 'cancelled') {
+                    $message = 'Pesanan telah selesai disiapkan.';
+                    $statusChanged = true;
+                } elseif ($newStatus === 'cancelled') { // Bisa membatalkan dari pending atau preparing
                     $order->status = $newStatus;
-                    $message = 'Pesanan berhasil dibatalkan.';
-                } else {
-                    continue;
+                    $message = 'Pesanan telah dibatalkan.';
+                    $statusChanged = true;
                 }
-                $order->save();
-                Log::info("Order ID {$order->id} status updated from {$oldStatus} to {$newStatus} for Reservasi ID {$reservasi->id}.");
+                
+                if ($statusChanged) {
+                    $order->save();
+                    Log::info("Order ID {$order->id} status updated from {$oldStatus} to {$newStatus} for Reservasi ID {$reservasi->id}.");
+                }
             }
             
             DB::commit();
+
+            // START: Perubahan - Kirim notifikasi ke pelanggan setelah commit berhasil
+            if ($statusChanged) {
+                try {
+                    NotificationController::createOrderStatusUpdateNotification($reservasi, $newStatus);
+                } catch (\Exception $e) {
+                    // Log error jika pengiriman notifikasi gagal, tapi jangan gagalkan respons ke koki
+                    Log::error("Gagal mengirim notifikasi untuk Reservasi ID {$reservasi->id} setelah update status: " . $e->getMessage());
+                }
+            }
+            // END: Perubahan
 
             return response()->json([
                 'success' => true,
@@ -178,34 +186,19 @@ class KokiController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error updating order status for Reservasi ID {$reservasi->id}: " . $e->getMessage() . " Stack: " . $e->getTraceAsString());
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status pesanan: ' . $e->getMessage()], 500);
+            Log::error("Error updating order status for Reservasi ID {$reservasi->id}: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status pesanan.'], 500);
         }
     }
 
     private function getStatusBadgeClass($status)
     {
         switch ($status) {
-            case 'pending':
-                return 'bg-danger';
-            case 'preparing':
-                return 'bg-warning';
-            case 'completed':
-                return 'bg-success';
-            case 'served':
-                return 'bg-primary';
-            case 'cancelled':
-                return 'bg-secondary';
-            default:
-                return 'bg-secondary';
+            case 'pending': return 'bg-danger';
+            case 'preparing': return 'bg-warning';
+            case 'completed': return 'bg-success';
+            case 'cancelled': return 'bg-secondary';
+            default: return 'bg-secondary';
         }
-    }
-
-    public function daftarPesanan()
-    {
-    }
-
-    public function stokBahan()
-    {
     }
 }
