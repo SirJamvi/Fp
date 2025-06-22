@@ -13,7 +13,6 @@ use App\Models\Meja;
 use App\Models\Reservasi;
 use App\Services\PaymentService;
 use App\Http\Requests\Customer\ReservationRequest;
-use App\Http\Controllers\Customer\NotificationController;
 
 class ReservationController extends Controller
 {
@@ -107,8 +106,8 @@ class ReservationController extends Controller
             Meja::whereIn('id',$mejaIds)->update(['status'=>'dipesan']);
         }
 
-        // 8) Notifikasi
-        NotificationController::createReservationReminders($reservasi);
+        // 8) Notifikasi - Dihapus karena method sudah tidak tersedia
+        // NotificationController::createReservationReminders($reservasi);
 
         DB::commit();
 
