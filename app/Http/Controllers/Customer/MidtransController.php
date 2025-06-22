@@ -172,8 +172,8 @@ class MidtransController extends Controller
                 'user_id'      => $user->id,
                 'reservasi_id' => $reservasi->id,
                 'type'         => 'reservation_created',
-                'title'        => 'Menunggu Pembayaran',
-                'message'      => "Pesanan Anda dengan kode #{$reservasi->id} telah dibuat. Segera selesaikan pembayaran DP 50%.",
+                'title'        => 'Berhasil',
+                
                 'data'         => [
                     'order_id'     => $orderId,
                     'total_amount' => $totalAmount,

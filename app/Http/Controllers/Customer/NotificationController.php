@@ -16,6 +16,7 @@ class NotificationController extends Controller
         try {
             Log::info('Fetching notifications for user: ' . $request->user()->id);
 
+            // Simplified query - back to basic like old controller
             $notifications = CustomerNotification::where('user_id', $request->user()->id)
                 ->with([
                     'reservasi:id,kode_reservasi,waktu_kedatangan,status',
@@ -98,12 +99,17 @@ class NotificationController extends Controller
         try {
             Log::info('Creating immediate notification for reservation: ' . $reservasi->id);
 
+            // Pesan sederhana tanpa menyebutkan pembayaran
+            $message = "Reservasi Anda ({$reservasi->kode_reservasi}) berhasil dibuat untuk tanggal " . 
+                       Carbon::parse($reservasi->waktu_kedatangan)->isoFormat('D MMMM YYYY') . 
+                       " pukul " . Carbon::parse($reservasi->waktu_kedatangan)->isoFormat('HH:mm') . ".";
+
             $notification = CustomerNotification::create([
                 'user_id'       => $reservasi->user_id,
                 'reservasi_id'  => $reservasi->id,
                 'type'          => CustomerNotification::TYPE_RESERVATION_CREATED,
                 'title'         => 'Reservasi Berhasil Dibuat',
-                'message'       => "Reservasi Anda ({$reservasi->kode_reservasi}) berhasil dibuat. Silakan lakukan pembayaran.",
+                'message'       => $message,
                 'data'          => [
                     'kode_reservasi' => $reservasi->kode_reservasi,
                     'waktu_kedatangan' => $reservasi->waktu_kedatangan,
@@ -125,13 +131,12 @@ class NotificationController extends Controller
         }
     }
 
-    // Ganti seluruh method createReservationReminders Anda dengan ini:
     public static function createReservationReminders(Reservasi $reservasi)
     {
         try {
             Log::info('Creating reminders for reservation: ' . $reservasi->id);
 
-            // PERBAIKAN: Gunakan 'waktu_kedatangan' yang benar
+            // Back to original simple logic without timezone complexity
             $reservationDateTime = Carbon::parse($reservasi->waktu_kedatangan);
 
             if ($reservationDateTime->isPast()) {
@@ -153,7 +158,7 @@ class NotificationController extends Controller
 
             $notifications = [];
 
-            // PERBAIKAN: Format tanggal dan waktu dari objek Carbon
+            // Format tanggal dan waktu dari objek Carbon
             $formattedDate = $reservationDateTime->isoFormat('D MMMM YYYY');
             $formattedTime = $reservationDateTime->isoFormat('HH:mm');
 
@@ -172,6 +177,7 @@ class NotificationController extends Controller
                     'created_at'    => now(),
                     'updated_at'    => now(),
                 ];
+                Log::info("12-hour reminder scheduled for: " . $rem12->toDateTimeString());
             }
 
             // Reminder 1 jam sebelumnya
@@ -189,6 +195,7 @@ class NotificationController extends Controller
                     'created_at'    => now(),
                     'updated_at'    => now(),
                 ];
+                Log::info("1-hour reminder scheduled for: " . $rem1->toDateTimeString());
             }
 
             // Reminder 5 menit sebelumnya
@@ -206,6 +213,7 @@ class NotificationController extends Controller
                     'created_at'    => now(),
                     'updated_at'    => now(),
                 ];
+                Log::info("5-minute reminder scheduled for: " . $rem5->toDateTimeString());
             }
 
             if (! empty($notifications)) {
@@ -310,39 +318,6 @@ class NotificationController extends Controller
                 'has_new'      => false,
             ], 500);
         }
-    }
-
-    public function getPendingNotifications()
-    {
-        $pending = CustomerNotification::pending()
-            ->with([
-                'pengguna:id,name,email',
-                'reservasi:id,kode_reservasi'
-            ])
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data'    => $pending,
-            'count'   => $pending->count(),
-        ]);
-    }
-
-    public function sendPendingNotifications()
-    {
-        $pending = CustomerNotification::pending()->get();
-        $sentCount = 0;
-
-        foreach ($pending as $notification) {
-            $notification->markAsSent();
-            $sentCount++;
-        }
-
-        return response()->json([
-            'success'   => true,
-            'message'   => "{$sentCount} notifikasi berhasil dikirim.",
-            'sent_count'=> $sentCount,
-        ], 200);
     }
 
     public function destroy(Request $request, $notificationId)
