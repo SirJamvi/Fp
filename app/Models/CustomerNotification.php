@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -71,12 +72,18 @@ class CustomerNotification extends Model
         ]);
     }
 
-    // Tambahkan type baru untuk notifikasi langsung saat reservasi dibuat
+    // START: Perubahan - Penambahan tipe notifikasi untuk status order
     const TYPE_RESERVATION_CREATED   = 'reservation_created';
     const TYPE_RESERVATION_CONFIRMED = 'reservation_confirmed';
+    const TYPE_PAYMENT_SUCCESS       = 'payment_success';
+    const TYPE_RESERVATION_CANCELLED = 'reservation_cancelled';
+    const TYPE_ORDER_PREPARING       = 'order_preparing';   // <-- BARU
+    const TYPE_ORDER_COMPLETED       = 'order_completed';   // <-- BARU
+    const TYPE_ORDER_CANCELLED_KOKI  = 'order_cancelled_by_koki'; // <-- BARU
+
+    // Tipe notifikasi pengingat yang lama, bisa dihapus jika tidak diperlukan lagi
     const TYPE_REMINDER_12_HOURS     = 'reminder_12_hours';
     const TYPE_REMINDER_1_HOUR       = 'reminder_1_hour';
     const TYPE_REMINDER_5_MINUTES    = 'reminder_5_minutes';
-    const TYPE_PAYMENT_SUCCESS       = 'payment_success';
-    const TYPE_RESERVATION_CANCELLED = 'reservation_cancelled';
+    // END: Perubahan
 }
