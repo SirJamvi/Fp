@@ -154,7 +154,7 @@ class Invoice extends Model
     private function getPaymentStatusLabel(): string
     {
         return match($this->attributes['payment_status']) {
-            'pending' => 'Menunggu Pembayaran',
+            'pending' => 'selesai',
             'partial' => 'Dibayar Sebagian',
             'paid' => 'Lunas',
             default => 'Tidak Diketahui'
