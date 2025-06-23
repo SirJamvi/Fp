@@ -101,31 +101,34 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <div class="flex text-sm text-gray-600">
-                                <label for="image" class="relative cursor-pointer bg-white rounded-md font-medium text-teal-600 hover:text-teal-500 focus-within:outline-none">
-                                    <span>Upload a file</span>
-                                    <input id="image" name="image" type="file" accept="image/*" class="sr-only">
-                                </label>
-                                <p class="pl-1">or drag and drop</p>
-                            </div>
-                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
-                        </div>
+                    <div class="mt-1">
+                        <input type="file" id="image" name="image" accept="image/*"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 @error('image') border-red-500 @enderror">
+                        <p class="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 2MB. Leave empty to keep current image.</p>
                     </div>
                     @error('image')
                         <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
                     @enderror
                     
+                    <!-- Current image display -->
                     @if($menu->image)
-                        <div class="mt-4">
-                            <p class="text-sm font-medium text-gray-700 mb-2">Current Image:</p>
-                            <img src="{{ asset('storage/' . $menu->image) }}" alt="{{ $menu->name }}" class="mt-2 h-32 w-auto rounded-lg shadow-sm border border-gray-200">
+                        <div id="current-image" class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Image:</label>
+                            <div class="border border-gray-300 rounded-lg p-2 bg-gray-50">
+                                <img src="{{ asset('storage/' . $menu->image) }}" alt="{{ $menu->name }}" class="max-w-full h-32 object-cover rounded">
+                                <p class="text-xs text-gray-500 mt-1">{{ $menu->name }}</p>
+                            </div>
                         </div>
                     @endif
+                    
+                    <!-- New image preview area -->
+                    <div id="image-preview" class="mt-3 hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Image Preview:</label>
+                        <div class="border border-gray-300 rounded-lg p-2 bg-gray-50">
+                            <img id="preview-img" src="" alt="New image preview" class="max-w-full h-32 object-cover rounded">
+                            <button type="button" id="remove-preview" class="mt-2 text-sm text-red-600 hover:text-red-800">Remove new image</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-start pt-6">
@@ -187,6 +190,61 @@
 
             // Initial calculation when the page loads
             calculateDiscountedPrice();
+
+            // Image preview functionality for edit form
+            const imageInput = document.getElementById('image');
+            const imagePreview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            const removePreview = document.getElementById('remove-preview');
+            const currentImage = document.getElementById('current-image');
+
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (2MB = 2 * 1024 * 1024 bytes)
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('File size exceeds 2MB. Please choose a smaller file.');
+                        imageInput.value = '';
+                        return;
+                    }
+
+                    // Check file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select a valid image file.');
+                        imageInput.value = '';
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.classList.remove('hidden');
+                        // Optionally dim the current image to show a new one is selected
+                        if (currentImage) {
+                            currentImage.style.opacity = '0.5';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.classList.add('hidden');
+                    // Restore current image opacity
+                    if (currentImage) {
+                        currentImage.style.opacity = '1';
+                    }
+                }
+            });
+
+            if (removePreview) {
+                removePreview.addEventListener('click', function() {
+                    imageInput.value = '';
+                    imagePreview.classList.add('hidden');
+                    previewImg.src = '';
+                    // Restore current image opacity
+                    if (currentImage) {
+                        currentImage.style.opacity = '1';
+                    }
+                });
+            }
         });
     </script>
     @endpush

@@ -29,6 +29,7 @@ class Pengguna extends Authenticatable
         'nomor_hp',
         'password',
         'peran',
+        'foto_profil', // Tambahkan ini
     ];
 
     /**
@@ -50,6 +51,19 @@ class Pengguna extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Accessor untuk mendapatkan URL foto profil lengkap
+     * 
+     * @return string
+     */
+    public function getFotoProfilUrlAttribute(): string
+    {
+        if ($this->foto_profil) {
+            return asset('storage/profile_photos/' . $this->foto_profil);
+        }
+        return asset('assets/img/default-profile.jpg');
+    }
 
     /**
      * Cek apakah pengguna adalah admin
