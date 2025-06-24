@@ -157,7 +157,7 @@
               <tr><td colspan="4" class="h-4 bg-gray-50"></td></tr>
             @empty
               <tr>
-                <td colspan="4" class="py-4 text-center text-gray-700">Belum ada rating yang diterima!</td>
+                <td colspan="4" class="py-4 text-center text-gray-700">Belum ada rating yang diterima!!</td>
               </tr>
             @endforelse
           </tbody>
