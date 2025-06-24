@@ -24,7 +24,7 @@
         <div class="card-body">
             <form method="GET" action="{{ route('pelayan.reservasi') }}" class="d-flex flex-wrap gap-3">
                 <div class="flex-grow-1">
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control py-2" placeholder="Cari (Nama/Kode/Meja)">
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control py-2" placeholder="Cari (Nama/Kode Reservasi)">
                 </div>
                 <div class="flex-grow-1">
                     <select name="filter" class="form-select py-2" onchange="this.form.submit()">

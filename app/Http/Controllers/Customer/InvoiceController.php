@@ -96,9 +96,9 @@ class InvoiceController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'invoice'   => $invoiceResult['data'],
-                    'reservasi' => $reservasi,
-                    'customer'  => $reservasi->pengguna,
+                    'invoice'   => $invoiceResult['data']->toArray(),
+                    'reservasi' => $reservasi->toArray(),
+                    'customer'  => $reservasi->pengguna->toArray(),
                     'items'     => $items,
                 ],
             ]);
@@ -115,7 +115,6 @@ class InvoiceController extends Controller
             ], 500);
         }
     }
-
     /**
      * API: Generate atau regenerate invoice (POST).
      */
