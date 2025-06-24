@@ -81,10 +81,6 @@ Route::middleware(['auth:sanctum', 'customer'])
      'autoCancel'
      ])->where('reservasiId', '[0-9]+');
 
-
-
-
-
     // Orders (Pre-order dari customer)
     Route::post('orders/pre-order', [OrderController::class, 'storePreOrder']);
     Route::post('reservations/{reservasi}/add-items', [
@@ -93,9 +89,11 @@ Route::middleware(['auth:sanctum', 'customer'])
     ])->where('reservasi', '[0-9]+');
     Route::get('orders', [OrderController::class, 'index']);
 
-    // Ratings
+    // Ratings - DIPERBAIKI DAN DITAMBAH
     Route::post('ratings', [RatingController::class, 'store']);
     Route::get('ratings',  [RatingController::class, 'index']);
+    Route::get('ratings/check/{reservasiId}', [RatingController::class, 'checkExistingRating'])
+         ->where('reservasiId', '[0-9]+');
 
     // Notifications
     Route::get('notifications',              [NotificationController::class, 'index']);

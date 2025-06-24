@@ -29,7 +29,7 @@ class Pengguna extends Authenticatable
         'nomor_hp',
         'password',
         'peran',
-        'foto_profil', // Tambahkan ini
+        'foto_profil',
     ];
 
     /**
@@ -87,5 +87,35 @@ class Pengguna extends Authenticatable
     public function isKoki(): bool
     {
         return $this->peran === 'koki';
+    }
+
+    /**
+     * Relasi ke ratings yang dibuat oleh user ini
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'user_id');
+    }
+
+    /**
+     * Relasi ke reservasi yang dibuat oleh user ini
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function reservasi()
+    {
+        return $this->hasMany(Reservasi::class, 'user_id');
+    }
+
+    /**
+     * Relasi ke reservasi yang dibuat oleh staff ini (jika user adalah staff)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function reservasiYangDibuat()
+    {
+        return $this->hasMany(Reservasi::class, 'staff_id');
     }
 }
