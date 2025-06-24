@@ -1,4 +1,3 @@
-<!-- dashboard.blade.php -->
 <x-layout>
   <x-slot:title>{{ $title ?? 'Dashboard' }}</x-slot:title>
 
@@ -113,12 +112,15 @@
                 <td class="py-2">
                   @for($i = 1; $i <= 5; $i++)
                     <span class="text-yellow-400">
-                      {{ $i <= $rating->food_rating ? '★' : '☆' }}
+                      {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                      {{ $i <= $rating->rating_makanan ? '★' : '☆' }}
                     </span>
                   @endfor
-                  <span class="text-gray-700">({{ $rating->food_rating }})</span>
+                  {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                  <span class="text-gray-700">({{ $rating->rating_makanan }})</span>
                 </td>
-                <td class="py-2" rowspan="3">{{ $rating->comment }}</td>
+                {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                <td class="py-2" rowspan="3">{{ $rating->komentar }}</td>
                 <td class="py-2" rowspan="3">
                   <span class="text-gray-700">{{ $rating->pengguna->nama ?? 'Anonim' }}</span><br>
                   <span class="text-xs text-gray-500">
@@ -131,10 +133,12 @@
                 <td class="py-2">
                   @for($i = 1; $i <= 5; $i++)
                     <span class="text-yellow-400">
-                      {{ $i <= $rating->service_rating ? '★' : '☆' }}
+                      {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                      {{ $i <= $rating->rating_pelayanan ? '★' : '☆' }}
                     </span>
                   @endfor
-                  <span class="text-gray-700">({{ $rating->service_rating }})</span>
+                  {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                  <span class="text-gray-700">({{ $rating->rating_pelayanan }})</span>
                 </td>
               </tr>
               <tr class="border-b">
@@ -142,10 +146,12 @@
                 <td class="py-2">
                   @for($i = 1; $i <= 5; $i++)
                     <span class="text-yellow-400">
-                      {{ $i <= $rating->app_rating ? '★' : '☆' }}
+                      {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                      {{ $i <= $rating->rating_aplikasi ? '★' : '☆' }}
                     </span>
                   @endfor
-                  <span class="text-gray-700">({{ $rating->app_rating }})</span>
+                  {{-- [FIXED] Menggunakan nama kolom yang benar --}}
+                  <span class="text-gray-700">({{ $rating->rating_aplikasi }})</span>
                 </td>
               </tr>
               <tr><td colspan="4" class="h-4 bg-gray-50"></td></tr>
@@ -159,95 +165,102 @@
       </div>
     </div>
 
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      // Data dari controller
-      const attendanceData = {
-        today: {{ Js::from($attendanceChart['today']) }},
-        week: {{ Js::from($attendanceChart['week']) }},
-        month: {{ Js::from($attendanceChart['month']) }},
-        year: {{ Js::from($attendanceChart['year']) }},
-      };
+<script>
+  // Ambil filter awal dari backend, aman karena hanya string
+  const selectedFilter = @json($filter ?? 'month');
 
-      const transactionData = {
-        today: {
-          labels: {!! json_encode($transactionChart['today']['labels']) !!},
-          data: {!! json_encode($transactionChart['today']['data']) !!}
-        },
-        week: {
-          labels: {!! json_encode($transactionChart['week']['labels']) !!},
-          data: {!! json_encode($transactionChart['week']['data']) !!}
-        },
-        month: {
-          labels: {!! json_encode($transactionChart['month']['labels']) !!},
-          data: {!! json_encode($transactionChart['month']['data']) !!}
-        },
-        year: {
-          labels: {!! json_encode($transactionChart['year']['labels']) !!},
-          data: {!! json_encode($transactionChart['year']['data']) !!}
-        },
-      };
+  // Data untuk Attendance Chart (Doughnut)
+  const attendanceData = {
+    today: @json($attendanceChart['today']),
+    week: @json($attendanceChart['week']),
+    month: @json($attendanceChart['month']),
+    year: @json($attendanceChart['year']),
+  };
 
-      // Inisialisasi Chart Attendance
-      const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-      let attendanceChart = new Chart(attendanceCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Total Reservation', 'Present', 'Total Order'],
-          datasets: [{
-            data: attendanceData['{{ $filter ?? 'month' }}'],
-            backgroundColor: ['#f97316', '#10b981', '#8b5cf6'],
-          }]
-        },
-        options: {
-          responsive: true,
-          cutout: '70%'
-        }
-      });
+  // Data untuk Transaction Chart (Bar)
+  const transactionData = {
+    today: {
+      labels: @json($transactionChart['today']['labels']),
+      data: @json($transactionChart['today']['data'])
+    },
+    week: {
+      labels: @json($transactionChart['week']['labels']),
+      data: @json($transactionChart['week']['data'])
+    },
+    month: {
+      labels: @json($transactionChart['month']['labels']),
+      data: @json($transactionChart['month']['data'])
+    },
+    year: {
+      labels: @json($transactionChart['year']['labels']),
+      data: @json($transactionChart['year']['data'])
+    },
+  };
 
-      document.getElementById('attendanceFilter').addEventListener('change', function () {
-        const filter = this.value;
-        attendanceChart.data.datasets[0].data = attendanceData[filter];
-        attendanceChart.update();
-      });
+  // Inisialisasi Attendance Chart
+  const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+  const attendanceChart = new Chart(attendanceCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Total Reservation', 'Present', 'Total Order'],
+      datasets: [{
+        data: attendanceData[selectedFilter],
+        backgroundColor: ['#f97316', '#10b981', '#8b5cf6'],
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '70%'
+    }
+  });
 
-      // Inisialisasi Chart Transaction
-      const transactionCtx = document.getElementById('transactionChart').getContext('2d');
-      let transactionChart = new Chart(transactionCtx, {
-        type: 'bar',
-        data: {
-          labels: transactionData['{{ $filter ?? 'month' }}'].labels,
-          datasets: [{
-            label: 'Total Transaksi (Rp)',
-            data: transactionData['{{ $filter ?? 'month' }}'].data,
-            backgroundColor: '#3b82f6'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
+  document.getElementById('attendanceFilter').addEventListener('change', function () {
+    const filter = this.value;
+    attendanceChart.data.datasets[0].data = attendanceData[filter];
+    attendanceChart.update();
+  });
 
-      document.getElementById('transactionFilter').addEventListener('change', function () {
-        const filter = this.value;
-        transactionChart.data.labels = transactionData[filter].labels;
-        transactionChart.data.datasets[0].data = transactionData[filter].data;
-        transactionChart.update();
-      });
+  // Inisialisasi Transaction Chart
+  const transactionCtx = document.getElementById('transactionChart').getContext('2d');
+  const transactionChart = new Chart(transactionCtx, {
+    type: 'bar',
+    data: {
+      labels: transactionData[selectedFilter].labels,
+      datasets: [{
+        label: 'Total Transaksi (Rp)',
+        data: transactionData[selectedFilter].data,
+        backgroundColor: '#3b82f6'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
 
-      // Filter & Export PDF control untuk rating
-      document.getElementById('filterBtn').addEventListener('click', () => {
-        const filterValue = document.getElementById('ratingFilter').value;
-        document.getElementById('exportFilter').value = filterValue;
+  document.getElementById('transactionFilter').addEventListener('change', function () {
+    const filter = this.value;
+    transactionChart.data.labels = transactionData[filter].labels;
+    transactionChart.data.datasets[0].data = transactionData[filter].data;
+    transactionChart.update();
+  });
 
-        // Reload halaman dengan query param filter
-        const url = new URL(window.location.href);
-        url.searchParams.set('filter', filterValue);
-        window.location.href = url.toString();
-      });
-    </script>
+  // Rating filter dan export
+  document.getElementById('filterBtn').addEventListener('click', () => {
+    const filterValue = document.getElementById('ratingFilter').value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('filter', filterValue);
+    window.location.href = url.toString();
+  });
+
+  document.getElementById('ratingFilter').addEventListener('change', function () {
+    document.getElementById('exportFilter').value = this.value;
+  });
+</script>
+
   </div>
 </x-layout>
