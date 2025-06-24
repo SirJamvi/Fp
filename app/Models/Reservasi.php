@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Pengguna;    // Import model Pengguna
+use App\Models\Pengguna;    
 use App\Models\Meja;
 use App\Models\Order;
 use App\Models\Invoice;
+use App\Models\Rating;
 
 class Reservasi extends Model
 {
@@ -32,7 +33,7 @@ class Reservasi extends Model
         'meja_id',
         'combined_tables',
         'nama_pelanggan',
-        'staff_id', // Ini adalah kolom foreign key yang akan digunakan oleh staffYangMembuat
+        'staff_id',
         'waktu_kedatangan',
         'jumlah_tamu',
         'kehadiran_status',
@@ -43,7 +44,7 @@ class Reservasi extends Model
         'source',
         'kode_reservasi',
         'catatan',
-        'created_by_pelayan_id', // Perhatikan apakah ini juga merujuk ke staff/pengguna yang membuat reservasi
+        'created_by_pelayan_id',
         'total_bill',
         'payment_method',
         'sisa_tagihan_reservasi',
@@ -78,16 +79,10 @@ class Reservasi extends Model
 
     /**
      * Relasi ke staf yang membuat (pelayan)
-     * Mengganti nama method 'staff' menjadi 'staffYangMembuat'
-     * agar sesuai dengan pemanggilan di PelayanController.php
      */
-    public function staffYangMembuat() // NAMA INI HARUS SAMA DENGAN YANG DIPANGGIL DI CONTROLLER
+    public function staffYangMembuat()
     {
-        // Asumsi 'staff_id' adalah foreign key yang merujuk ke ID pengguna/staff yang membuat reservasi
         return $this->belongsTo(Pengguna::class, 'staff_id');
-        // Jika Anda juga memiliki 'created_by_pelayan_id' yang merujuk ke staff,
-        // dan itu yang dimaksud 'staffYangMembuat', maka ganti 'staff_id' menjadi 'created_by_pelayan_id'
-        // return $this->belongsTo(Pengguna::class, 'created_by_pelayan_id');
     }
 
     /**
@@ -115,18 +110,40 @@ class Reservasi extends Model
         return $this->hasOne(Invoice::class, 'reservasi_id');
     }
 
-    // App\Models\Reservasi.php
+    /**
+     * Relasi ke rating
+     */
+    public function rating()
+    {
+        return $this->hasOne(Rating::class, 'reservasi_id');
+    }
+
+    /**
+     * Relasi ke semua ratings (jika bisa lebih dari satu)
+     */
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'reservasi_id');
+    }
+
     public function mejaReservasi()
     {
         return $this->hasMany(MejaReservasi::class);
     }
 
     /**
- * Relasi ke 1 meja utama (kolom meja_id)
- */
-public function mejaUtama()
-{
-    return $this->belongsTo(Meja::class, 'meja_id');
-}
+     * Relasi ke 1 meja utama (kolom meja_id)
+     */
+    public function mejaUtama()
+    {
+        return $this->belongsTo(Meja::class, 'meja_id');
+    }
 
+    /**
+     * Check apakah reservasi sudah diberi rating
+     */
+    public function hasRating()
+    {
+        return $this->rating()->exists();
+    }
 }

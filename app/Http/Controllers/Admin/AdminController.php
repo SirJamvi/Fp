@@ -16,7 +16,6 @@ class AdminController extends Controller
     public function dashboard(Request $request)
     {
         $title = 'Dashboard Admin';
-
         $filter = $request->get('filter', 'month');
 
         $ranges = [
@@ -41,6 +40,7 @@ class AdminController extends Controller
             ->orderByDesc('total')
             ->value('menus.name');
 
+        // ==================== QUERY YANG DIPERBAIKI ADA DI SINI ====================
         $staffPerformances = DB::table('pengguna')
             ->leftJoin('reservasi', 'pengguna.id', '=', 'reservasi.staff_id')
             ->leftJoin('ratings', 'pengguna.id', '=', 'ratings.staff_id')
@@ -51,12 +51,13 @@ class AdminController extends Controller
                 'pengguna.peran',
                 DB::raw('COUNT(DISTINCT reservasi.id) as jumlah_reservasi'),
                 DB::raw('ROUND(AVG(CASE 
-                    WHEN pengguna.peran = "pelayan" THEN ratings.service_rating
-                    WHEN pengguna.peran = "koki" THEN ratings.food_rating
+                    WHEN pengguna.peran = "pelayan" THEN ratings.rating_pelayanan 
+                    WHEN pengguna.peran = "koki" THEN ratings.rating_makanan
                     ELSE NULL END), 2) as rata_rata_rating')
             )
             ->groupBy('pengguna.id', 'pengguna.nama', 'pengguna.peran')
             ->get();
+        // ==========================================================================
 
         $attendanceChart = [];
         foreach ($ranges as $key => [$start, $end]) {
@@ -84,7 +85,6 @@ class AdminController extends Controller
             ];
         }
 
-        // ✅ FIX: Tambahkan ratings
         $ratings = Rating::with('pengguna')->latest()->take(10)->get();
 
         return view('admin.dashboard', compact(
@@ -97,33 +97,29 @@ class AdminController extends Controller
             'staffPerformances',
             'attendanceChart',
             'transactionChart',
-            'ratings' // <-- ini harus ditambahkan
+            'ratings'
         ));
     }
 
     public function exportPdf(Request $request)
-{
-    $filter = $request->query('filter', 'week'); // default filter misal minggu ini
+    {
+        $filter = $request->query('filter', 'week');
+        $ratings = Rating::query();
 
-    // Ambil data rating sesuai filter, misal:
-    $ratings = Rating::query();
+        if ($filter === 'today') {
+            $ratings->whereDate('created_at', today());
+        } elseif ($filter === 'week') {
+            $ratings->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+        } elseif ($filter === 'month') {
+            $ratings->whereMonth('created_at', now()->month);
+        } elseif ($filter === 'year') {
+            $ratings->whereYear('created_at', now()->year);
+        }
 
-    if ($filter === 'today') {
-        $ratings->whereDate('created_at', today());
-    } elseif ($filter === 'week') {
-        $ratings->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-    } elseif ($filter === 'month') {
-        $ratings->whereMonth('created_at', now()->month);
-    } elseif ($filter === 'year') {
-        $ratings->whereYear('created_at', now()->year);
+        $ratings = $ratings->get();
+
+        // Ganti \PDF dengan facade yang benar, contoh: PDF::
+        $pdf = \PDF::loadView('export.pdf', compact('ratings'));
+        return $pdf->stream('ratings_report.pdf');
     }
-
-    $ratings = $ratings->get();
-
-    // Generate PDF (contoh pakai Dompdf / Snappy)
-    $pdf = \PDF::loadView('export.pdf', compact('ratings'));
-    return $pdf->stream('ratings_report.pdf');
-
-}
-
 }
