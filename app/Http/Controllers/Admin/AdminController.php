@@ -85,7 +85,10 @@ class AdminController extends Controller
             ];
         }
 
-        $ratings = Rating::with('pengguna')->latest()->take(10)->get();
+        $ratings = Rating::with('pengguna')
+        ->latest()
+        ->paginate(5); // ganti jumlah per halaman sesuai kebutuhan
+
 
         return view('admin.dashboard', compact(
             'title',
