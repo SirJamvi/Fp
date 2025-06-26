@@ -1,4 +1,3 @@
-{{-- resources/views/admin/menu/index.blade.php --}}
 <x-layout>
     <x-slot:title></x-slot:title>
 
@@ -12,12 +11,28 @@
         </a>
     </div>
 
+    {{-- Pencarian --}}
+    <form method="GET" action="{{ route('admin.menu.index') }}" class="mb-6 flex flex-wrap items-center gap-2">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau kategori menu..."
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 w-full max-w-sm">
+
+        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md">
+            Cari
+        </button>
+
+        @if(request('search'))
+            <a href="{{ route('admin.menu.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Reset
+            </a>
+        @endif
+    </form>
+
     @if($menus->isEmpty())
         <div class="p-4 bg-teal-50 border border-teal-100 text-teal-700 rounded-lg flex items-center">
             <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            No menu items found. Start by adding a new one.
+            Tidak ada menu ditemukan.
         </div>
     @else
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -39,8 +54,8 @@
                     <tbody class="divide-y divide-gray-100">
                         @foreach($menus as $menu)
                             <tr class="hover:bg-teal-50 transition">
-                                {{-- Image --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                {{-- Kolom lainnya tetap sama seperti sebelumnya --}}
+                                <td class="px-6 py-4">
                                     @if($menu->image)
                                         <img src="{{ asset('storage/' . $menu->image) }}" class="h-12 w-12 rounded-lg object-cover border border-gray-200" alt="{{ $menu->name }}">
                                     @else
@@ -51,89 +66,36 @@
                                         </div>
                                     @endif
                                 </td>
-
-                                {{-- Name --}}
-                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ $menu->name }}</td>
-
-                                {{-- Category --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-3 py-1 rounded-full text-xs font-medium
-                                        @if($menu->category == 'food') bg-green-100 text-green-800
-                                        @elseif($menu->category == 'beverage') bg-blue-100 text-blue-800
-                                        @elseif($menu->category == 'dessert') bg-yellow-100 text-yellow-800
-                                        @elseif($menu->category == 'appetizer') bg-pink-100 text-pink-800
-                                        @elseif($menu->category == 'other') bg-gray-100 text-gray-800
-                                        @else bg-teal-100 text-teal-800
-                                        @endif">
-                                        {{ ucfirst($menu->category) }}
-                                    </span>
+                                <td class="px-6 py-4 font-medium text-gray-900">{{ $menu->name }}</td>
+                                <td class="px-6 py-4">{{ ucfirst($menu->category) }}</td>
+                                <td class="px-6 py-4">Rp {{ number_format($menu->price, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4">
+                                    @if($menu->discount_percentage)
+                                        <span class="text-purple-800 bg-purple-100 px-2 py-1 text-xs rounded">{{ $menu->discount_percentage }}%</span>
+                                    @else — @endif
                                 </td>
-
-                                {{-- Original Price --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    Rp {{ number_format($menu->price, 0, ',', '.') }}
-                                </td>
-
-                                {{-- Discount Percentage --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($menu->discount_percentage && $menu->discount_percentage > 0)
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                            {{ $menu->discount_percentage }}%
-                                        </span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-
-                                {{-- Final Price --}}
-                                <td class="px-6 py-4 whitespace-nowrap font-medium">
-                                    @if($menu->discounted_price && $menu->discounted_price < $menu->price)
-                                        <span class="text-gray-500 line-through mr-1 text-sm">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
-                                        <span class="text-teal-700">Rp {{ number_format($menu->discounted_price, 0, ',', '.') }}</span>
+                                <td class="px-6 py-4 font-semibold text-teal-700">
+                                    @if($menu->discounted_price)
+                                        Rp {{ number_format($menu->discounted_price, 0, ',', '.') }}
                                     @else
                                         Rp {{ number_format($menu->price, 0, ',', '.') }}
                                     @endif
                                 </td>
-
-                                {{-- Status --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4">
                                     @if($menu->is_available)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Available
-                                        </span>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Available</span>
                                     @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            Not Available
-                                        </span>
+                                        <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Not Available</span>
                                     @endif
                                 </td>
-
-                                {{-- Preparation Time --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {{ $menu->preparation_time ?? '—' }} <span class="text-gray-500 text-sm">min</span>
-                                </td>
-
-                                {{-- Actions - Using SVG icons --}}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center space-x-3">
-                                        <a href="{{ route('admin.menu.edit', $menu) }}" 
-                                           class="flex items-center justify-center w-9 h-9 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-lg border border-teal-200 transition-all hover:shadow-sm"
-                                           title="Edit">
-                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </a>
-                                        
-                                        <form action="{{ route('admin.menu.destroy', $menu) }}" method="POST" class="m-0" onsubmit="return confirm('Delete this item?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" 
-                                                    class="flex items-center justify-center w-9 h-9 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg border border-red-200 transition-all hover:shadow-sm"
-                                                    title="Delete">
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
+                                <td class="px-6 py-4">{{ $menu->preparation_time ?? '—' }} <span class="text-gray-500 text-sm">min</span></td>
+                                <td class="px-6 py-4">
+                                    {{-- Tombol Edit & Delete --}}
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('admin.menu.edit', $menu) }}" class="text-teal-600 hover:text-teal-800">Edit</a>
+                                        <form action="{{ route('admin.menu.destroy', $menu) }}" method="POST" onsubmit="return confirm('Yakin hapus?');">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-800">Hapus</button>
                                         </form>
                                     </div>
                                 </td>
@@ -145,7 +107,7 @@
 
             {{-- Pagination --}}
             <div class="px-6 py-4 border-t border-gray-100">
-                {{ $menus->links() }}
+                {{ $menus->withQueryString()->links() }}
             </div>
         </div>
     @endif

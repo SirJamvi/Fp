@@ -13,11 +13,19 @@ class MenuController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $menus = Menu::orderBy('category')->orderBy('name')->paginate(10);
-        return view('admin.menu.index', compact('menus'));
+public function index(Request $request)
+{
+    $query = Menu::query();
+
+    if ($search = $request->input('search')) {
+        $query->where('name', 'like', '%' . $search . '%')
+              ->orWhere('category', 'like', '%' . $search . '%');
     }
+
+    $menus = $query->orderBy('category')->orderBy('name')->paginate(10);
+
+    return view('admin.menu.index', compact('menus'));
+}
 
     /**
      * Show the form for creating a new resource.
@@ -37,29 +45,25 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100', // <<< Tambahkan validasi diskon
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'category' => ['required', Rule::in(array_keys(Menu::getCategoryOptions()))],
             'is_available' => 'boolean',
             'preparation_time' => 'nullable|integer|min:1',
         ]);
 
-        // Handle the image upload
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('menu_images', 'public');
             $validated['image'] = $imagePath;
         }
 
-        // Calculate discounted_price if discount_percentage is provided
         if (isset($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
             $validated['discounted_price'] = $validated['price'] * (1 - ($validated['discount_percentage'] / 100));
         } else {
-            $validated['discounted_price'] = null; // Set to null if no discount
-            $validated['discount_percentage'] = null; // Set to null if no discount
+            $validated['discounted_price'] = null;
+            $validated['discount_percentage'] = null;
         }
 
-
-        // Set availability
         $validated['is_available'] = $request->has('is_available');
 
         Menu::create($validated);
@@ -86,16 +90,14 @@ class MenuController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100', // <<< Tambahkan validasi diskon
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'category' => ['required', Rule::in(array_keys(Menu::getCategoryOptions()))],
             'is_available' => 'boolean',
             'preparation_time' => 'nullable|integer|min:1',
         ]);
 
-        // Handle the image upload
         if ($request->hasFile('image')) {
-            // Delete old image if exists
             if ($menu->image) {
                 Storage::disk('public')->delete($menu->image);
             }
@@ -103,15 +105,13 @@ class MenuController extends Controller
             $validated['image'] = $imagePath;
         }
 
-        // Calculate discounted_price if discount_percentage is provided
         if (isset($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
             $validated['discounted_price'] = $validated['price'] * (1 - ($validated['discount_percentage'] / 100));
         } else {
-            $validated['discounted_price'] = null; // Set to null if no discount
-            $validated['discount_percentage'] = null; // Set to null if no discount
+            $validated['discounted_price'] = null;
+            $validated['discount_percentage'] = null;
         }
 
-        // Set availability
         $validated['is_available'] = $request->has('is_available');
 
         $menu->update($validated);
@@ -125,7 +125,6 @@ class MenuController extends Controller
      */
     public function destroy(Menu $menu)
     {
-        // Delete the image if exists
         if ($menu->image) {
             Storage::disk('public')->delete($menu->image);
         }

@@ -162,6 +162,11 @@
             @endforelse
           </tbody>
         </table>
+        @if ($ratings->hasPages())
+        <div class="mt-4">
+          {{ $ratings->links() }}
+        </div>
+      @endif
       </div>
     </div>
 
