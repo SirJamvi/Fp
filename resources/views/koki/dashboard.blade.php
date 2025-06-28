@@ -159,10 +159,6 @@
                     </div>
                     <i class="fas fa-utensils fa-2x text-white-50"></i>
                   </div>
-                  <div class="card-footer d-flex justify-content-between">
-                    <a href="#" class="small text-white stretched-link">Lihat Detail</a>
-                    <i class="fas fa-angle-right text-white"></i>
-                  </div>
                 </div>
               </div>
               <div class="col-xl-4 col-md-6">
@@ -174,10 +170,6 @@
                     </div>
                     <i class="fas fa-clock fa-2x text-white-50"></i>
                   </div>
-                  <div class="card-footer d-flex justify-content-between">
-                    <a href="#" class="small text-white stretched-link">Lihat Detail</a>
-                    <i class="fas fa-angle-right text-white"></i>
-                  </div>
                 </div>
               </div>
               <div class="col-xl-4 col-md-6">
@@ -188,10 +180,6 @@
                       <div class="text-lg" id="completedOrdersCount">0</div>
                     </div>
                     <i class="fas fa-check-circle fa-2x text-white-50"></i>
-                  </div>
-                  <div class="card-footer d-flex justify-content-between">
-                    <a href="#" class="small text-white stretched-link">Lihat Detail</a>
-                    <i class="fas fa-angle-right text-white"></i>
                   </div>
                 </div>
               </div>
