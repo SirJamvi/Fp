@@ -104,25 +104,19 @@ class AdminController extends Controller
         ));
     }
 
-    public function exportPdf(Request $request)
-    {
-        $filter = $request->query('filter', 'week');
-        $ratings = Rating::query();
+public function exportPdf(Request $request)
+{
+    $filter = $request->query('filter', 'week');
 
-        if ($filter === 'today') {
-            $ratings->whereDate('created_at', today());
-        } elseif ($filter === 'week') {
-            $ratings->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        } elseif ($filter === 'month') {
-            $ratings->whereMonth('created_at', now()->month);
-        } elseif ($filter === 'year') {
-            $ratings->whereYear('created_at', now()->year);
-        }
+    $ratings = Rating::with('pengguna')
+        ->when($filter === 'today', fn($q) => $q->whereDate('created_at', today()))
+        ->when($filter === 'week',  fn($q) => $q->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
+        ->when($filter === 'month', fn($q) => $q->whereMonth('created_at', now()->month))
+        ->when($filter === 'year',  fn($q) => $q->whereYear('created_at', now()->year))
+        ->get();
 
-        $ratings = $ratings->get();
+    $pdf = \PDF::loadView('export.pdf', compact('ratings'));
+    return $pdf->stream('ratings_report.pdf');
+}
 
-        // Ganti \PDF dengan facade yang benar, contoh: PDF::
-        $pdf = \PDF::loadView('export.pdf', compact('ratings'));
-        return $pdf->stream('ratings_report.pdf');
-    }
 }

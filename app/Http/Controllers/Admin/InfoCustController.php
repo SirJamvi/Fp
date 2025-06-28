@@ -11,44 +11,39 @@ use App\Exports\PenggunaExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Style\Language;
 
 class InfoCustController extends Controller
 {
-    /**
-     * Tampilkan halaman Info Customer (role = 'pelanggan'), dengan filter, search, paginate.
-     */
     public function index(Request $request)
     {
-        // Base query: hanya yang peran = 'pelanggan'
         $query = Pengguna::where('peran', 'pelanggan');
-
-        // 1) Filter berdasarkan periode created_at (all, week, month, year)
-        $filter = $request->input('filter', 'all');
         $today = Carbon::today();
+        $filter = $request->input('filter', 'all');
+        $search = $request->input('search');
 
+        // Filter periode
         if ($filter === 'week') {
             $query->whereBetween('created_at', [
                 $today->copy()->startOfWeek(),
-                $today->copy()->endOfWeek(),
+                $today->copy()->endOfWeek()
             ]);
         } elseif ($filter === 'month') {
             $query->whereMonth('created_at', $today->month)
-                  ->whereYear('created_at', $today->year);
+                ->whereYear('created_at', $today->year);
         } elseif ($filter === 'year') {
             $query->whereYear('created_at', $today->year);
         }
-        // filter = 'all' → tidak di‐kurangi apa pun
 
-        // 2) Search: nama, email, atau nomor_hp
-        if ($search = $request->input('search')) {
+        // Pencarian
+        if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('nomor_hp', 'like', '%' . $search . '%');
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('nomor_hp', 'like', "%{$search}%");
             });
         }
 
-        // 3) Ambil hasil dengan pagination (10 per halaman)
         $customers = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return view('admin.info-cust', [
@@ -57,97 +52,119 @@ class InfoCustController extends Controller
         ]);
     }
 
-    /**
-     * Export daftar pelanggan ke Excel.
-     */
     public function exportExcel(Request $request)
     {
-        // Akan mem‐pass request ke PenggunaExport supaya filter & search diterapkan
         return Excel::download(new PenggunaExport($request), 'pelanggan.xlsx');
     }
 
-    /**
-     * Export daftar pelanggan ke PDF.
-     */
     public function exportPdf(Request $request)
     {
-        // Ambil data yang sudah difilter & dicari
         $customers = $this->getFilteredPengguna($request);
-
-        // Buat view khusus untuk PDF (misalnya di resources/views/export/pelanggan-pdf.blade.php)
         $pdf = Pdf::loadView('export.pelanggan-pdf', compact('customers'));
         return $pdf->download('pelanggan.pdf');
     }
 
-    /**
-     * Export daftar pelanggan ke Word (docx).
-     */
-    public function exportWord(Request $request)
-    {
-        $customers = $this->getFilteredPengguna($request);
+   public function exportWord(Request $request)
+{
+    $customers = $this->getFilteredPengguna($request);
 
-        $phpWord = new PhpWord();
-        $section = $phpWord->addSection();
-        $section->addText('Laporan Pelanggan', ['bold' => true, 'size' => 16]);
+    $phpWord = new PhpWord();
+    $phpWord->setDefaultFontName('Arial');
+    $phpWord->setDefaultFontSize(10);
 
-        // Buat tabel dengan header
-        $table = $section->addTable([
-            'borderSize' => 6,
-            'borderColor' => '999999',
-            'cellMargin' => 50,
-        ]);
+    $section = $phpWord->addSection();
 
-        // Header kolom
-        $table->addRow();
-        $headers = ['No', 'Nama', 'Email', 'Nomor HP', 'Tanggal Daftar'];
-        foreach ($headers as $header) {
-            $table->addCell(2000, ['bgColor' => 'd9d9d9'])->addText($header, ['bold' => true]);
-        }
+    // Header dokumen
+    $section->addText('LAPORAN PELANGGAN', [
+        'bold' => true, 
+        'size' => 16, 
+        'color' => '1F497D',
+        'alignment' => 'center'
+    ]);
+    $section->addText('Dicetak pada: ' . now()->format('d F Y H:i'), [
+        'italic' => true, 
+        'size' => 9,
+        'alignment' => 'center'
+    ]);
+    $section->addTextBreak(1);
 
-        // Baris data
-        foreach ($customers as $idx => $cust) {
-            $table->addRow();
-            $table->addCell(500)->addText($idx + 1);
-            $table->addCell(2000)->addText($cust->nama);
-            $table->addCell(3000)->addText($cust->email);
-            $table->addCell(2000)->addText($cust->nomor_hp);
-            $table->addCell(2000)->addText($cust->created_at->format('d M Y'));
-        }
+    // Buat tabel dengan styling profesional
+    $tableStyle = [
+        'borderSize' => 6,
+        'borderColor' => '999999',
+        'alignment' => 'center',
+        'cellMargin' => 50
+    ];
+    
+    $headerStyle = ['bgColor' => '1F497D'];
+    $headerFontStyle = ['bold' => true, 'color' => 'FFFFFF'];
+    $cellCenterStyle = ['alignment' => 'center'];
+    $cellLeftStyle = ['alignment' => 'left'];
 
-        // Simpan ke file temporer dan download
-        $writer = IOFactory::createWriter($phpWord, 'Word2007');
-        $tempFile = tempnam(sys_get_temp_dir(), 'pelanggan');
-        $writer->save($tempFile);
+    $table = $section->addTable($tableStyle);
 
-        return response()->download($tempFile, 'pelanggan.docx')->deleteFileAfterSend(true);
+    // Header tabel
+    $table->addRow(400);
+    $headers = ['No', 'Nama', 'Email', 'Nomor HP', 'Tanggal Daftar'];
+    $cellWidths = [800, 3000, 3500, 2000, 2000]; // Lebar sel disesuaikan
+    
+    foreach ($headers as $i => $header) {
+        $table->addCell($cellWidths[$i], $headerStyle)
+              ->addText($header, $headerFontStyle, $cellCenterStyle);
     }
 
-    /**
-     * Helper: ambil koleksi Pengguna yang sudah difilter & dicari (tanpa paginate).
-     */
+    // Isi tabel dengan row bergantian warna
+    foreach ($customers as $index => $cust) {
+        $rowColor = ($index % 2 == 0) ? ['bgColor' => 'E7E6E6'] : ['bgColor' => 'FFFFFF'];
+        
+        $table->addRow();
+        $table->addCell($cellWidths[0], $rowColor)->addText($index + 1, null, $cellCenterStyle);
+        $table->addCell($cellWidths[1], $rowColor)->addText($cust->nama, null, $cellLeftStyle);
+        $table->addCell($cellWidths[2], $rowColor)->addText($cust->email, null, $cellLeftStyle);
+        $table->addCell($cellWidths[3], $rowColor)->addText($cust->nomor_hp, null, $cellCenterStyle);
+        $table->addCell($cellWidths[4], $rowColor)->addText($cust->created_at->format('d M Y'), null, $cellCenterStyle);
+    }
+
+    // Footer dengan nomor halaman
+    $footer = $section->addFooter();
+    $footer->addPreserveText('Halaman {PAGE} dari {NUMPAGES}', null, ['alignment' => 'center']);
+    $footer->addText('Dokumen ini dicetak dari sistem informasi pelanggan', [
+        'size' => 8, 
+        'italic' => true, 
+        'alignment' => 'center'
+    ]);
+
+    // Simpan file
+    $writer = IOFactory::createWriter($phpWord, 'Word2007');
+    $tempFile = tempnam(sys_get_temp_dir(), 'pelanggan');
+    $writer->save($tempFile);
+
+    return response()->download($tempFile, 'pelanggan.docx')->deleteFileAfterSend(true);
+}
     private function getFilteredPengguna(Request $request)
     {
         $query = Pengguna::where('peran', 'pelanggan');
         $today = Carbon::today();
         $filter = $request->input('filter', 'all');
+        $search = $request->input('search');
 
         if ($filter === 'week') {
             $query->whereBetween('created_at', [
                 $today->copy()->startOfWeek(),
-                $today->copy()->endOfWeek(),
+                $today->copy()->endOfWeek()
             ]);
         } elseif ($filter === 'month') {
             $query->whereMonth('created_at', $today->month)
-                  ->whereYear('created_at', $today->year);
+                ->whereYear('created_at', $today->year);
         } elseif ($filter === 'year') {
             $query->whereYear('created_at', $today->year);
         }
 
-        if ($search = $request->input('search')) {
+        if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('nomor_hp', 'like', '%' . $search . '%');
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('nomor_hp', 'like', "%{$search}%");
             });
         }
 

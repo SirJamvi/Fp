@@ -2,32 +2,53 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Pelanggan</title>
+    <title>Laporan Data Costumer</title>
     <style>
-        /* Tambahkan style CSS PDF sederhana */
-        body { font-family: DejaVu Sans, sans-serif; }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 1rem;
+        /* Base font for PDF */
+        @page { margin: 20px; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #2c3e50; margin: 0; padding: 0; }
+        h3 {
+            text-align: center;
+            font-size: 20px;
+            margin: 20px 0;
+            color: #34495e;
         }
-        th, td {
-            border: 1px solid #888;
-            padding: 6px;
-            text-align: left;
+        /* Table styling */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        thead { background-color: #34495e; }
+        thead th {
+            color: #ecf0f1;
+            font-weight: 600;
             font-size: 12px;
+            padding: 8px;
+            text-align: left;
         }
-        th {
-            background-color: #f2f2f2;
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+        tbody td {
+            padding: 8px;
+            font-size: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        /* Footer if needed */
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: right;
+            font-size: 10px;
+            color: #95a5a6;
         }
     </style>
 </head>
 <body>
-    <h3 style="text-align: center;">Laporan Pelanggan</h3>
+    <h3>Laporan Pelanggan</h3>
+       <div class="footer">
+        Dicetak pada {{ now()->format('d M Y H:i') }}
+    </div>
     <table>
         <thead>
             <tr>
-                <th>No</th>
+                <th style="width: 40px;">No</th>
                 <th>Nama</th>
                 <th>Email</th>
                 <th>Nomor HP</th>

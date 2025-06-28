@@ -109,7 +109,27 @@
                                 <td class="px-6 py-4 text-sm text-gray-700">{{ $r->nama_pelanggan ?? '—' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-700">{{ $r->catatan ?? '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-700">{{ \Carbon\Carbon::parse($r->waktu_kedatangan)->format('d M Y H:i') }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ optional($r->meja)->nomor_meja ?? '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    @php
+                                        $mejaList = $r->meja ?? collect();
+
+                                        if ($mejaList instanceof \Illuminate\Database\Eloquent\Collection && $mejaList->isEmpty() && $r->combined_tables) {
+                                            $decoded = json_decode($r->combined_tables, true) ?: [];
+                                            $mejaList = \App\Models\Meja::whereIn('id', $decoded)->get();
+                                        }
+                                    @endphp
+
+                                    @if($mejaList->isNotEmpty())
+                                        @foreach($mejaList as $mejaObj)
+                                            <span class="inline-block bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded mr-1 mb-1">
+                                                {{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})
+                                            </span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+
                                 <td class="px-6 py-4 text-sm">
                                     @switch($r->status)
                                         @case('selesai')
