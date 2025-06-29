@@ -355,6 +355,44 @@ class ReservationController extends Controller
         }
     }
 
+    /**
+     * Menghapus semua riwayat reservasi milik pengguna yang terautentikasi.
+     */
+    public function clearHistory()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak terautentikasi.'], 401);
+        }
+        DB::beginTransaction();
+        try {
+            // Mengambil semua reservasi milik user
+            // Model 'Reservasi' sudah menggunakan SoftDeletes, jadi kita perlu forceDelete
+            $reservations = Reservasi::where('user_id', $user->id)->get();
+            foreach ($reservations as $reservasi) {
+                // Hapus relasi di pivot table (meja_reservasi) terlebih dahulu
+                $reservasi->meja()->detach();
+                
+                // Hapus data secara permanen karena model menggunakan SoftDeletes
+                $reservasi->forceDelete();
+            }
+            DB::commit();
+            return response()->json([
+                'message' => 'Semua riwayat reservasi berhasil dihapus secara permanen.'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal menghapus riwayat reservasi:', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage()
+            ]);
+            return response()->json([
+                'message' => 'Gagal menghapus riwayat.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     private function returnResponse($message, $status = 200)
     {
         if (request()->wantsJson()) {
