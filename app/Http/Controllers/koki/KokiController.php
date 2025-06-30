@@ -9,13 +9,10 @@ use App\Models\Reservasi;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-// START: Perubahan - Import NotificationController
 use App\Http\Controllers\Customer\NotificationController;
-// END: Perubahan
 
 class KokiController extends Controller
 {
-    // ... fungsi index() dan getOrders() tidak berubah ...
     public function index()
     {
         return view('koki.dashboard', [
@@ -124,14 +121,7 @@ class KokiController extends Controller
             $message = '';
             $statusChanged = false;
 
-            // Pastikan kita memuat relasi user karena dibutuhkan untuk notifikasi
             $reservasi->load('user');
-
-            if (!$reservasi->user) {
-                DB::rollBack();
-                Log::warning("Reservasi ID {$reservasi->id} tidak memiliki user terkait.");
-                return response()->json(['success' => false, 'message' => 'Reservasi tidak memiliki data pelanggan.'], 404);
-            }
 
             $ordersToUpdate = $reservasi->orders()->whereIn('status', ['pending', 'preparing'])->get();
 
@@ -143,7 +133,6 @@ class KokiController extends Controller
             foreach ($ordersToUpdate as $order) {
                 $oldStatus = $order->status;
 
-                // Terapkan perubahan status berdasarkan logika
                 if ($oldStatus === 'pending' && $newStatus === 'preparing') {
                     $order->status = $newStatus;
                     $message = 'Pesanan sekarang sedang disiapkan.';
@@ -152,7 +141,7 @@ class KokiController extends Controller
                     $order->status = $newStatus;
                     $message = 'Pesanan telah selesai disiapkan.';
                     $statusChanged = true;
-                } elseif ($newStatus === 'cancelled') { // Bisa membatalkan dari pending atau preparing
+                } elseif ($newStatus === 'cancelled') {
                     $order->status = $newStatus;
                     $message = 'Pesanan telah dibatalkan.';
                     $statusChanged = true;
@@ -166,16 +155,13 @@ class KokiController extends Controller
             
             DB::commit();
 
-            // START: Perubahan - Kirim notifikasi ke pelanggan setelah commit berhasil
-            if ($statusChanged) {
+            if ($statusChanged && $reservasi->user) {
                 try {
                     NotificationController::createOrderStatusUpdateNotification($reservasi, $newStatus);
                 } catch (\Exception $e) {
-                    // Log error jika pengiriman notifikasi gagal, tapi jangan gagalkan respons ke koki
                     Log::error("Gagal mengirim notifikasi untuk Reservasi ID {$reservasi->id} setelah update status: " . $e->getMessage());
                 }
             }
-            // END: Perubahan
 
             return response()->json([
                 'success' => true,
