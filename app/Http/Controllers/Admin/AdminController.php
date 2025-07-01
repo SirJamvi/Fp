@@ -106,17 +106,47 @@ class AdminController extends Controller
 
 public function exportPdf(Request $request)
 {
-    $filter = $request->query('filter', 'week');
+    // Ambil filter, tambah opsi 'all'
+    $filter = $request->query('filter', 'month');
 
-    $ratings = Rating::with('pengguna')
-        ->when($filter === 'today', fn($q) => $q->whereDate('created_at', today()))
-        ->when($filter === 'week',  fn($q) => $q->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
-        ->when($filter === 'month', fn($q) => $q->whereMonth('created_at', now()->month))
-        ->when($filter === 'year',  fn($q) => $q->whereYear('created_at', now()->year))
-        ->get();
+    $ratingsQuery = Rating::with('pengguna');
 
-    $pdf = \PDF::loadView('export.pdf', compact('ratings'));
-    return $pdf->stream('ratings_report.pdf');
+    switch ($filter) {
+        case 'today':
+            $ratingsQuery->whereDate('created_at', today());
+            $title = 'Hari Ini';
+            break;
+        case 'week':
+            $ratingsQuery->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+            $title = 'Minggu Ini';
+            break;
+        case 'month':
+            $ratingsQuery->whereMonth('created_at', now()->month)
+                         ->whereYear('created_at', now()->year);
+            $title = 'Bulan Ini';
+            break;
+        case 'year':
+            $ratingsQuery->whereYear('created_at', now()->year);
+            $title = 'Tahun Ini';
+            break;
+        case 'all':
+            // tidak ada filter tanggal
+            $title = 'Semua Data';
+            break;
+        default:
+            // fallback ke month
+            $ratingsQuery->whereMonth('created_at', now()->month)
+                         ->whereYear('created_at', now()->year);
+            $title = 'Bulan Ini';
+            break;
+    }
+
+    $ratings = $ratingsQuery->orderBy('created_at', 'desc')->get();
+
+    $pdf = \PDF::loadView('export.pdf', compact('ratings', 'title'));
+    $filename = "ratings_report_{$filter}_" . now()->format('Ymd') . ".pdf";
+
+    return $pdf->stream($filename);
 }
 
 }
