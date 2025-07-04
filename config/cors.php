@@ -1,44 +1,33 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
-    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-    |
-    */
-
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
-
     'allowed_methods' => ['*'],
-
     'allowed_origins' => [
-        'http://localhost:8100',
-        'http://127.0.0.1:8100',
-        'http://localhost:4200',
-        'http://127.0.0.1:4200',
+        // --- Izin untuk aplikasi Ionic native ---
         'capacitor://localhost',
-        'ionic://localhost',
+        'ionic://localhost', 
         'http://localhost',
-        'http://localhost:8080',
-        'http://localhost:3000'
+        'http://localhost:8100',
+        'http://localhost:8101',
+        
+        // --- Izin untuk domain produksi Anda ---
+        'https://resdigaza.my.id',
+        
+        // --- Tambahan untuk mobile app ---
+        'file://',
+        'http://192.168.*',
+        'http://10.*',  
     ],
-
-    'allowed_origins_patterns' => [],
-
+    'allowed_origins_patterns' => [
+        // Pattern untuk IP lokal dan mobile
+        '/^http:\/\/192\.168\.\d+\.\d+/',
+        '/^http:\/\/10\.\d+\.\d+\.\d+/',
+        '/^capacitor:\/\/.*/',
+        '/^ionic:\/\/.*/',
+    ],
     'allowed_headers' => ['*'],
-
     'exposed_headers' => [],
-
     'max_age' => 0,
-
     'supports_credentials' => true,
-
 ];

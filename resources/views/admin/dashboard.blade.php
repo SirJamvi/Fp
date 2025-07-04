@@ -32,7 +32,7 @@
       </div>
       <div class="card border-0 shadow-sm" style="border-left: 4px solid #107672;">
         <div class="card-body">
-          <div class="text-sm text-muted">Total Orders</div>
+          <div class="text-sm text-muted">Total Menu Yang Dipesan</div>
           <div class="text-2xl font-semibold" style="color: #107672;">{{ $totalOrders }}</div>
         </div>
       </div>
