@@ -1,6 +1,6 @@
 <!-- reservasi.blade.php -->
 <x-layout>
-    <x-slot:title>{{ $title ?? 'Reservasi' }}</x-slot:title>
+    <x-slot:title>{{ $title ?? 'reservasi' }}</x-slot:title>
 
     <div class="p-6">
         <div class="flex items-center gap-3 mb-6">
@@ -10,7 +10,7 @@
                 </svg>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-0">Kelola Data Reservasi</h1>
+                <h1 class="text-2xl font-bold text-gray-800 mb-0">Kelola Data Total Orders</h1>
             </div>
         </div>
 
