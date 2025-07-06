@@ -319,23 +319,25 @@
         </div>
     </div>
 
-    {{-- Footer tombol --}}
-    <div class="footer-buttons">
-        @if($from === 'reservasi')
-            @if(!in_array($reservasi->status, ['paid','selesai']))
-                <a href="{{ route('pelayan.reservasi.bayarSisa', $reservasi->id) }}"
-                   class="btn btn-teal d-flex align-items-center gap-2 py-2 px-3">
-                    <i class="bi bi-cash-coin"></i> Bayar Sisa
-                </a>
-            @endif
-            <a href="{{ route('pelayan.reservasi') }}" class="btn btn-outline-teal d-flex align-items-center gap-2 py-2 px-3">
-                <i class="bi bi-arrow-left"></i> Kembali ke Daftar Reservasi
-            </a>
-        @else
-            <a href="{{ route('pelayan.dinein') }}" class="btn btn-outline-teal d-flex align-items-center gap-2 py-2 px-3">
-                <i class="bi bi-arrow-left"></i> Kembali ke Daftar Dine-in
+   {{-- Footer tombol --}}
+<div class="footer-buttons">
+    @if($from === 'reservasi')
+        {{-- Tampilkan tombol Bayar Sisa hanya untuk status pending_payment --}}
+        @if($reservasi->status === 'pending_payment' && $reservasi->payment_status !== 'dibatalkan')
+            <a href="{{ route('pelayan.reservasi.bayarSisa', $reservasi->id) }}"
+               class="btn btn-teal d-flex align-items-center gap-2 py-2 px-3">
+                <i class="bi bi-cash-coin"></i> Bayar Sisa
             </a>
         @endif
-    </div>
+        
+        <a href="{{ route('pelayan.reservasi') }}" class="btn btn-outline-teal d-flex align-items-center gap-2 py-2 px-3">
+            <i class="bi bi-arrow-left"></i> Kembali ke Daftar Reservasi
+        </a>
+    @else
+        <a href="{{ route('pelayan.dinein') }}" class="btn btn-outline-teal d-flex align-items-center gap-2 py-2 px-3">
+            <i class="bi bi-arrow-left"></i> Kembali ke Daftar Dine-in
+        </a>
+    @endif
+</div>
 </div>
 @endsection

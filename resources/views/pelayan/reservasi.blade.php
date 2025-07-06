@@ -65,8 +65,6 @@
             <i class="bi bi-qr-code-scan"></i> Scan QR
         </a>
     </div>
-
-<<<<<<< Updated upstream
     <div class="card border-0 shadow-sm" style="border-left: 4px solid #107672;">
         <div class="card-header text-white" style="background-color: #107672;">
             <h5 class="mb-0 d-flex align-items-center gap-2">
@@ -129,7 +127,7 @@
                                 <td>
                                     <span class="badge bg-{{ match($item->status) {
                                         'dipesan', 'confirmed'      => 'primary',
-                                        'pending_arrival'           => 'warning',
+                                        'pending_payment'           => 'warning',
                                         'active_order'              => 'info',
                                         'paid', 'selesai'           => 'success',
                                         'dibatalkan'                => 'danger',
@@ -151,6 +149,8 @@
                                 <td>
                                     @if($item->status === 'paid')
                                         <span class="badge bg-success">Lunas ({{ ucfirst($item->payment_method ?? '-') }})</span>
+                                    @elseif($item->status === 'dibatalkan')
+                                        <span class="badge bg-danger">Dibatalkan</span>
                                     @else
                                         <span class="badge bg-warning text-dark">Belum Lunas</span>
                                     @endif
@@ -191,122 +191,10 @@
                     </tbody>
                 </table>
             </div>
-
-            <div class="d-flex justify-content-center mt-3">
+        </div>
+    <div class="d-flex justify-content-center mt-3">
                 {{ $reservasi->links('pagination::bootstrap-5') }}
             </div>
-        </div>
-=======
-    <table class="table table-bordered table-striped table-hover align-middle">
-        <thead>
-            <tr>
-                <th>Kode Order/Reservasi</th>
-                <th>Nama Pelanggan</th>
-                <th>Meja</th>
-                <th>Jumlah Tamu</th>
-                <th>Waktu Kedatangan/Pesan</th>
-                <th>Status Reservasi</th>
-                <th>Status Kehadiran</th>
-                <th>Status Pembayaran</th>
-                <th>Detail Pembayaran</th>
-                <th>Detail Menu</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($reservasi as $item)
-                <tr>
-                    <td>{{ $item->kode_reservasi }}</td>
-                    <td>{{ $item->nama_pelanggan ?? $item->pengguna?->name ?? '-' }}</td>
-                    <td>
-                        @php
-                            $mejaList = $item->meja ?? collect();
-                            if ($mejaList->isEmpty() && $item->combined_tables) {
-                                $decoded = json_decode($item->combined_tables, true) ?: [];
-                                $mejaList = \App\Models\Meja::whereIn('id', $decoded)->get();
-                            }
-                        @endphp
-                        @if($mejaList->isNotEmpty())
-                            @foreach($mejaList as $mejaObj)
-                                <span>{{ $mejaObj->nomor_meja }} ({{ $mejaObj->area }})</span>@if(!$loop->last)<br>@endif
-                            @endforeach
-                        @else
-                            <span class="text-muted">-</span>
-                        @endif
-                    </td>
-                    <td>{{ $item->jumlah_tamu ?? '-' }}</td>
-                     <td>
-                        {{
-                            ($item->waktu_kedatangan
-                                ? \Carbon\Carbon::parse($item->waktu_kedatangan)
-                                : $item->created_at
-                            )
-                            ->timezone('Asia/Jakarta')
-                            ->translatedFormat('l, d M Y H:i')
-                        }}
-                    </td>
-                    <td>
-                        <span class="badge bg-{{ match($item->status) {
-                            'dipesan', 'confirmed' => 'primary',
-                            'pending_arrival' => 'warning',
-                            'active_order' => 'info',
-                            'paid', 'selesai' => 'success',
-                            'dibatalkan' => 'danger',
-                            default => 'secondary',
-                        } }}">{{ ucfirst($item->status) }}</span>
-                    </td>
-                    <td>
-                        @php
-                            $kehadiranStatus = $item->kehadiran_status ?? 'N/A';
-                            $kehadiranClass = match($kehadiranStatus) {
-                                'hadir' => 'success',
-                                'tidak_hadir' => 'danger',
-                                'belum_dikonfirmasi' => 'warning',
-                                default => 'secondary',
-                            };
-                        @endphp
-                        <span class="badge bg-{{ $kehadiranClass }}">{{ ucfirst($kehadiranStatus) }}</span>
-                    </td>
-                    <td>
-                        @if($item->status === 'paid')
-                            <span class="badge bg-success">Lunas ({{ ucfirst($item->payment_method ?? '-') }})</span>
-                        @else
-                            <span class="badge bg-warning text-dark">Belum Lunas</span>
-                        @endif
-                    </td>
-                    <td class="text-center">
-                        <a href="{{ route('pelayan.order.summary', ['reservasi_id' => $item->id, 'from' => 'reservasi']) }}"
-                           class="btn btn-info btn-sm">
-                            <i class="bi bi-receipt me-1"></i> Detail Pembayaran
-                        </a>
-                    </td>
-                    <td class="text-center">
-                        <a href="{{ route('pelayan.reservasi.detail', ['id' => $item->id, 'from' => 'reservasi']) }}"
-                           class="btn btn-primary btn-sm">
-                            <i class="bi bi-card-checklist me-1"></i> Detail Menu
-                        </a>
-                    </td>
-                    <td class="text-center">
-                        <form action="{{ route('pelayan.reservasi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <i class="bi bi-trash me-1"></i> Hapus
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="11" class="text-center text-muted">Tidak ada reservasi.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <div class="d-flex justify-content-center">
-        {{ $reservasi->withQueryString()->links() }}
->>>>>>> Stashed changes
     </div>
 </div>
 

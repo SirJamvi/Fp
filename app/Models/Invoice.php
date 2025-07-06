@@ -155,7 +155,7 @@ class Invoice extends Model
     {
         return match($this->attributes['payment_status']) {
             'pending' => 'selesai',
-            'partial' => 'Dibayar Sebagian',
+            'partial' => 'Belum Lunas',
             'paid' => 'Lunas',
             default => 'Tidak Diketahui'
         };

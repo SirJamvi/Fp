@@ -192,53 +192,63 @@ class ReservationController extends Controller
         ], 200);
     }
 
-    public function cancel(Reservasi $reservasi)
-    {
-        $user = Auth::user();
-        
-        if (!$user || !$user->id) {
-            return response()->json([
-                'message' => 'User tidak terautentikasi dengan benar.',
-            ], 401);
-        }
-        
-        if ($reservasi->user_id !== $user->id) {
-            return response()->json([
-                'message' => 'Reservasi tidak ditemukan atau Anda tidak memiliki akses.'
-            ], 404);
-        }
-
-        if (! in_array($reservasi->status, ['pending_payment', 'confirmed'])) {
-            return response()->json([
-                'message' => 'Reservasi tidak dapat dibatalkan pada status ini.'
-            ], 400);
-        }
-
-        DB::beginTransaction();
-        try {
-            $mejaIds = $reservasi->meja()->pluck('meja_id')->toArray();
-
-            $reservasi->meja()->detach();
-
-            Meja::whereIn('id', $mejaIds)->update(['status' => 'tersedia']);
-
-            $reservasi->update(['status' => 'dibatalkan']);
-
-            DB::commit();
-
-            return response()->json([
-                'message'   => 'Reservasi berhasil dibatalkan.',
-                'reservasi' => $reservasi->load('meja'),
-            ], 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Gagal membatalkan reservasi.',
-                'error'   => $e->getMessage(),
-            ], 500);
-        }
+public function cancel(Reservasi $reservasi)
+{
+    $user = Auth::user();
+    
+    if (!$user || !$user->id) {
+        return response()->json([
+            'message' => 'User tidak terautentikasi dengan benar.',
+        ], 401);
     }
+    
+    if ($reservasi->user_id !== $user->id) {
+        return response()->json([
+            'message' => 'Reservasi tidak ditemukan atau Anda tidak memiliki akses.'
+        ], 404);
+    }
+
+    // Perluas kondisi yang bisa dibatalkan
+    if (! in_array($reservasi->status, ['pending_payment', 'confirmed', 'active_order'])) {
+        return response()->json([
+            'message' => 'Reservasi tidak dapat dibatalkan pada status ini.'
+        ], 400);
+    }
+
+    DB::beginTransaction();
+    try {
+        $mejaIds = $reservasi->meja()->pluck('meja_id')->toArray();
+
+        $reservasi->meja()->detach();
+
+        Meja::whereIn('id', $mejaIds)->update(['status' => 'tersedia']);
+
+        // UPDATE SEMUA STATUS TERKAIT
+        $reservasi->update([
+            'status' => 'dibatalkan',
+            'kehadiran_status' => 'tidak_hadir', // Tambahkan ini
+            'payment_status' => 'dibatalkan',     // Tambahkan ini
+            'waktu_selesai' => now()              // Tambahkan waktu selesai
+        ]);
+
+        // Reload data terbaru dari database
+        $reservasi->refresh();
+
+        DB::commit();
+
+        return response()->json([
+            'message'   => 'Reservasi berhasil dibatalkan.',
+            'reservasi' => $reservasi->load('meja'),
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Gagal membatalkan reservasi.',
+            'error'   => $e->getMessage(),
+        ], 500);
+    }
+}
 
     public function processPayment(Request $request, Reservasi $reservasi)
     {

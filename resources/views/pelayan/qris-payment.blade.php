@@ -1,6 +1,6 @@
 @extends('pelayan.layout.app')
 
-@section('title', 'Pembayaran QRIS')
+@section('title', 'Pembayaran 50% Reservasi')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-[#107672] to-[#0d625f] py-8 px-4">
@@ -28,7 +28,7 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600 font-medium">Status:</span>
                         <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                            Dibayar Sebagian
+                            Belum Lunas
                         </span>
                     </div>
                 </div>
